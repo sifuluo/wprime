@@ -141,11 +141,13 @@ public:
       ReadGenParts();
       ReadGenJets();
       ReadGenMET();
+      ReadPileup();
     }
     ReadJets();
     ReadLeptons();
     ReadMET();
     ReadTriggers();
+    ReadVertices();
   }
 
   void ReadGenParts() {
@@ -242,6 +244,16 @@ public:
     isolated_muon_track_trigger = evts->isolated_muon_track_trigger;
   }
 
+  void ReadPileup() {
+    Pileup_nPU = evts->Pileup_nPU;
+    Pileup_nTrueInt = evts->Pileup_nTrueInt;
+  }
+
+  void ReadVertices() {
+    PV_npvs = evts->PV_npvs;
+    PV_npvsGood = evts->PV_npvsGood;
+  }
+
   int iSampleYear, iSampleType, iTrigger, iFile;
   bool IsMC;
   string SampleYear, SampleType;
@@ -263,6 +275,9 @@ public:
   GenMET GenMet;
 
   bool isolated_electron_trigger, isolated_muon_trigger, isolated_muon_track_trigger;
+  int Pileup_nPU;
+  float Pileup_nTrueInt;
+  int PV_npvs, PV_npvsGood;
   // nlohmann::json GoodSections;
   // bool LumiStatus;
 };

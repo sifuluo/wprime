@@ -33,6 +33,7 @@ vector<string> GetFileNames(int isy_, int ist_, int igroup = 0, int groupsize = 
     ++counter;
     if (counter < startfile) continue;
     if (counter > endfile) break;
+    if (rootf.find("/store/") == 0) rootf = "root://cms-xrd-global.cern.ch/" + rootf;
     cout << "Loading root file " << rootf << endl;
     out.push_back(rootf);
   }

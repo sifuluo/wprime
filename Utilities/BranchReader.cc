@@ -83,6 +83,14 @@ public:
   bool isolated_muon_trigger;
   bool isolated_muon_track_trigger;
 
+  //Pileup
+  Int_t Pileup_nPU;
+  Float_t Pileup_nTrueInt;
+
+  // Primary Vertices
+  Int_t PV_npvs;
+  Int_t PV_npvsGood;
+
 
   Events(TChain *chain_, string sy_, bool mc_){
      chain = chain_;
@@ -159,8 +167,9 @@ public:
       chain->SetBranchAddress("GenPart_genPartIdxMother", &GenPart_genPartIdxMother);
       chain->SetBranchAddress("GenPart_status", &GenPart_status);
 
+      chain->SetBranchAddress("Pileup_nPU", &Pileup_nPU);
+      chain->SetBranchAddress("Pileup_nTrueInt", &Pileup_nTrueInt);
     }
-
 
     if (SampleYear == "2016" || SampleYear == "2016apv"){
       chain->SetBranchAddress("HLT_Ele27_WPTight_Gsf", &isolated_electron_trigger);
@@ -177,6 +186,9 @@ public:
       chain->SetBranchAddress("HLT_IsoMu24",&isolated_muon_trigger);
       isolated_muon_track_trigger = false;
     }
+
+    chain->SetBranchAddress("PV_npvs", &PV_npvs);
+    chain->SetBranchAddress("PV_npvsGood", &PV_npvsGood);
   }
 
 };

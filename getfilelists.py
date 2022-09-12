@@ -3,23 +3,24 @@ import os
 samples = []
 samples.append(("SingleElectron","2016"))
 samples.append(("SingleElectron","2017"))
+samples.append(("EGamma,2018"))
 samples.append(("SingleMuon","2016"))
 samples.append(("SingleMuon","2017"))
 samples.append(("SingleMuon","2018"))
 for datastream,year in samples:
     print(datastream,year)
-    os.system(f'dasgoclient -query="dataset=/{datastream}/Run{year}*_UL{year}_MiniAODv2_NanoAODv9-v*/NANOAOD" >> filelists.txt')
+    os.system(f'dasgoclient -query="dataset=/{datastream}/Run{year}*UL{year}_MiniAODv2_NanoAODv9-v*/NANOAOD" >> filenames/{datastream}_{year}_datasets.txt')
 
-    with open("filelists.txt","r") as f:
+    with open(f"filenames/{datastream}_{year}_datasets.txt","r") as f:
         for i,line in enumerate(f):
             os.system(f'dasgoclient -query="file dataset={line}" >> filelist_{i}.txt'.replace("\n",""))
     # break
-    os.remove("filelists.txt")
+    # os.remove("filelists.txt")
 
     files = [x for x in os.listdir() if "filelist" in x and ".py" not in x]
 
-    with open(f"datafiles/{datastream}_{year}.txt","w") as output:
-        with open(f"datafiles/{datastream}_{year}apv.txt","w") as output_apv:
+    with open(f"filenames/{datastream}_{year}.txt","w") as output:
+        with open(f"filenames/{datastream}_{year}apv.txt","w") as output_apv:
             for file in files:
                 with open(file,"r") as f:
                     for line in f:

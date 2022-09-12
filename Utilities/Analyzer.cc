@@ -16,6 +16,7 @@
 #include "ProgressBar.cc"
 #include "ScaleFactor.cc"
 #include "DataSelection.cc"
+#include "PUReweight.cc"
 
 using namespace std;
 
@@ -42,6 +43,7 @@ public:
     EntryMax = r->GetEntries();
     datasel = new DataSelection(iSampleYear);
     progress = new Progress(EntryMax, 1000);
+    pureweight = new PUReweight(iSampleYear);
   }
 
   Long64_t GetEntryMax() {return EntryMax;}
@@ -53,19 +55,20 @@ public:
     progress->SetEntryMax(mx);
   }
 
-  void SetOutput(string folder = "") {
+  void SetOutput(string folder = "Validation") {
     string path = "/eos/user/s/siluo/WPrimeAnalysis/" + folder + "/";
+    string subpath = Form("%s_%s_%s/");
     string outname = Form("%s_%s_%s_%i.root",SampleYear.c_str(), SampleType.c_str(), Trigger.c_str(), iFile);
     if (debug) {
       path = "";
       outname = "out.root";
     }
-    TString ofname = path + outname;
+    TString ofname = path + subpath + outname;
     ofile = new TFile(ofname,"RECREATE");
     ofile->cd();
     t = new TTree("t","EventTree");
     BookBranches();
-    evtCounter = new TH1F("EventCounter","Event Counter", 3, -0.5, 2.5);
+    evtCounter = new TH1F("EventCounter","Event Counter", 10, -0.5, 9.5);
   }
 
   int ReadEvent(Long64_t ievt) {
@@ -74,11 +77,20 @@ public:
     r->ReadEvent(ievt);
     progress->Print(ievt);
     BaseLineSelections();
-    if (!PassedSelections) {
+    if (GetDataSelection()) {
       evtCounter->Fill(1);
+      if (TriggerSelection()) {
+        evtCounter->Fill(2);
+        if (TopologySelection()) {
+          evtCounter->Fill(3);
+        }
+      }
+    }
+    if (!PassedSelections) {
+      evtCounter->Fill(4);
       return -1;
     }
-    evtCounter->Fill(2);
+    evtCounter->Fill(5);
     GetEventScaleFactor();
     BranchContent();
     return 0;
@@ -129,18 +141,71 @@ public:
     ofile->Close();
   }
 
+  void SuccessFlag() {
+    if (iEvent < EntryMax - 1) return;
+    string basepath = "/afs/cern.ch/work/s/siluo/wprime/SuccessFlags/";
+    string sucf = Form("%i_%i_%i_%i.txt",iSampleYear, iSampleType, iTrigger, iFile);
+    string flag = basepath + sucf;
+    ofstream suc(flag);
+    suc << "Completed\n";
+  }
+
   void BookBranches() {
     t->Branch("PassedSelections",&PassedSelections);
     t->Branch("EventScaleFactor",&EventScaleFactor);
     t->Branch("LeptonPt",&LeptonPt);
+    t->Branch("LeptonEta",&LeptonEta);
+    JetPt = new vector<double>;
+    t->Branch("JetPt",&JetPt);
+    JetEta = new vector<double>;
+    t->Branch("JetEta",&JetEta);
+    t->Branch("nJets",&nJets);
+    t->Branch("METPt",&METPt);
+
+    t->Branch("PUWeight", &PUWeight);
+    t->Branch("nPU", &nPU);
+    t->Branch("nTrueInt", &nTrueInt);
+
+    t->Branch("nPV", &nPV);
+    t->Branch("nPVGood", &nPVGood);
   }
 
   void BranchContent() {
     LeptonPt = r->Leptons[0].Pt();
+    LeptonEta = r->Leptons[0].Eta();
+    JetPt->clear();
+    JetEta->clear();
+    for (Jet j : r->Jets) {
+      JetPt->push_back(j.Pt());
+      JetEta->push_back(j.Eta());
+    }
+    nJets =  r->Jets.size();
+    METPt = r->Met.Pt();
+
+    if (IsMC) {
+      nPU = r->Pileup_nPU;
+      nTrueInt = r->Pileup_nTrueInt;
+      PUWeight = pureweight->GetWeight(nPU);
+    }
+    else {
+      nPU = 0;
+      nTrueInt = 0;
+      PUWeight = 1.;
+    }
+    nPV = r->PV_npvs;
+    nPVGood = r->PV_npvsGood;
   }
 
   double LeptonPt;
-
+  double LeptonEta;
+  vector<double> *JetPt;
+  vector<double> *JetEta;
+  int nJets;
+  double METPt;
+  double PUWeight;
+  int nPU;
+  double nTrueInt;
+  int nPV, nPVGood;
 
 
   Long64_t EntryMax;
@@ -154,6 +219,8 @@ public:
   ScaleFactor *sf;
   DataSelection *datasel;
   Progress* progress;
+  PUReweight* pureweight;
+
   int iSampleYear, iSampleType, iTrigger, iFile;
   bool IsMC;
   string SampleYear, SampleType, Trigger;

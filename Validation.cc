@@ -33,9 +33,7 @@
 #include "Utilities/ProgressBar.cc"
 
 void Validation(int isampleyear = 1, int isampletype = 2, int itrigger = 1, int ifile = 0) {
-  // sampleyear: 0 for 2016apv, 1 for 2016, 2 for 2017, 3 for 2018
-  // sampletype: 0 for SingleElectron, 1 for SingleMuon, 2 for ttbar
-  // trigger: 0 for SingleElectron, 1 for SingleMuon
+  // Indices details see Utilities/Constants.cc
   bool debug = false;
   Analyzer *a = new Analyzer(isampleyear, isampletype, itrigger, ifile, debug);
   a->SetOutput("Validation");
@@ -47,4 +45,5 @@ void Validation(int isampleyear = 1, int isampletype = 2, int itrigger = 1, int 
   }
   a->SaveOutput();
   a->CloseOutput();
+  a->SuccessFlag();
 }
