@@ -9,9 +9,8 @@
 #include "TFile.h"
 
 #include "DataFormat.cc"
-// #include "NanoAODEvents.C"
 #include "BranchReader.cc"
-#include "FileLists.cc"
+// #include "FileLists.cc"
 #include "BTag.cc"
 #include "Constants.cc"
 
@@ -19,29 +18,59 @@ using namespace std;
 
 class NanoAODReader {
 public:
-  NanoAODReader(int isy_, int ist_, int itr_, int ifile_) {
+  NanoAODReader(Configs *conf_) {
     chain = new TChain("Events");
-    iSampleYear = isy_;
-    iSampleType = ist_;
-    IsMC = (iSampleType > 1);
-    SampleYear = Constants::SampleYears[isy_];
-    SampleType = Constants::SampleTypes[ist_];
-    iTrigger = itr_;
-    // if (!IsMC) ReadLumiJSON();
+    // iSampleYear = isy_;
+    // iSampleType = ist_;
+    // SampleYear = Constants::SampleYears[isy_];
+    // SampleType = Constants::SampleTypes[ist_];
+    // iTrigger = itr_;
+    conf = conf_;
+
+    IsMC = (conf->iSampleType > 1);
+
+    JetPtThreshold = 30.;
+    JetIdThreshold = 6;
+    LepPtThreshold = 30.;
     if (true) { // batch mode
-      vector<string> rootfiles = GetFileNames(isy_, ist_, ifile_);
+      vector<string> rootfiles = GetFileNames(conf->iSampleYear, conf->iSampleType, conf->iFile);
       for (string rf : rootfiles) {
         chain->Add(TString(rf));
         cout << "Successfully loaded root file: " << rf << endl;
       }
     }
     else chain->Add("ttbar2018sample.root"); // single file mode
-    cout << "Running with SampleYear = " << SampleYear << ", SampleType = " << SampleType << ", Trigger = " << Constants::Triggers[iTrigger] << endl;
-    evts = new Events(chain, SampleYear, IsMC);
-    JetPtThreshold = 30.;
-    JetIdThreshold = 6;
-    LepPtThreshold = 30.;
+    cout << "Running with SampleYear = " << conf->SampleYear << ", SampleType = " << conf->SampleType << ", Trigger = " << conf->Trigger << endl;
+    evts = new Events(chain, conf->SampleYear, IsMC);
+    cout << "This iteration contains " << GetEntries() << " events" <<endl;
   };
+
+  vector<string> GetFileNames(int isy_, int ist_, int igroup = 0, int groupsize = 1) {
+    vector<string> out;
+    string basepath = "/afs/cern.ch/work/s/siluo/wprime/filenames/";
+    string filename = basepath + Constants::SampleTypes[ist_] + "_" + Constants::SampleYears[isy_] + ".txt";
+    ifstream infile(filename);
+    if (!infile) {
+      cout << "Cannot read from file " << filename << endl;
+      throw runtime_error("Cannot Read from file");
+      return out;
+    }
+    else cout << "Reading from file " << filename << endl;
+
+    int startfile = igroup * groupsize;
+    int endfile = (igroup + 1) * groupsize - 1;
+    string rootf;
+    int counter = -1;
+    while (getline(infile, rootf)) {
+      ++counter;
+      if (counter < startfile) continue;
+      if (counter > endfile) break;
+      if (rootf.find("/store/") == 0) rootf = "root://cms-xrd-global.cern.ch/" + rootf;
+      cout << "Loading root file " << rootf << endl;
+      out.push_back(rootf);
+    }
+    return out;
+  }
 
   Long64_t GetEntries() {
     return chain->GetEntries();
@@ -76,67 +105,16 @@ public:
     return pass;
   }
 
-  // bool TopologySelection() {
-  //   return (Jets.size() >=5 && Leptons.size() == 1 && N_BJets >= 2);
-  // }
-
-  // bool TriggerSelection() {
-  //   if (iTrigger == 0) return isolated_electron_trigger;
-  //   else if (iTrigger == 1) return (isolated_muon_trigger || isolated_muon_track_trigger);
-  //   else {
-  //     cout << "Ineligeble iTrigger: " << iTrigger << endl;
-  //     return false;
-  //   }
-  // return (isolated_electron_trigger || isolated_muon_trigger || isolated_muon_track_trigger);
-  // }
-
-  // bool LumiSelection() {
-  //   return GetLumiStatus();
-  // }
-
-  // void ReadLumiJSON() {
-  //   TString s;
-  //   if (iSampleYear < 2){ // 2016 or 2016apv
-  //     ifstream f("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Legacy_2016/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt");
-  //     s.ReadFile(f);
-  //   }
-  //   if (iSampleYear == 2){ // 2017
-  //     ifstream f("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt");
-  //     s.ReadFile(f);
-  //   }
-  //   if (iSampleYear == 3){
-  //     ifstream f("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/Legacy_2018/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt");
-  //     s.ReadFile(f);
-  //   }
-  //   GoodSections = nlohmann::json::parse(s.Data());
-  // }
-  //
-  // bool GetLumiStatus() {
-  //   if (IsMC) {
-  //     LumiStatus = true;
-  //     return LumiStatus;
-  //   }
-  //   string runstr = to_string(run);
-  //   LumiStatus = GoodSections.contains(runstr);
-  //   if (LumiStatus) {
-  //     bool goodblock = false;
-  //     vector<vector<unsigned>> blocks = GoodSections.at(runstr).get<vector<vector<unsigned>>>();
-  //     for (vector<unsigned> block : blocks) {
-  //       if (block[0] <= luminosityBlock && block[1] >= luminosityBlock) {
-  //         goodblock = true;
-  //         break;
-  //       }
-  //     }
-  //     LumiStatus &= goodblock;
-  //   }
-  //   return LumiStatus;
-  // }
-
   void ReadEvent(Long64_t i) {
     evts->GetEntry(i);
     run = evts->run;
     luminosityBlock = evts->luminosityBlock;
     if (!IsMC && (run < 0 || luminosityBlock < 0)) cout << "Run/LuminosityBlock number is negative" <<endl;
+    if (conf->PUEvaluation) { // It will only run on MC
+      ReadPileup();
+      ReadVertices();
+      return;
+    }
     if (IsMC) {
       ReadGenParts();
       ReadGenJets();
@@ -254,9 +232,13 @@ public:
     PV_npvsGood = evts->PV_npvsGood;
   }
 
-  int iSampleYear, iSampleType, iTrigger, iFile;
+  // int iSampleYear, iSampleType, iTrigger, iFile;
+  // string SampleYear, SampleType;
+  // bool PUEvaluation;
+  // bool DASInput;
+  Configs *conf;
+
   bool IsMC;
-  string SampleYear, SampleType;
   TChain* chain;
   BTag* btagger;
   Events* evts;

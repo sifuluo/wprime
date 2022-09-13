@@ -7,12 +7,14 @@
 #include <string>
 #include <vector>
 
+#include "DataFormat.cc"
 #include "nlohmann/json.hpp"
 
 class DataSelection {
 public:
-  DataSelection(int isy_) {
-    iSampleYear = isy_;
+  DataSelection(Configs *conf_) {
+    conf = conf_;
+    iSampleYear = conf->iSampleYear;
     ReadLumiJSON();
   };
 
@@ -50,6 +52,7 @@ public:
     return LumiStatus;
   }
 
+  Configs *conf;
   int iSampleYear;
   nlohmann::json GoodSections;
 };

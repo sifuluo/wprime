@@ -9,9 +9,10 @@ using namespace std;
 
 class BTag {
 public:
-  BTag(int wp_ = 2, int isy_ = 0) {
-    wp = wp_;
-    sample = Constants::SampleYears[isy_];
+  BTag(Configs *conf_) {
+    conf = conf_;
+    wp = conf->Btag_WP;
+    sample = conf->SampleYear;
     //https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation106XUL16preVFP
     DeepJetCuts["2016apv"] = vector<float> {0.0508,0.2598,0.6502};
     DeepJetEff["2016apv"]  = vector<float> {0.873 ,0.733 ,0.575};
@@ -52,6 +53,7 @@ public:
     j.btag = (j.btagDeepFlavB > cut);
   }
 
+  Configs *conf;
   int wp; // 0  for loose, 1 for medium, 2 for tight;
   string sample;
   float cut, eff, mr;

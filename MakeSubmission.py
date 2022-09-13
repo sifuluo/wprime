@@ -1,17 +1,25 @@
 import os
 
-# years = ["2016apv","2016","2017","2018"]
-years = ["2016","2017"]
+SampleYears = ["2016apv","2016","2017","2018"]
 SampleTypes = ["SingleElectron","SingleMuon","ttbar","wjets_HT_70_100", "wjets_HT_100_200", "wjets_HT_200_400", "wjets_HT_400_600","wjets_HT_600_800", "wjets_HT_800_1200", "wjets_HT_1200_2500", "wjets_HT_2500_inf","single_antitop_tchan","single_antitop_tw","single_top_schan","single_top_tchan","single_top_tw"]
 Triggers = ["SE","SM"]
+
+RunningYears = ["2016","2017"]
+RunningTypes = ["ttbar"]
+RunningTriggers = ["SE"]
+
+EOSFolderName = "PUEval"
 
 if not os.path.exists("Submits"):
   os.makedirs("Submits")
 
 MCBaseFolder = "/eos/user/d/doverton/"
-for iy, year in enumerate(years):
+for iy, year in enumerate(SampleYears):
+  if not (year in RunningYears): continue
   for isa, sampletype in enumerate(SampleTypes):
+    if not (sampletype in RunningTypes): continue
     for itr, trigger in enumerate(Triggers):
+      if not (trigger in RunningTriggers): continue
       # filenamesfolder = "/afs/cern.ch/work/s/siluo/wprime/datafiles/" if (sampletype == "SingleElectron" or sampletype == "SingleMuon") else "/afs/cern.ch/work/s/siluo/wprime/mcfiles/"
       if isa + itr == 1: continue
       filenamesfolder = "/afs/cern.ch/work/s/siluo/wprime/filenames/"
@@ -47,7 +55,7 @@ for iy, year in enumerate(years):
       if not os.path.exists("Submits/logs/log" + runname):
         os.makedirs("Submits/logs/log" + runname)
 
-      eossubfolder = "Validation/"
+      eossubfolder = EOSFolderName + "/"
       jobsubfolder = year + "_" + sampletype + "_" + trigger + "/"
       jobpath = "/eos/user/s/siluo/WPrimeAnalysis/" + eossubfolder + jobsubfolder
       if not os.path.exists(jobpath):

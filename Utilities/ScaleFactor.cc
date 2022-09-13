@@ -20,7 +20,7 @@ public:
   };
 
   void Init() {
-    string sy = r->SampleYear;
+    string sy = r->conf->SampleYear;
     if (sy == "16apv" || sy == "2016apv") sampleyear = "2016preVFP";
     else if (sy == "16" || sy == "2016") sampleyear = "2016postVFP";
     else if (sy == "17" || sy == "2017") sampleyear = "2017";

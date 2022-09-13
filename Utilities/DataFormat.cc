@@ -2,11 +2,38 @@
 #define DATAFORMAT_CC
 
 #include <vector>
+#include <string>
 // #include "TChain.h"
 #include "TLorentzVector.h"
 #include "TString.h"
 
+#include "Constants.cc"
 using namespace std;
+
+struct Configs {
+  Configs(int isy_ = 2, int ist_ = 2, int itr_ = 0, int ifile_ = 0) {
+    iSampleYear = isy_;
+    iSampleType = ist_;
+    iTrigger = itr_;
+    iFile = ifile_;
+    SampleYear = Constants::SampleYears[isy_];
+    SampleType = Constants::SampleTypes[ist_];
+    Trigger = Constants::Triggers[itr_];
+  };
+  int iSampleYear;
+  string SampleYear;
+  int iSampleType;
+  string SampleType;
+  int iTrigger;
+  string Trigger;
+  int iFile;
+
+  bool Debug = false;
+  bool PUEvaluation = false;
+  bool DASInput = false;
+
+  int Btag_WP = 2;
+};
 
 struct PO : TLorentzVector {
   PO(TLorentzVector v_ = TLorentzVector()) : TLorentzVector(v_), index(-1) {};
