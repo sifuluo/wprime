@@ -2,8 +2,9 @@
 #define BTAG_CC
 
 #include <vector>
-#include "DataFormat.cc"
-#include "Constants.cc"
+
+#include "Configs.cc"
+// #include "Constants.cc"
 
 using namespace std;
 
@@ -12,7 +13,7 @@ public:
   BTag(Configs *conf_) {
     conf = conf_;
     wp = conf->Btag_WP;
-    sample = conf->SampleYear;
+    SampleYear = conf->SampleYear;
     //https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation106XUL16preVFP
     DeepJetCuts["2016apv"] = vector<float> {0.0508,0.2598,0.6502};
     DeepJetEff["2016apv"]  = vector<float> {0.873 ,0.733 ,0.575};
@@ -35,27 +36,38 @@ public:
     DeepJetEff["2018"]  = vector<float> {0.929 ,0.819 ,0.652};
     DeepJetMR["2018"]   = vector<float> {0.1   ,0.01  ,0.001};
 
-    cut = DeepJetCuts[sample][wp];
-    eff = DeepJetEff[sample][wp];
-    mr  = DeepJetMR[sample][wp];
-
+    cut = DeepJetCuts[SampleYear][wp];
+    eff = DeepJetEff[SampleYear][wp];
+    mr  = DeepJetMR[SampleYear][wp];
   };
+
+  void SetBtagWP(int wp_) {
+    wp = wp_;
+    cut = DeepJetCuts[SampleYear][wp];
+    eff = DeepJetEff[SampleYear][wp];
+    mr  = DeepJetMR[SampleYear][wp];
+  }
 
   bool IsBtag(float p) {
     return (p > cut);
   }
 
-  bool IsBtag(Jet& j) {
-    return (j.btagDeepFlavB > cut);
+  bool IsBtag(float p, int wp_) {
+    return (p>DeepJetCuts[SampleYear][wp_]);
   }
 
-  void TagB(Jet& j) {
-    j.btag = (j.btagDeepFlavB > cut);
+  vector<bool> GetBtags(float p) {
+    vector<bool> bts;
+    bts.clear();
+    bts.push_back(p>DeepJetCuts[SampleYear][0]); // loose
+    bts.push_back(p>DeepJetCuts[SampleYear][1]); // medium
+    bts.push_back(p>DeepJetCuts[SampleYear][2]); // tight
+    return bts;
   }
 
   Configs *conf;
   int wp; // 0  for loose, 1 for medium, 2 for tight;
-  string sample;
+  string SampleYear;
   float cut, eff, mr;
   map< string, vector<float> > DeepJetCuts, DeepJetEff, DeepJetMR;
 };

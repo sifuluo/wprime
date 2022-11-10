@@ -32,23 +32,28 @@ public:
     JetPtThreshold = 30.;
     JetIdThreshold = 6;
     LepPtThreshold = 30.;
-    if (true) { // batch mode
-      vector<string> rootfiles = GetFileNames(conf->iSampleYear, conf->iSampleType, conf->iFile);
+    if (conf->iFile >= 0) { // batch mode
+      vector<string> rootfiles = GetFileNames();
       for (string rf : rootfiles) {
         chain->Add(TString(rf));
         cout << "Successfully loaded root file: " << rf << endl;
       }
     }
-    else chain->Add("ttbar2018sample.root"); // single file mode
+    else if (conf->InputFile == "") cout << "iFile set to negative but a valid test InputFile name is missing" << endl;
+    else {
+      chain->Add(conf->InputFile);
+      cout << "Loaded test InputFile: " << conf->InputFile << endl;
+    }
     cout << "Running with SampleYear = " << conf->SampleYear << ", SampleType = " << conf->SampleType << ", Trigger = " << conf->Trigger << endl;
     evts = new Events(chain, conf->SampleYear, IsMC);
     cout << "This iteration contains " << GetEntries() << " events" <<endl;
   };
 
-  vector<string> GetFileNames(int isy_, int ist_, int igroup = 0, int groupsize = 1) {
+  vector<string> GetFileNames() {
     vector<string> out;
     string basepath = "/afs/cern.ch/work/s/siluo/wprime/filenames/";
-    string filename = basepath + Constants::SampleTypes[ist_] + "_" + Constants::SampleYears[isy_] + ".txt";
+    if (conf->DASInput) basepath = basepath + "DASFileNames/DAS_";
+    string filename = basepath + conf->SampleType + "_" + conf->SampleYear + ".txt";
     ifstream infile(filename);
     if (!infile) {
       cout << "Cannot read from file " << filename << endl;
@@ -57,8 +62,8 @@ public:
     }
     else cout << "Reading from file " << filename << endl;
 
-    int startfile = igroup * groupsize;
-    int endfile = (igroup + 1) * groupsize - 1;
+    int startfile = conf->iFile * conf->FilePerJob;
+    int endfile = (conf->iFile + 1) * conf->FilePerJob - 1;
     string rootf;
     int counter = -1;
     while (getline(infile, rootf)) {
@@ -78,6 +83,12 @@ public:
 
   void SetBTagger(BTag* b_) {
     btagger = b_;
+    Jet::btagger = b_;
+  }
+
+  void SetBtagWP(int wp_) {
+    conf->Btag_WP = wp_;
+    btagger->SetBtagWP(wp_);
   }
 
   bool JetSelection(Jet& j) {
@@ -115,6 +126,7 @@ public:
       ReadVertices();
       return;
     }
+
     if (IsMC) {
       ReadGenParts();
       ReadGenJets();
@@ -156,8 +168,9 @@ public:
   void ReadJets() {
     AllJets.clear();
     Jets.clear();
-    N_BJets = 0;
-    N_NBJets = 0;
+    BJets.clear();
+    NBJets.clear();
+
     for (unsigned i = 0; i < evts->nJet; ++i) {
       Jet tmp;
       tmp.SetPtEtaPhiM(evts->Jet_pt[i],evts->Jet_eta[i],evts->Jet_phi[i],evts->Jet_mass[i]);
@@ -170,12 +183,21 @@ public:
         tmp.partonFlavour = evts->Jet_partonFlavour[i];
       }
       tmp.btagDeepFlavB = evts->Jet_btagDeepFlavB[i];
-      btagger->TagB(tmp);
+      tmp.SetBtags();
       AllJets.push_back(tmp);
       if (!JetSelection(tmp)) continue;
       Jets.push_back(tmp);
-      if (tmp.btag) N_BJets++;
-      else N_NBJets++;
+    }
+    for (unsigned i = 0; i < 3; ++i) {
+      vector<int> bjs, nbjs;
+      bjs.clear();
+      nbjs.clear();
+      for (unsigned j = 0; j < Jets.size(); ++j) {
+        if (Jets[j].btags[i]) bjs.push_back(j);
+        else nbjs.push_back(j);
+      }
+      BJets.push_back(bjs);
+      NBJets.push_back(nbjs);
     }
   }
 
@@ -232,6 +254,23 @@ public:
     PV_npvsGood = evts->PV_npvsGood;
   }
 
+  bool ReadMETFilterStatus() {
+    bool status = true;
+    if (!IsMC || true) {
+      status = status && evts->Flag_goodVertices;
+      status = status && evts->Flag_globalSuperTightHalo2016Filter;
+      status = status && evts->Flag_HBHENoiseFilter;
+      status = status && evts->Flag_HBHENoiseIsoFilter;
+      status = status && evts->Flag_EcalDeadCellTriggerPrimitiveFilter;
+      status = status && evts->Flag_BadPFMuonFilter;
+      status = status && evts->Flag_BadPFMuonDzFilter;
+      status = status && evts->Flag_eeBadScFilter;
+      status = status && evts->Flag_ecalBadCalibFilter;
+    }
+    METFilterStatus = status;
+    return METFilterStatus;
+  }
+
   // int iSampleYear, iSampleType, iTrigger, iFile;
   // string SampleYear, SampleType;
   // bool PUEvaluation;
@@ -248,7 +287,7 @@ public:
   float JetPtThreshold;
   int JetIdThreshold;
   vector<Jet> AllJets, Jets;
-  int N_BJets, N_NBJets;
+  vector< vector<int> > BJets, NBJets;
   float LepPtThreshold;
   vector<Lepton> Leptons;
   vector<Electron> Electrons;
@@ -257,6 +296,7 @@ public:
   GenMET GenMet;
 
   bool isolated_electron_trigger, isolated_muon_trigger, isolated_muon_track_trigger;
+  bool METFilterStatus;
   int Pileup_nPU;
   float Pileup_nTrueInt;
   int PV_npvs, PV_npvsGood;

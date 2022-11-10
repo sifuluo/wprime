@@ -37,17 +37,14 @@ public:
   };
 
   void Init() {
-    cout <<"**1**" <<endl;
     r = new NanoAODReader(conf);
-    cout <<"**2**" <<endl;
-    bt = new BTag(conf);
-    cout <<"**3**" <<endl;
-    r->SetBTagger(bt);
-    cout <<"**4**" <<endl;
-    sf = new ScaleFactor(r);
     EntryMax = r->GetEntries();
+    progress = new Progress(EntryMax, conf->ProgressInterval);
+    if (conf->PUEvaluation) return;
+    bt = new BTag(conf);
+    r->SetBTagger(bt);
+    sf = new ScaleFactor(r);
     if (!IsMC) datasel = new DataSelection(conf);
-    progress = new Progress(EntryMax, 1000);
     // pureweight = new PUReweight(iSampleYear);
   }
 
@@ -64,41 +61,39 @@ public:
     string path = "/eos/user/s/siluo/WPrimeAnalysis/" + folder + "/";
     string subpath = Form("%s_%s_%s/",conf->SampleYear.c_str(), conf->SampleType.c_str(), conf->Trigger.c_str());
     string outname = Form("%s_%s_%s_%i.root",conf->SampleYear.c_str(), conf->SampleType.c_str(), conf->Trigger.c_str(), conf->iFile);
-    if (conf->Debug) {
+    if (conf->GetSwitch("LocalOutput")) {
       path = "";
-      outname = "out.root";
+      subpath = "outputs/";
     }
     TString ofname = path + subpath + outname;
     ofile = new TFile(ofname,"RECREATE");
+    cout << "Output will be saved to " << ofname << endl;
     ofile->cd();
     t = new TTree("t","EventTree");
     BookBranches();
-    evtCounter = new TH1F("EventCounter","Event Counter", 10, -0.5, 9.5);
+    evtCounter = new TH1F("EventCounter","Event Counter", 10, 0.5, 10.5);
+    const char *evtCounterLabel[20] = {"All", "Lumi Sec", "Trigger", "1 Lep", "5J", "2BJ"};
   }
 
   int ReadEvent(Long64_t ievt) {
     iEvent = ievt;
-    evtCounter->Fill(0);
+    evtCounter->Fill("All",1);
     r->ReadEvent(ievt);
-    progress->Print(ievt);
-    BaseLineSelections();
-    if (GetDataSelection()) {
-      evtCounter->Fill(1);
-      if (TriggerSelection()) {
-        evtCounter->Fill(2);
-        if (TopologySelection()) {
-          evtCounter->Fill(3);
-        }
-      }
+    if (conf->PrintProgress) progress->Print(ievt);
+    if (conf->PUEvaluation) {
+      evtCounter->Fill("Passed",1);
+      FillBranchContent();
+      return 0;
     }
-    if (PassedSelections || conf->PUEvaluation) {
-      evtCounter->Fill(5);
+    BaseLineSelections();
+    FillEventCounter();
+    if (PassedSelections) {
+      evtCounter->Fill("Passed Basic",1);
       GetEventScaleFactor();
-      BranchContent();
       return 0;
     }
     else {
-      evtCounter->Fill(4);
+      evtCounter->Fill("Failed",1);
       return -1;
     }
   }
@@ -112,26 +107,29 @@ public:
     }
   }
 
-  bool TopologySelection() {
-    return (r->Jets.size() >=5 && r->Leptons.size() == 1 && r->N_BJets >= 2);
-  }
-
   bool GetDataSelection() {
     if (IsMC) return true;
     else return datasel->GetDataSelection(r->run, r->luminosityBlock);
   }
 
+  virtual bool ObjectsRequirement() {
+    bool ob = (Leptons().size() == 1);
+    ob = ob && (Jets().size() > 4);
+    return ob;
+  }
+
   bool BaseLineSelections() {
     PassedSelections = true;
     PassedSelections &= TriggerSelection();
-    PassedSelections &= TopologySelection();
     PassedSelections &= GetDataSelection();
+    PassedSelections &= r->ReadMETFilterStatus();
+    PassedSelections &= ObjectsRequirement();
     return PassedSelections;
   }
 
   double GetEventScaleFactor() {
     if (IsMC) EventScaleFactor = sf->CalcEventSF();
-    else EventScaleFactor = 1.;
+    else EventScaleFactor = -1.;
     return EventScaleFactor;
   }
 
@@ -148,14 +146,36 @@ public:
     ofile->Close();
   }
 
-  void SuccessFlag() {
-    if (iEvent < EntryMax - 1) return;
-    string basepath = "/afs/cern.ch/work/s/siluo/wprime/SuccessFlags/";
-    string sucf = Form("%i_%i_%i_%i.txt",conf->iSampleYear, conf->iSampleType, conf->iTrigger, conf->iFile);
-    string flag = basepath + sucf;
-    ofstream suc(flag);
-    suc << "Completed\n";
-  }
+  // void SuccessFlag() {
+  //   if (iEvent < EntryMax - 1) return;
+  //   string basepath = "/afs/cern.ch/work/s/siluo/wprime/SuccessFlags/";
+  //   string sucf = Form("%i_%i_%i_%i.txt",conf->iSampleYear, conf->iSampleType, conf->iTrigger, conf->iFile);
+  //   string flag = basepath + sucf;
+  //   ofstream suc(flag);
+  //   suc << "Completed\n";
+  //   progress->JobEnd();
+  // }
+
+  // Accessors
+  vector<GenPart>& GenParts() {return r->GenParts;}
+  vector<GenJet>& GenJets() {return r->GenJets;}
+  vector<Jet>& AllJets() {return r->AllJets;}
+  vector<Jet>& Jets() {return r->Jets;}
+  vector<Lepton>& Leptons() {return r->Leptons;}
+  vector<Electron>& Electrons() {return r->Electrons;}
+  vector<Muon>& Muons() {return r->Muons;}
+  GenMET& GenMet() {return r->GenMet;}
+  MET& Met() {return r->Met;}
+
+  vector< vector<int> >& BJets() {return r->BJets;}
+  vector< vector<int> >& NBJets() {return r->NBJets;}
+  vector<int>& BJets_Loose(){return r->BJets[0];}
+  vector<int>& BJets_Medium(){return r->BJets[1];}
+  vector<int>& BJets_Tight(){return r->BJets[2];}
+  vector<int>& NBJets_Loose(){return r->NBJets[0];}
+  vector<int>& NBJets_Medium(){return r->NBJets[1];}
+  vector<int>& NBJets_Tight(){return r->NBJets[2];}
+
 
   virtual void BookBranches() {
     t->Branch("PassedSelections",&PassedSelections);
@@ -163,90 +183,19 @@ public:
     return;
   }
 
-  virtual void BranchContent() {
+  virtual void FillBranchContent() {
     return;
   }
 
-  // void BookBranches_PUEval() {
-  //   t->Branch("PassedSelections",&PassedSelections);
-  //   t->Branch("EventScaleFactor",&EventScaleFactor);
-  //   t->Branch("nPU", &nPU);
-  //   t->Branch("nTrueInt", &nTrueInt);
-  //   t->Branch("nPV", &nPV);
-  //   t->Branch("nPVGood", &nPVGood);
-  // }
-  //
-  // void BranchContent_PUEval() {
-  //   if (IsMC) {
-  //     nPU = r->Pileup_nPU;
-  //     nTrueInt = r->Pileup_nTrueInt;
-  //   }
-  //   else {
-  //     nPU = 0;
-  //     nTrueInt = 0;
-  //   }
-  //   nPV = r->PV_npvs;
-  //   nPVGood = r->PV_npvsGood;
-  // }
-  //
-  // void BookBranches_Validation() {
-  //   t->Branch("PassedSelections",&PassedSelections);
-  //   t->Branch("EventScaleFactor",&EventScaleFactor);
-  //   t->Branch("LeptonPt",&LeptonPt);
-  //   t->Branch("LeptonEta",&LeptonEta);
-  //   JetPt = new vector<double>;
-  //   t->Branch("JetPt",&JetPt);
-  //   JetEta = new vector<double>;
-  //   t->Branch("JetEta",&JetEta);
-  //   t->Branch("nJets",&nJets);
-  //   t->Branch("METPt",&METPt);
-  //
-  //   t->Branch("PUWeight", &PUWeight);
-  //   t->Branch("nPU", &nPU);
-  //   t->Branch("nTrueInt", &nTrueInt);
-  //
-  //   t->Branch("nPV", &nPV);
-  //   t->Branch("nPVGood", &nPVGood);
-  // }
-  //
-  // void BranchContent_Validation() {
-  //   LeptonPt = r->Leptons[0].Pt();
-  //   LeptonEta = r->Leptons[0].Eta();
-  //   JetPt->clear();
-  //   JetEta->clear();
-  //   for (Jet j : r->Jets) {
-  //     JetPt->push_back(j.Pt());
-  //     JetEta->push_back(j.Eta());
-  //   }
-  //   nJets =  r->Jets.size();
-  //   METPt = r->Met.Pt();
-  //
-  //   if (IsMC) {
-  //     nPU = r->Pileup_nPU;
-  //     nTrueInt = r->Pileup_nTrueInt;
-  //     // PUWeight = pureweight->GetWeight(nPU);
-  //   }
-  //   else {
-  //     nPU = 0;
-  //     nTrueInt = 0;
-  //     PUWeight = 1.;
-  //   }
-  //   nPV = r->PV_npvs;
-  //   nPVGood = r->PV_npvsGood;
-  //
-  // }
-
-  // double LeptonPt;
-  // double LeptonEta;
-  // vector<double> *JetPt;
-  // vector<double> *JetEta;
-  // int nJets;
-  // double METPt;
-  // double PUWeight;
-  // int nPU;
-  // double nTrueInt;
-  // int nPV, nPVGood;
-
+  virtual void FillEventCounter() {
+    if (!GetDataSelection()) return;
+    evtCounter->Fill("Lumi Sec",1);
+    if (!TriggerSelection()) return;
+    evtCounter->Fill("Trigger",1);
+    if (Leptons().size() != 1) return;
+    evtCounter->Fill("1 Lep",1);
+    return;
+  }
 
   Long64_t EntryMax;
   Long64_t iEvent;
@@ -261,8 +210,6 @@ public:
   // PUReweight* pureweight;
 
   Configs *conf;
-  // int iSampleYear, iSampleType, iTrigger, iFile;
-  // string SampleYear, SampleType, Trigger;
   bool IsMC;
   int PassedSelections;
   float EventScaleFactor;

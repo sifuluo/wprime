@@ -1,7 +1,7 @@
 import os
 
-get_data = False
-get_mc = True
+get_data = True
+get_mc = False
 if get_data:
   DATA_datasets = []
   DATA_datasets.append(("SingleElectron","2016"))

@@ -2,49 +2,31 @@
 #define DATAFORMAT_CC
 
 #include <vector>
+#include <map>
 #include <string>
 // #include "TChain.h"
 #include "TLorentzVector.h"
 #include "TString.h"
 
 #include "Constants.cc"
+#include "BTag.cc"
+#include "Configs.cc"
 using namespace std;
-
-struct Configs {
-  Configs(int isy_ = 2, int ist_ = 2, int itr_ = 0, int ifile_ = 0) {
-    iSampleYear = isy_;
-    iSampleType = ist_;
-    iTrigger = itr_;
-    iFile = ifile_;
-    SampleYear = Constants::SampleYears[isy_];
-    SampleType = Constants::SampleTypes[ist_];
-    Trigger = Constants::Triggers[itr_];
-  };
-  int iSampleYear;
-  string SampleYear;
-  int iSampleType;
-  string SampleType;
-  int iTrigger;
-  string Trigger;
-  int iFile;
-
-  bool Debug = false;
-  bool PUEvaluation = false;
-  bool DASInput = false;
-
-  int Btag_WP = 2;
-};
 
 struct PO : TLorentzVector {
   PO(TLorentzVector v_ = TLorentzVector()) : TLorentzVector(v_), index(-1) {};
   // operator TLorentzVector() {return v;};
   int index;
-  TString printXYZT() {
+  TString PrintXYZT() {
     TString a = Form("X = %f, Y = %f, Z = %f, T = %f", X(), Y(), Z(), T());
     return a;
   }
-  TString printXYZM() {
+  TString PrintXYZM() {
     TString a = Form("X = %f, Y = %f, Z = %f, M = %f", X(), Y(), Z(), M());
+    return a;
+  }
+  TString PrintPtEtaPhiM() {
+    TString a = Form("Pt = %f, Eta = %f, Phi = %f, M = %f", Pt(), Eta(), Phi(), M());
     return a;
   }
 };
@@ -74,9 +56,17 @@ struct Jet : PO {
   int hadronFlavour;
   int partonFlavour;
   bool btag;
-  // float btagDeepB;
+  vector<bool> btags; // {loose, medium, tight}
   float btagDeepFlavB;
+
+  static BTag* btagger;
+  void SetBtags() {
+    btags = btagger->GetBtags(btagDeepFlavB);
+    btag = btagger->IsBtag(btagDeepFlavB);
+  }
 };
+
+BTag* Jet::btagger = nullptr;
 
 struct Lepton : PO {
   Lepton(TLorentzVector v_ = TLorentzVector()) : PO(v_) {};
@@ -90,11 +80,14 @@ struct Lepton : PO {
 
 struct Electron : Lepton {
   Electron(TLorentzVector v_ = TLorentzVector()) : Lepton(v_) {};
+  int cutBased;
+  bool cutBasedHEEP;
 };
 
 struct Muon: Lepton {
   Muon(TLorentzVector v_ = TLorentzVector()) :Lepton(v_) {};
   int tightId;
+  int looseId;
   double relIso;
 };
 
