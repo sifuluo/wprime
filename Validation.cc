@@ -234,12 +234,12 @@ public:
   }
 };
 
-void Validation(int isampleyear = 3, int isampletype = 16, int itrigger = 0, int ifile = -1) {
+void Validation(int isampleyear = 3, int isampletype = 16, int itrigger = 0, int ifile = -1, bool test_ = false) {
   Configs *conf = new Configs(isampleyear, isampletype, itrigger, ifile);
   conf->Debug = false;
   conf->PUEvaluation = false;
   conf->DASInput = false;
-  if (false) { // TestRun
+  if (test_) { // TestRun
     conf->SetSwitch("LocalOutput",true);
     conf->PrintProgress = true;
     conf->ProgressInterval = 1;
