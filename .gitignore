@@ -1,5 +1,5 @@
 Submits/*.sub
 SuccessFlags/
 filenames/
-outputs/
+outputs/*.root
 ObsoleteCodes/
