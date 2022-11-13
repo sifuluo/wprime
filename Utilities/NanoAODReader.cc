@@ -14,6 +14,9 @@
 #include "BTag.cc"
 #include "Constants.cc"
 
+//METphi correction
+#include "XYMETCorrection_withUL17andUL18andUL16.h"
+
 using namespace std;
 
 class NanoAODReader {
@@ -230,7 +233,15 @@ public:
 
   void ReadMET() {
     Met = TLorentzVector();
-    Met.SetPtEtaPhiM(evts->MET_pt,0,evts->MET_phi,0);
+
+    //conversion of the constant SampleYear into the correction's year string where needed
+    string convertedYear = "";
+    if(evts->SampleYear      == "2016apv") convertedYear = "2016APV";
+    else if(evts->SampleYear == "2016")    convertedYear = "2016nonAPV";
+    else                                   convertedYear = evts->SampleYear;
+
+    std::pair<double,double> METXYCorr = METXYCorr_Met_MetPhi(evts->MET_pt, evts->MET_phi, evts->run, convertedYear, evts->IsMC, evts->PV_npvs, true, false);
+    Met.SetPtEtaPhiM(METXYCorr.first, 0, METXYCorr.second, 0);
   }
 
   void ReadGenMET() {
