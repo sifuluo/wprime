@@ -101,24 +101,6 @@ public:
     return pass;
   }
 
-  bool ElectronSelection(Electron ele) {
-    float et = fabs(ele.Eta());
-    bool pass = true;
-    pass &= (ele.Pt() > LepPtThreshold);
-    pass &= (et < 2.4);
-    pass &= (et < 1.44 || et > 1.57);
-    return pass;
-  }
-
-  bool MuonSelection(Muon mu) {
-    bool pass = true;
-    pass &= (mu.Pt() > LepPtThreshold);
-    pass &= (fabs(mu.Eta()) < 2.4);
-    pass &= (mu.tightId > 0);
-    pass &= (mu.relIso < 0.25);
-    return pass;
-  }
-
   void ReadEvent(Long64_t i) {
     evts->GetEntry(i);
     run = evts->run;
@@ -213,7 +195,23 @@ public:
       tmp.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
       tmp.index = i;
       tmp.charge = evts->Electron_charge[i];
-      if (!ElectronSelection(tmp)) continue;
+
+      //CommonSelectionBlock
+      float absEta = fabs(tmp.Eta());
+      bool passCommon = (absEta < 2.4);
+      passCommon &= (absEta < 1.44 || absEta > 1.57);
+      passCommon &= (tmp.Pt() >= 10.);
+
+      //TripleSelectionsBlock
+      bool passVeto = (evts->Electron_cutBased[i] >= 2) && passCommon;
+      passCommon &= (tmp.Pt() >= 40.); //change pT cut for non-veto electrons to be on trigger plateau
+      bool passLoose = (evts->Electron_cutBased[i] >= 3) && passCommon;
+      bool passPrimary = evts->Electron_cutBased_HEEP[i] && passCommon;
+
+      tmp.IsPrimary = passPrimary;
+      tmp.IsLoose = passLoose;
+      tmp.IsVeto = passVeto;
+
       Electrons.push_back(tmp);
       Leptons.push_back(tmp);
     }
@@ -222,10 +220,24 @@ public:
       tmp.SetPtEtaPhiM(evts->Muon_pt[i],evts->Muon_eta[i],evts->Muon_phi[i],evts->Muon_mass[i]);
       tmp.index = i;
       tmp.charge = evts->Muon_charge[i];
-      tmp.tightId = evts->Muon_tightId[i];
-      tmp.relIso = evts->Muon_pfRelIso04_all[i];
-      // tmp.type = 1;
-      if (!MuonSelection(tmp)) continue;
+
+      //CommonSelectionBlock
+      float absEta = fabs(tmp.Eta());
+      bool passCommon = (fabs(tmp.Eta()) < 2.4);
+      passCommon &= (tmp.Pt() > 10.);
+      passCommon &= (evts->Muon_pfRelIso04_all[i] < 0.25);
+
+      //TripleSelectionBlock
+      bool passVeto = (evts->Muon_looseId[i]) && passCommon;
+      passCommon &= (tmp.Pt() > 35.); //change pT cut for non-veto muons to be on trigger plateau
+      bool passLoose = (evts->Muon_tightId[i]) && passCommon;
+      passCommon &= (evts->Muon_pfRelIso04_all[i] < 0.15); //change isolation cut for primary muons
+      bool passPrimary = (evts->Muon_highPtId[i] == 2) && passCommon;
+
+      tmp.IsPrimary = passPrimary;
+      tmp.IsLoose = passLoose;
+      tmp.IsVeto = passVeto;
+
       Muons.push_back(tmp);
       Leptons.push_back(tmp);
     }
