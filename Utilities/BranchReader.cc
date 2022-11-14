@@ -71,6 +71,7 @@ public:
   // Int_t           Muon_genPartIdx[18];   //[nMuon]
   Int_t           Muon_tightId[18];   //[nMuon]
   Bool_t          Muon_looseId[18];   //[nMuon]
+  UChar_t	  Muon_highPtId[18];  //[nMuon]
   Float_t         Muon_pfRelIso04_all[18];   //[nMuon]
 
   //MET
@@ -162,6 +163,7 @@ public:
     chain->SetBranchAddress("Muon_charge", &Muon_charge);
     chain->SetBranchAddress("Muon_looseId", &Muon_looseId);
     chain->SetBranchAddress("Muon_tightId", &Muon_tightId);
+    chain->SetBranchAddress("Muon_highPtId", &Muon_highPtId);
     chain->SetBranchAddress("Muon_pfRelIso04_all", &Muon_pfRelIso04_all);
 
     chain->SetBranchAddress("MET_phi", &MET_phi);

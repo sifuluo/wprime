@@ -71,6 +71,9 @@ BTag* Jet::btagger = nullptr;
 struct Lepton : PO {
   Lepton(TLorentzVector v_ = TLorentzVector()) : PO(v_) {};
   int charge;
+  bool IsPrimary;
+  bool IsLoose;
+  bool IsVeto;
   // float jetRelIso;
   // int pdgId;
   // int jetIdx;
@@ -80,15 +83,15 @@ struct Lepton : PO {
 
 struct Electron : Lepton {
   Electron(TLorentzVector v_ = TLorentzVector()) : Lepton(v_) {};
-  int cutBased;
-  bool cutBasedHEEP;
+  //int cutBased;
+  //bool cutBasedHEEP;
 };
 
 struct Muon: Lepton {
   Muon(TLorentzVector v_ = TLorentzVector()) :Lepton(v_) {};
-  int tightId;
-  int looseId;
-  double relIso;
+  //int tightId;
+  //int looseId;
+  //double relIso;
 };
 
 struct MET : PO {
