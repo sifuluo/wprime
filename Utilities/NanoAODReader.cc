@@ -212,6 +212,8 @@ public:
       tmp.IsLoose = passLoose;
       tmp.IsVeto = passVeto;
 
+      if(!passVeto && !passLoose && !passPrimary) continue;
+
       Electrons.push_back(tmp);
       Leptons.push_back(tmp);
     }
@@ -237,6 +239,8 @@ public:
       tmp.IsPrimary = passPrimary;
       tmp.IsLoose = passLoose;
       tmp.IsVeto = passVeto;
+
+      if(!passVeto && !passLoose && !passPrimary) continue;
 
       Muons.push_back(tmp);
       Leptons.push_back(tmp);
