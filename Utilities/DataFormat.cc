@@ -9,7 +9,6 @@
 #include "TString.h"
 
 #include "Constants.cc"
-#include "BTag.cc"
 #include "Configs.cc"
 using namespace std;
 
@@ -47,26 +46,12 @@ struct GenJet : PO {
 
 struct Jet : PO {
   Jet(TLorentzVector v_ = TLorentzVector()) : PO(v_) {};
-    // jetId==1 means: pass loose ID, fail tight, fail tightLepVeto
-    // jetId==3 means: pass loose and tight ID, fail tightLepVeto
-    // jetId==7 means: pass loose, tight, tightLepVeto ID.
-  int jetId;
-  int puId;
+  vector<bool> PUIDpasses; // {loose, medium, tight}
   int genJetIdx;
   int hadronFlavour;
   int partonFlavour;
-  bool btag;
-  vector<bool> btags; // {loose, medium, tight}
-  float btagDeepFlavB;
-
-  static BTag* btagger;
-  void SetBtags() {
-    btags = btagger->GetBtags(btagDeepFlavB);
-    btag = btagger->IsBtag(btagDeepFlavB);
-  }
+  vector<bool> bTagPasses; // {loose, medium, tight}
 };
-
-BTag* Jet::btagger = nullptr;
 
 struct Lepton : PO {
   Lepton(TLorentzVector v_ = TLorentzVector()) : PO(v_) {};

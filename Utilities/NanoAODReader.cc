@@ -11,7 +11,8 @@
 #include "DataFormat.cc"
 #include "BranchReader.cc"
 // #include "FileLists.cc"
-#include "BTag.cc"
+#include "bTag.cc"
+#include "PUID.cc"
 #include "Constants.cc"
 
 //METphi correction
@@ -32,9 +33,6 @@ public:
 
     IsMC = (conf->iSampleType > 1);
 
-    JetPtThreshold = 30.;
-    JetIdThreshold = 6;
-    LepPtThreshold = 30.;
     if (conf->iFile >= 0) { // batch mode
       vector<string> rootfiles = GetFileNames();
       for (string rf : rootfiles) {
@@ -82,23 +80,6 @@ public:
 
   Long64_t GetEntries() {
     return chain->GetEntries();
-  }
-
-  void SetBTagger(BTag* b_) {
-    btagger = b_;
-    Jet::btagger = b_;
-  }
-
-  void SetBtagWP(int wp_) {
-    conf->Btag_WP = wp_;
-    btagger->SetBtagWP(wp_);
-  }
-
-  bool JetSelection(Jet& j) {
-    bool pass = true;
-    pass &= (j.Pt() > JetPtThreshold);
-    pass &= (j.jetId >= JetIdThreshold);
-    return pass;
   }
 
   void ReadEvent(Long64_t i) {
@@ -151,38 +132,32 @@ public:
   }
 
   void ReadJets() {
-    AllJets.clear();
     Jets.clear();
-    BJets.clear();
-    NBJets.clear();
 
     for (unsigned i = 0; i < evts->nJet; ++i) {
+      //baseline jet selections
+      if(evts->Jet_pt[i] < 30.) continue;
+      if(evts->Jet_jetId[i] < 4) continue;
+      if(fabs(evts->Jet_eta[i]) >= 5.0) continue;//added to accommodate PU ID limits
+
       Jet tmp;
       tmp.SetPtEtaPhiM(evts->Jet_pt[i],evts->Jet_eta[i],evts->Jet_phi[i],evts->Jet_mass[i]);
       tmp.index = i;
-      tmp.jetId = evts->Jet_jetId[i];
-      tmp.puId = evts->Jet_puId[i];
+
+      //set PUID flags
+      tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], evts->SampleYear);
+
+      //set generator information
       if (IsMC) {
         tmp.genJetIdx = evts->Jet_genJetIdx[i];
         tmp.hadronFlavour = evts->Jet_hadronFlavour[i];
         tmp.partonFlavour = evts->Jet_partonFlavour[i];
       }
-      tmp.btagDeepFlavB = evts->Jet_btagDeepFlavB[i];
-      tmp.SetBtags();
-      AllJets.push_back(tmp);
-      if (!JetSelection(tmp)) continue;
+
+      //set btagging flags
+      tmp.bTagPasses = bTag(evts->Jet_btagDeepFlavB[i], evts->SampleYear);
+
       Jets.push_back(tmp);
-    }
-    for (unsigned i = 0; i < 3; ++i) {
-      vector<int> bjs, nbjs;
-      bjs.clear();
-      nbjs.clear();
-      for (unsigned j = 0; j < Jets.size(); ++j) {
-        if (Jets[j].btags[i]) bjs.push_back(j);
-        else nbjs.push_back(j);
-      }
-      BJets.push_back(bjs);
-      NBJets.push_back(nbjs);
     }
   }
 
@@ -306,16 +281,13 @@ public:
 
   bool IsMC;
   TChain* chain;
-  BTag* btagger;
   Events* evts;
   int run, luminosityBlock;
   vector<GenPart> GenParts;
   vector<GenJet> GenJets;
   float JetPtThreshold;
   int JetIdThreshold;
-  vector<Jet> AllJets, Jets;
-  vector< vector<int> > BJets, NBJets;
-  float LepPtThreshold;
+  vector<Jet> Jets;
   vector<Lepton> Leptons;
   vector<Electron> Electrons;
   vector<Muon> Muons;
