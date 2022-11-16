@@ -122,8 +122,10 @@ public:
     nBJets->clear();
     nNBJets->clear();
     for (unsigned i = 0; i < 3; ++i) {
-      nBJets->push_back(r->BJets[i].size());
-      nNBJets->push_back(r->NBJets[i].size());
+      nBJets = r->nBJets;
+      nNBJets = r->nNBJets;
+      // nBJets->push_back(r->BJets[i].size());
+      // nNBJets->push_back(r->NBJets[i].size());
     }
 
     METPt = 0;
@@ -234,12 +236,12 @@ public:
   }
 };
 
-void Validation(int isampleyear = 3, int isampletype = 16, int itrigger = 0, int ifile = -1, bool test_ = false) {
+void Validation(int isampleyear = 3, int isampletype = 16, int itrigger = 0, int ifile = -1) {
   Configs *conf = new Configs(isampleyear, isampletype, itrigger, ifile);
   conf->Debug = false;
   conf->PUEvaluation = false;
   conf->DASInput = false;
-  if (test_) { // TestRun
+  if (false) { // TestRun
     conf->SetSwitch("LocalOutput",true);
     conf->PrintProgress = true;
     conf->ProgressInterval = 1;

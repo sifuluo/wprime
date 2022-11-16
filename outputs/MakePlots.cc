@@ -6,7 +6,7 @@
 #include <iostream>
 #include <vector>
 
-void MakePlots(int isy_, int itr_) {
+void MakePlots(int isy_ = 3, int itr_ = 1) {
   const vector<string> SampleYears{"2016apv","2016","2017","2018"};
   const vector<string> SampleTypes{"SingleElectron","SingleMuon", // 0,1
   "ttbar", // 2,
@@ -86,7 +86,7 @@ void MakePlots(int isy_, int itr_) {
     TH1F* hLeptonPt = new TH1F(sn + "_LeptonPt","LeptonPt",1000,0,1000);
 
     t->SetBranchAddress("LeptonEta",&LeptonEta);
-    TH1F* hLeptonEta = new TH1F(sn + "_LeptonEta","LeptonEta", 40,0,4);
+    TH1F* hLeptonEta = new TH1F(sn + "_LeptonEta","LeptonEta", 80,-4,4);
 
     t->SetBranchAddress("METPt",&METPt);
     TH1F* hMETPt = new TH1F(sn + "_METPt","METPt", 1000,0,1000);
@@ -98,7 +98,7 @@ void MakePlots(int isy_, int itr_) {
     TH1F* hJetPt = new TH1F(sn + "_JetPt","JetPt",2000,0,2000);
 
     t->SetBranchAddress("JetEta",&JetEta);
-    TH1F* hJetEta = new TH1F(sn + "_JetEta","JetEta",40,0,4);
+    TH1F* hJetEta = new TH1F(sn + "_JetEta","JetEta",80,-4.,4.);
 
 
     // t->SetBranchAddress("PUWeight", &PUWeight);
@@ -134,14 +134,6 @@ void MakePlots(int isy_, int itr_) {
       if (ie == t->GetEntries() - 1) cout << endl << sn << " Done" <<endl;
       double sf = EventScaleFactor;
       if (sf < 0) sf = 1.0;
-      hLeptonPt->Fill(LeptonPt, sf);
-      hLeptonEta->Fill(LeptonEta, sf);
-      hMETPt->Fill(METPt, sf);
-      hnJets->Fill(nJets, sf);
-      for (unsigned ij = 0; ij < JetPt->size(); ++ij) {
-        hJetPt->Fill(JetPt->at(ij), sf);
-        hJetEta->Fill(JetEta->at(ij), sf);
-      }
       for (unsigned iwp = 0; iwp < 3; ++iwp) {
         jetmulti[iwp]->Fill(nNBJets->at(iwp), nBJets->at(iwp));
         for (unsigned inb = 0; inb < nBJets->at(iwp); ++inb) {
@@ -150,6 +142,16 @@ void MakePlots(int isy_, int itr_) {
           wpmass[iwp][inb_]->Fill(WPrimeMassSimple->at(iwp), sf);
         }
       }
+      if (nBJets->at(2) < 2) continue;
+      hLeptonPt->Fill(LeptonPt, sf);
+      hLeptonEta->Fill(LeptonEta, sf);
+      hMETPt->Fill(METPt, sf);
+      hnJets->Fill(nJets, sf);
+      for (unsigned ij = 0; ij < JetPt->size(); ++ij) {
+        hJetPt->Fill(JetPt->at(ij), sf);
+        hJetEta->Fill(JetEta->at(ij), sf);
+      }
+
     }
   }
   fout->Write();
