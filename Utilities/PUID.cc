@@ -1,6 +1,7 @@
 #include <vector>
 #include <string>
 
+//working points for PU jet ID implemented as in https://twiki.cern.ch/twiki/bin/view/CMS/PileupJetIDUL
 std::vector<bool> PUID(float pT_, float absEta_, float PUIDdisc_, string year_){
  std::vector<bool> output;
   if(pT_ >= 50.) output = {true, true, true};
