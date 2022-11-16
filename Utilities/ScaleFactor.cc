@@ -42,6 +42,9 @@ public:
 
     auto bjetcs = correction::CorrectionSet::from_file(bjetpath);
     BJet_SF = bjetcs->at("deepJet_comb");
+
+    //set b-tagging working point for calculation -> move this to general configuration later
+    Bwp = 2;
   }
 
   double GetElectronSF(Electron& e) {
@@ -52,12 +55,25 @@ public:
     return Muon_Med_SF->evaluate({sampleyear + "_UL", fabs(m.Eta()), m.Pt(), "sf"});
   }
 
-  double GetBJetSF(Jet& j) {
-    if (abs(j.hadronFlavour) && fabs(j.Eta()) < 2.5) return BJet_SF->evaluate({"central","T",j.hadronFlavour, fabs(j.Eta()), j.Pt()});
+  double GetBJetSFcontribution(Jet& j) {
+    //select 0=loose, 1=medium, 2=tight
+    string wp;
+    if(Bwp == 0) wp = "L";
+    else if(Bwp == 1) wp = "M";
+    else if(Bwp == 2) wp = "T";
+    if (fabs(j.Eta()) < 2.5){
+      double SF = BJet_SF->evaluate({"central", wp, j.hadronFlavour, fabs(j.Eta()), j.Pt()});
+      if(j.bTagPasses[Bwp]) return SF;
+      else{
+        //using a dummy efficiency for now, this will have to be sample-specific later
+        double eff = 0.1;
+	return (1.-eff*SF)/(1.-eff);
+      }
+    }
     else return 1.;
   }
 
-  double CalcEventSF() {
+  vector<double> CalcEventSFweights() {
     Electron_SFs.clear();
     Muon_SFs.clear();
     BJet_SFs.clear();
@@ -77,9 +93,9 @@ public:
     // cout << "jets" <<endl;
     for (unsigned i = 0; i < r->Jets.size(); ++i) {
       if (r->Jets[i].btag){
-        BJet_SFs.push_back(GetBJetSF(r->Jets[i]));
-        out *= GetBJetSF(r->Jets[i]);
-        // cout << "Adding B-jet ScaleFactor = " << GetBJetSF(r->Jets[i]) <<endl;
+        BJet_SFs.push_back(GetBJetSFcontribution(r->Jets[i]));
+        out *= GetBJetSFcontribution(r->Jets[i]);
+        // cout << "Adding B-jet ScaleFactor contribution for jet " << i << " = " << GetBJetSF(r->Jets[i]) <<endl;
       }
     }
     // cout << "Total Scale Factor of this event  = " << out << endl;
@@ -103,6 +119,8 @@ public:
   std::shared_ptr<const correction::Correction> Muon_High_SF;
   std::shared_ptr<const correction::Correction> BJet_SF;
   vector<double> Electron_SFs, Muon_SFs, BJet_SFs;
+
+  unsigned Bwp;
 };
 
 #endif
