@@ -95,7 +95,7 @@ public:
     luminosityBlock = evts->luminosityBlock;
     if (!IsMC && (run < 0 || luminosityBlock < 0)) cout << "Run/LuminosityBlock number is negative" <<endl;
     if (conf->PUEvaluation) { // It will only run on MC
-      ReadPileup();
+      // ReadPileup();
       ReadVertices();
       return;
     }
@@ -104,7 +104,7 @@ public:
       ReadGenParts();
       ReadGenJets();
       ReadGenMET();
-      ReadPileup();
+      // ReadPileup();
     }
     ReadJets();
     ReadLeptons();
@@ -286,10 +286,6 @@ public:
     return METFilterStatus;
   }
 
-  // int iSampleYear, iSampleType, iTrigger, iFile;
-  // string SampleYear, SampleType;
-  // bool PUEvaluation;
-  // bool DASInput;
   Configs *conf;
 
   bool IsMC;

@@ -113,9 +113,21 @@ public:
   }
 
   virtual bool ObjectsRequirement() {
-    bool ob = (Leptons().size() == 1);
+    bool ob = LeptonSelection();
     ob = ob && (Jets().size() > 4);
     return ob;
+  }
+
+  bool LeptonSelection() {
+    int lepcount = 0;
+    for (unsigned i = 0; i < Leptons().size(); ++i) {
+      if (Leptons()[i].IsVeto) return false;
+      else if (Leptons()[i].IsLoose || Leptons()[i].IsPrimary) lepcount++;
+    }
+    // if (lepcount != 1) cout << "Lepton size not equal to 1, this event will be skipped" << endl;
+    if (lepcount == 1) return true;
+    else return false;
+
   }
 
   bool BaseLineSelections() {
@@ -167,14 +179,14 @@ public:
   GenMET& GenMet() {return r->GenMet;}
   MET& Met() {return r->Met;}
 
-  vector< vector<int> >& BJets() {return r->BJets;}
-  vector< vector<int> >& NBJets() {return r->NBJets;}
-  vector<int>& BJets_Loose(){return r->BJets[0];}
-  vector<int>& BJets_Medium(){return r->BJets[1];}
-  vector<int>& BJets_Tight(){return r->BJets[2];}
-  vector<int>& NBJets_Loose(){return r->NBJets[0];}
-  vector<int>& NBJets_Medium(){return r->NBJets[1];}
-  vector<int>& NBJets_Tight(){return r->NBJets[2];}
+  // vector< vector<int> >& BJets() {return r->BJets;}
+  // vector< vector<int> >& NBJets() {return r->NBJets;}
+  // vector<int>& BJets_Loose(){return r->BJets[0];}
+  // vector<int>& BJets_Medium(){return r->BJets[1];}
+  // vector<int>& BJets_Tight(){return r->BJets[2];}
+  // vector<int>& NBJets_Loose(){return r->NBJets[0];}
+  // vector<int>& NBJets_Medium(){return r->NBJets[1];}
+  // vector<int>& NBJets_Tight(){return r->NBJets[2];}
 
 
   virtual void BookBranches() {
