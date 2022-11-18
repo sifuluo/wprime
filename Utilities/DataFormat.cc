@@ -59,6 +59,7 @@ struct Lepton : PO {
   bool IsPrimary;
   bool IsLoose;
   bool IsVeto;
+  vector<bool> OverlapsJet; //{PUID: loose, medium, tight}
   // float jetRelIso;
   // int pdgId;
   // int jetIdx;
