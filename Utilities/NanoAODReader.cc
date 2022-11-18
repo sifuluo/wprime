@@ -82,6 +82,13 @@ public:
     return chain->GetEntries();
   }
 
+  //function to determine lepton-jet overlaps, gives answer depending on PUID passing or not
+  vector<bool> OverlapCheck(Lepton ell_){
+    vector<bool> out = {true, true, true};
+    for(unsigned j = 0; j < Jets.size(); ++j) if(fabs(Jets[j].DeltaR(ell_)) < 0.4) out = Jets[j].PUIDpasses;//this solution presumes there is only 1 possible jet to match
+   return out;
+  }
+
   void ReadEvent(Long64_t i) {
     evts->GetEntry(i);
     run = evts->run;
@@ -189,6 +196,9 @@ public:
 
       if(!passVeto && !passLoose && !passPrimary) continue;
 
+      //check for jet overlaps
+      tmp.OverlapsJet = OverlapCheck(tmp);
+
       Electrons.push_back(tmp);
       Leptons.push_back(tmp);
     }
@@ -216,6 +226,9 @@ public:
       tmp.IsVeto = passVeto;
 
       if(!passVeto && !passLoose && !passPrimary) continue;
+
+      //check for jet overlaps
+      tmp.OverlapsJet = OverlapCheck(tmp);
 
       Muons.push_back(tmp);
       Leptons.push_back(tmp);
