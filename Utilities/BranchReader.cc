@@ -242,7 +242,7 @@ public:
     chain->SetBranchAddress("Flag_HBHENoiseIsoFilter", &Flag_HBHENoiseIsoFilter);
     chain->SetBranchAddress("Flag_EcalDeadCellTriggerPrimitiveFilter", &Flag_EcalDeadCellTriggerPrimitiveFilter);
     chain->SetBranchAddress("Flag_BadPFMuonFilter", &Flag_BadPFMuonFilter);
-    // chain->SetBranchAddress("Flag_BadPFMuonDzFilter", &Flag_BadPFMuonDzFilter); // Doesn't exist for 16 and 18
+    chain->SetBranchAddress("Flag_BadPFMuonDzFilter", &Flag_BadPFMuonDzFilter);
   }
 
 };

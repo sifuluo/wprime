@@ -7,37 +7,30 @@
 #include "TString.h"
 #include "TChain.h"
 
-#include "Utilities/Constants.cc"
+#include "Utilities/Analyzer.cc"
 
-void MakePUReweight() {
-  TChain *c = new TChain("t");
-  TString infilepath = "/eos/user/s/siluo/WPrimeAnalysis/PUEval/2016_ttbar_SE";
-  TString infilename = "2016_ttbar_SE_-1.root";
-  c->Add(infilepath + infilename);
-  int nPU, nPV, nPVGood;
-  double nTrueInt;
-
-  c->SetBranchAddress("nPU", &nPU);
-  c->SetBranchAddress("nTrueInt", &nTrueInt);
-  c->SetBranchAddress("nPV", &nPV);
-  c->SetBranchAddress("nPVGood", &nPVGood);
-
-  TString datafilename = "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-postVFP-69200ub-99bins.root";
+void MakePUReweight(int isampleyear = 3, int isampletype = 16, int itrigger = 0, int ifile = 0) {
+  Configs *conf = new Configs(isampleyear, isampletype, itrigger, ifile);
+  conf->PUEvaluation = true;
+  conf->FilesPerJob = 50;
+  TString datafilename = Constants::DataPileupHist[isampleyear];
   TFile * datafile = new TFile(datafilename,"READ");
-  TH1D* datahist = (TH1D*) datafile->Get("pileup");
-
-  TFile* out = new TFile("MCReweight.root","RECREATE");
+  NanoAODReader *r = new NanoAODReader(conf);
+  TString outputfilename = "PUReweight/" + conf->SampleType + "_" + conf->SampleYear + ".root";
+  TFile* out = new TFile(outputfilename,"RECREATE");
   out->cd();
-
-  // Create MC PU histogram
-  TH1D* mcpu = new TH1D("mcpu","mcpu",99,0.,99);
-  c->Draw("nTrueInt >> mcpu");
-
+  TH1D* mcpu = new TH1D("mcpu","mcpu",99,0,99);
+  r->chain->Draw("Pileup_nTrueInt + 1 >> mcpu ");
+  TH1D* mcpunorm = (TH1D*)mcpu->Clone();
+  mcpunorm->SetName("mcpunorm");
+  mcpunorm->Scale(1./mcpunorm->Integral());
+  TH1D* datahist = (TH1D*) datafile->Get("pileup")->Clone();
+  datahist->SetName("datapu");
   TH1D* weight = (TH1D*) datahist->Clone();
-  weight->Divide(mcpu);
-  weight->SetName("PUWeight");
+  weight->Scale(1./weight->Integral());
+  weight->SetName("weight");
+  weight->Divide(mcpunorm);
 
-  for (Long64_t i = 0; i < c->GetEntries(); ++i) {
-
-  }
+  out->Write();
+  out->Save();
 }

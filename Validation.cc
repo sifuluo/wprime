@@ -26,11 +26,6 @@
 #include <map>
 
 #include "Utilities/Analyzer.cc"
-#include "Utilities/NanoAODReader.cc"
-#include "Utilities/DataFormat.cc"
-#include "Utilities/BTag.cc"
-#include "Utilities/ScaleFactor.cc"
-#include "Utilities/ProgressBar.cc"
 
 class ThisAnalysis : public Analyzer {
 public:

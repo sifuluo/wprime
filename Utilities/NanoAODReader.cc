@@ -10,7 +10,6 @@
 
 #include "DataFormat.cc"
 #include "BranchReader.cc"
-// #include "FileLists.cc"
 #include "BTag.cc"
 #include "Constants.cc"
 
@@ -20,11 +19,7 @@ class NanoAODReader {
 public:
   NanoAODReader(Configs *conf_) {
     chain = new TChain("Events");
-    // iSampleYear = isy_;
-    // iSampleType = ist_;
-    // SampleYear = Constants::SampleYears[isy_];
-    // SampleType = Constants::SampleTypes[ist_];
-    // iTrigger = itr_;
+
     conf = conf_;
 
     IsMC = (conf->iSampleType > 1);
@@ -32,12 +27,13 @@ public:
     JetPtThreshold = 30.;
     JetIdThreshold = 6;
     LepPtThreshold = 40.;
-    if (conf->iFile >= 0) { // batch mode
+    if (conf->iFile >= 0 || conf->InputFile == "All") { // batch mode
       vector<string> rootfiles = GetFileNames();
       for (string rf : rootfiles) {
         chain->Add(TString(rf));
         cout << "Successfully loaded root file: " << rf << endl;
       }
+      cout << "In total, " << rootfiles.size() << " files are loaded" << endl;
     }
     else if (conf->InputFile == "") cout << "iFile set to negative but a valid test InputFile name is missing" << endl;
     else {
@@ -46,7 +42,7 @@ public:
     }
     cout << "Running with SampleYear = " << conf->SampleYear << ", SampleType = " << conf->SampleType << ", Trigger = " << conf->Trigger << endl;
     evts = new Events(chain, conf->SampleYear, IsMC);
-    cout << "This iteration contains " << GetEntries() << " events" <<endl;
+    if (conf->InputFile != "All" && conf->FilesPerJob == 1) cout << "This iteration contains " << GetEntries() << " events" <<endl;
   };
 
   vector<string> GetFileNames() {
@@ -62,14 +58,14 @@ public:
     }
     else cout << "Reading from file " << filename << endl;
 
-    int startfile = conf->iFile * conf->FilePerJob;
-    int endfile = (conf->iFile + 1) * conf->FilePerJob - 1;
+    int startfile = conf->iFile * conf->FilesPerJob;
+    int endfile = (conf->iFile + 1) * conf->FilesPerJob - 1;
     string rootf;
     int counter = -1;
     while (getline(infile, rootf)) {
       ++counter;
       if (counter < startfile) continue;
-      if (counter > endfile) break;
+      if (counter > endfile && conf->InputFile != "All") break;
       if (rootf.find("/store/") == 0) rootf = "root://cms-xrd-global.cern.ch/" + rootf;
       cout << "Loading root file " << rootf << endl;
       out.push_back(rootf);
@@ -286,10 +282,6 @@ public:
     return METFilterStatus;
   }
 
-  // int iSampleYear, iSampleType, iTrigger, iFile;
-  // string SampleYear, SampleType;
-  // bool PUEvaluation;
-  // bool DASInput;
   Configs *conf;
 
   bool IsMC;
