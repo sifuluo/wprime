@@ -117,6 +117,11 @@ public:
   bool Flag_eeBadScFilter;
   bool Flag_ecalBadCalibFilter;
 
+  // L1PreFiring weights for 2016 and 2017
+  Float_t L1PreFiringWeight_Nom;
+  Float_t L1PreFiringWeight_Up;
+  Float_t L1PreFiringWeight_Down;
+
 
   Events(TChain *chain_, string sy_, bool mc_){
      chain = chain_;
@@ -231,6 +236,12 @@ public:
       isolated_muon_track_trigger = false;
       chain->SetBranchAddress("Flag_eeBadScFilter", &Flag_eeBadScFilter);
       chain->SetBranchAddress("Flag_ecalBadCalibFilter", &Flag_ecalBadCalibFilter);
+    }
+
+    if(SampleYear == "2016" || SampleYear == "2016apv" || SampleYear == "2017"){
+      chain->SetBranchAddress("L1PreFiringWeight_Nom", &L1PreFiringWeight_Nom);
+      chain->SetBranchAddress("L1PreFiringWeight_Up", &L1PreFiringWeight_Up);
+      chain->SetBranchAddress("L1PreFiringWeight_Down", &L1PreFiringWeight_Down);
     }
 
     chain->SetBranchAddress("PV_npvs", &PV_npvs);

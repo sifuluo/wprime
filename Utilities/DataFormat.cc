@@ -87,5 +87,10 @@ struct GenMET : PO {
   GenMET(TLorentzVector v_ = TLorentzVector()) : PO(v_) {};
 };
 
+struct EventWeight{
+  string source;
+  bool IsActive;
+  float variations[3];
+};
 
 #endif

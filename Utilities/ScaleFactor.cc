@@ -47,22 +47,35 @@ public:
     Bwp = 2;
   }
 
-  double GetElectronSF(Electron& e) {
+  //FIXME: Need to introduce up and down variations of Electron ID, need trigger SF implementation
+  double GetElectronSF(Electron& e, int mode) {
     return Electron_SF->evaluate({sampleyear, "sf", "wp90iso", e.Eta(), e.Pt()});
   }
 
-  double GetMuonSF(Muon& m) {
+  //FIXME: Need actual implementation of the three different types of muon scale factor sources
+  double GetMuonTriggerSF(Muon& m, int mode) {
     return Muon_Med_SF->evaluate({sampleyear + "_UL", fabs(m.Eta()), m.Pt(), "sf"});
   }
 
-  double GetBJetSFcontribution(Jet& j) {
+  double GetMuonIDSF(Muon& m, int mode) {
+    return Muon_Med_SF->evaluate({sampleyear + "_UL", fabs(m.Eta()), m.Pt(), "sf"});
+  }
+
+  double GetMuonIsoSF(Muon& m, int mode) {
+    return Muon_Med_SF->evaluate({sampleyear + "_UL", fabs(m.Eta()), m.Pt(), "sf"});
+  }
+
+  double GetBJetSFcontribution(Jet& j, int mode) {
     //select 0=loose, 1=medium, 2=tight
     string wp;
     if(Bwp == 0) wp = "L";
     else if(Bwp == 1) wp = "M";
     else if(Bwp == 2) wp = "T";
     if (fabs(j.Eta()) < 2.5){
-      double SF = BJet_SF->evaluate({"central", wp, j.hadronFlavour, fabs(j.Eta()), j.Pt()});
+      double SF = 0; 
+      if(mode == 0)       BJet_SF->evaluate({"central", wp, j.hadronFlavour, fabs(j.Eta()), j.Pt()});
+      else if(mode == -1) BJet_SF->evaluate({"up", wp, j.hadronFlavour, fabs(j.Eta()), j.Pt()});
+      else if(mode == +1) BJet_SF->evaluate({"down", wp, j.hadronFlavour, fabs(j.Eta()), j.Pt()});
       if(j.bTagPasses[Bwp]) return SF;
       else{
         //using a dummy efficiency for now, this will have to be sample-specific later
@@ -73,41 +86,95 @@ public:
     else return 1.;
   }
 
-  vector<double> CalcEventSFweights() {
+  vector<EventWeight> CalcEventSFweights() {
+    vector<EventWeight> out;
     Electron_SFs.clear();
     Muon_SFs.clear();
     BJet_SFs.clear();
-    double out = 1.0;
-    // cout << "ele"<<endl;
-    for (unsigned i = 0; i < r->Electrons.size(); ++i) {
-      Electron_SFs.push_back(GetElectronSF(r->Electrons[i]));
-      out *= GetElectronSF(r->Electrons[i]);
-      // cout << " Adding Electron ScaleFactor = " << GetElectronSF(r->Electrons[i]) <<endl;
-    }
-    // cout << "muon" <<endl;
-    for (unsigned i = 0; i < r->Muons.size(); ++i) {
-      Muon_SFs.push_back(GetMuonSF(r->Muons[i]));
-      out *= GetMuonSF(r->Muons[i]);
-      // cout << " Adding Muon ScaleFactor = " << GetMuonSF(r->Muons[i]) << endl;
-    }
-    // cout << "jets" <<endl;
-    for (unsigned i = 0; i < r->Jets.size(); ++i) {
-      if (r->Jets[i].btag){
-        BJet_SFs.push_back(GetBJetSFcontribution(r->Jets[i]));
-        out *= GetBJetSFcontribution(r->Jets[i]);
-        // cout << "Adding B-jet ScaleFactor contribution for jet " << i << " = " << GetBJetSF(r->Jets[i]) <<endl;
+    EventWeight electronIDW, muonIDW, muonIsoW, muonTriggerW, BjetW, L1PreFiringW;
+    electronIDW.source = "ElectronID";
+    muonIDW.source = "muonID";
+    muonIsoW.source = "muonIso";
+    muonTriggerW.source = "muonTrigger";
+    BjetW.source = "BjetTag";
+    L1PreFiringW.source = "L1PreFiring";
+    int modes[3]={-1,0,+1};
+    for(unsigned i=0; i<3; ++i){ //loop over down, central, up variations of all event weights
+      //electron ID SF = event weight, since there is only one electron, if any. Events with two electrons should be veto'd by default      
+      if(r->Electrons.size() == 1){
+        electronIDW.IsActive = true;
+	electronIDW.variations[i] = GetElectronSF(r->Electrons[0], modes[i]);
       }
+      else{
+	electronIDW.IsActive = false;
+      }
+      
+      //muon ID and Iso SF = event weight, since there is only one muon, if any. Events with two muons should be veto'd by default
+      if(r->Muons.size() == 1){
+	muonTriggerW.variations[i] = GetMuonTriggerSF(r->Muons[0], modes[i]);
+        muonIDW.variations[i] = GetMuonIDSF(r->Muons[0], modes[i]);
+        muonIsoW.variations[i] = GetMuonIsoSF(r->Muons[0], modes[i]);
+      }
+      else{
+        muonTriggerW.IsActive = false;
+        muonIDW.IsActive = false;
+        muonIsoW.IsActive = false;
+      }
+
+      //jet Btag SF implementation
+      //FIXME: needs some reference to actual PUID selection later
+      float BtagsW = 1.;
+      for (unsigned i = 0; i < r->Jets.size(); ++i) BtagsW *= BJet_SFs.push_back(GetBJetSFcontribution(r->Jets[i]), modes[i]);
+      BjetW.IsActive = true;
+      BjetW.variations[i] = BtagsW;
+
+      //L1PrefiringWeight
+      if(sampleyear == "2016preVFP" || sampleyear == "2016postVFP" || sampleyear == "2017"){
+	L1PreFiringW.IsActive = true;
+      }
+      else L1PreFiringW.IsActive = false;
     }
-    // cout << "Total Scale Factor of this event  = " << out << endl;
-    if (out != MultiplySFs()) cout << "???" << endl;
+
+    //L1PrefiringWeight
+    if(sampleyear == "2016preVFP" || sampleyear == "2016postVFP" || sampleyear == "2017"){
+      L1PreFiringW.IsActive = true;
+      L1PreFiringW.variations[0] = r->L1PreFiringWeight_Dn;
+      L1PreFiringW.variations[1] = r->L1PreFiringWeight_Nom;
+      L1PreFiringW.variations[2] = r->L1PreFiringWeight_Up;
+    }
+    else L1PreFiringW.IsActive = false;
+
+    //put all sources together
+    out.push_back(electronIDW);
+    out.push_back(muonIDW);
+    out.push_back(muonIsoW);
+    out.push_back(muonTriggerW);
+    out.push_back(BjetW);
+    out.push_back(L1PreFiringW);
+
     return out;
   }
 
-  double MultiplySFs() {
-    double out = 1.;
-    for (double sf : Electron_SFs) out *= sf;
-    for (double sf : Muon_SFs) out *= sf;
-    for (double sf : BJet_SFs) out *= sf;
+  vector<pair<double, string> > WeightVariations(vector<EventWeight> sources_) {
+    vector<pair<float, string> > out;
+
+    //determine nominal weight
+    float CentralWeight = 1.;
+    for(unsigned i = 0; i < sources_.size(); ++i){
+      if(!sources_[i].IsActive) continue; //skip inactive sources
+      CentralWeight *= sources_[i].variations[1];
+    }
+    out.push_back(make_pair(CentralWeight, "Nominal"); 
+
+    //select source for up and down variations
+    for(unsigned i = 0; i < sources_.size(); ++i){
+      if(!sources_[i].IsActive) continue; //skip inactive sources
+      
+      //create variations with strings for later combine histograms
+      out.push_back(make_pair(CentralWeight / sources_[i].variations[1] * sources_[i].variations[0], sources_[i].source + "_down"));
+      out.push_back(make_pair(CentralWeight / sources_[i].variations[1] * sources_[i].variations[2], sources_[i].source + "_up"));
+    }
+
     return out;
   }
 
@@ -118,7 +185,6 @@ public:
   std::shared_ptr<const correction::Correction> Muon_Med_SF;
   std::shared_ptr<const correction::Correction> Muon_High_SF;
   std::shared_ptr<const correction::Correction> BJet_SF;
-  vector<double> Electron_SFs, Muon_SFs, BJet_SFs;
 
   unsigned Bwp;
 };
