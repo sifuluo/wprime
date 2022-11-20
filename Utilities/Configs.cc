@@ -8,6 +8,8 @@
 
 #include "TString.h"
 
+#include "Constants.cc"
+
 struct Configs {
   Configs(int isy_ = 2, int ist_ = 2, int itr_ = 0, int ifile_ = 0) {
     iSampleYear = isy_;

@@ -24,7 +24,7 @@ public:
   void Init() {
     if (!conf->IsMC) return;
     string basepath = "/afs/cern.ch/work/s/siluo/wprime/PUReweight/";
-    TString filename = basepath + conf->SampleType + "_" + conf->SampleYear + ".root";
+    TString filename = basepath + conf->SampleYear + "_" + conf->SampleType + ".root";
     cout << "PUReweighting file: " << filename << endl;
     TFile* f = new TFile(filename);
     // Read once and close file to avoid congestion accessing the same file.
@@ -42,6 +42,10 @@ public:
 
   double GetWeight(int nTrueInt) {
     if (!conf->IsMC) return 1.;
+    if (nTrueInt > 97 || nTrueInt < 0) {
+      cout << "PUReweight: nTrueInt = " << nTrueInt << ", out of range [0,97], using 1.0 as weight" << endl;
+      return 1.;
+    }
     return weights[nTrueInt];
   }
 
