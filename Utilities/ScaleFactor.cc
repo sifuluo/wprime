@@ -44,7 +44,7 @@ public:
     BJet_SF = bjetcs->at("deepJet_comb");
 
     //set b-tagging working point for calculation -> move this to general configuration later
-    Bwp = 2;
+    Bwp = 2; //0: loose, 1: medium, 2: tight
   }
 
   //FIXME: Need to introduce up and down variations of Electron ID, need trigger SF implementation

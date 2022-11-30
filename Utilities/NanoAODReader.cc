@@ -86,11 +86,12 @@ public:
   vector<bool> OverlapCheck(Lepton ell_){
     vector<bool> out = {true, true, true};
     for(unsigned j = 0; j < Jets.size(); ++j) if(fabs(Jets[j].DeltaR(ell_)) < 0.4) out = Jets[j].PUIDpasses;//this solution presumes there is only 1 possible jet to match
-   return out;
+    return out;
   }
 
   void ReadEvent(Long64_t i) {
     evts->GetEntry(i);
+    if(ReadMETFilterStatus() == false) return; //skip events not passing MET filter flags
     run = evts->run;
     luminosityBlock = evts->luminosityBlock;
     if (!IsMC && (run < 0 || luminosityBlock < 0)) cout << "Run/LuminosityBlock number is negative" <<endl;
@@ -111,6 +112,7 @@ public:
     ReadMET();
     ReadTriggers();
     ReadVertices();
+    RegionAssociations = RegionReader();
   }
 
   void ReadGenParts() {
@@ -142,14 +144,36 @@ public:
     Jets.clear();
 
     for (unsigned i = 0; i < evts->nJet; ++i) {
+
+      //determine maximum pT of all jet variations
+      float maxPt = max(evts->Jet_pt_nom[i], evts->Jet_pt_jesTotalUp[i]);
+      maxPt = max(maxPt, evts->Jet_pt_jesTotalDown[i]);
+      maxPt = max(maxPt, evts->Jet_pt_jerUp[i]);
+      maxPt = max(maxPt, evts->Jet_pt_jerDown[i]);
+
       //baseline jet selections
-      if(evts->Jet_pt[i] < 30.) continue;
+      if(maxPt < 30.) continue;
       if(evts->Jet_jetId[i] < 4) continue;
       if(fabs(evts->Jet_eta[i]) >= 5.0) continue;//added to accommodate PU ID limits
 
+      //storing jet variations vectors and nominal -> all the same for data
+
       Jet tmp;
-      tmp.SetPtEtaPhiM(evts->Jet_pt[i],evts->Jet_eta[i],evts->Jet_phi[i],evts->Jet_mass[i]);
+      tmp.SetPtEtaPhiM(evts->Jet_pt_nom[i],evts->Jet_eta[i],evts->Jet_phi[i],evts->Jet_mass_nom[i]); //the nominal here in MC contains JER while nanoAOD default does not
       tmp.index = i;
+
+      TLorentzVector PtVars;
+      PtVars.SetPtEtaPhiM(evts->Jet_pt_jesTotalUp[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jesTotalUp[i]);
+      tmp.JESup = PtVars;
+      
+      PtVars.SetPtEtaPhiM(evts->Jet_pt_jesTotalDown[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jesTotalDown[i]);
+      tmp.JESdown = PtVars;
+
+      PtVars.SetPtEtaPhiM(evts->Jet_pt_jerUp[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jerUp[i]);
+      tmp.JERup = PtVars;
+
+      PtVars.SetPtEtaPhiM(evts->Jet_pt_jerDown[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jerDown[i]);
+      tmp.JERdown = PtVars;
 
       //set PUID flags
       tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], evts->SampleYear);
@@ -175,18 +199,33 @@ public:
     for (unsigned i = 0; i < evts->nElectron; ++i) {
       Electron tmp;
       tmp.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
+      //set resolution variations (only matter in MC, will be ineffective in data)
+      tmp.ResUp.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
+      tmp.ResUp.SetE(tmp.E()-evts->Electron_dEsigmaUp[i]);
+      tmp.ResDown.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
+      tmp.ResDown.SetE(tmp.E()-evts->Electron_dEsigmaDown[i]);
+      //set scale variations (only filled in data, should be applied to MC, for now FIXME inactive)
+      tmp.ScaleUp.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);      
+      tmp.ScaleDown.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
+
       tmp.index = i;
       tmp.charge = evts->Electron_charge[i];
+
+      //find maxmimum pT of any variation
+      double maxPt = max(tmp.Pt(), tmp.ResUp.Pt());
+      maxPt = max(maxPt, tmp.ResDown.Pt());
+      maxPt = max(maxPt, tmp.ScaleUp.Pt());
+      maxPt = max(maxPt, tmp.ScaleDown.Pt());
 
       //CommonSelectionBlock
       float absEta = fabs(tmp.Eta());
       bool passCommon = (absEta < 2.4);
       passCommon &= (absEta < 1.44 || absEta > 1.57);
-      passCommon &= (tmp.Pt() >= 10.);
+      passCommon &= (maxPt >= 10.);
 
       //TripleSelectionsBlock
       bool passVeto = (evts->Electron_cutBased[i] >= 2) && passCommon;
-      passCommon &= (tmp.Pt() >= 40.); //change pT cut for non-veto electrons to be on trigger plateau
+      passCommon &= (maxPt >= 40.); //change pT cut for non-veto electrons to be on trigger plateau
       bool passLoose = (evts->Electron_cutBased[i] >= 3) && passCommon;
       bool passPrimary = evts->Electron_cutBased_HEEP[i] && passCommon;
 
@@ -207,6 +246,14 @@ public:
       tmp.SetPtEtaPhiM(evts->Muon_pt[i],evts->Muon_eta[i],evts->Muon_phi[i],evts->Muon_mass[i]);
       tmp.index = i;
       tmp.charge = evts->Muon_charge[i];
+
+      //Dummy for scale variations, not to be used without Rochester corrections (not compulsory)
+      TLorentzVector dummy;
+      dummy.SetPtEtaPhiM(evts->Muon_pt[i],evts->Muon_eta[i],evts->Muon_phi[i],evts->Muon_mass[i]);
+      tmp.ResUp = dummy;
+      tmp.ResDown = dummy;
+      tmp.ScaleUp = dummy;
+      tmp.ScaleDown = dummy;
 
       //CommonSelectionBlock
       float absEta = fabs(tmp.Eta());
@@ -244,8 +291,41 @@ public:
     else if(evts->SampleYear == "2016")    convertedYear = "2016nonAPV";
     else                                   convertedYear = evts->SampleYear;
 
-    std::pair<double,double> METXYCorr = METXYCorr_Met_MetPhi(evts->MET_pt, evts->MET_phi, evts->run, convertedYear, evts->IsMC, evts->PV_npvs, true, false);
-    Met.SetPtEtaPhiM(METXYCorr.first, 0, METXYCorr.second, 0);
+
+    if(IsMC){
+      TLorentzVector JESup, JESdown, JERup, JERdown;
+
+      std::pair<double,double> METXYCorr = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt, evts->MET_T1smear_phi, evts->run, convertedYear, evts->IsMC, evts->PV_npvs, true, false);
+      Met.SetPtEtaPhiM(METXYCorr.first, 0, METXYCorr.second, 0);
+
+      std::pair<double,double> METXYCorr_JESup = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt_jesTotalUp, evts->MET_T1smear_phi_jesTotalUp, evts->run, convertedYear, evts->IsMC, evts->PV_npvs, true, false);
+      JESup.SetPtEtaPhiM(METXYCorr_JESup.first, 0, METXYCorr_JESup.second, 0);
+      Met.JESup = JESup;
+
+      std::pair<double,double> METXYCorr_JESdown = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt_jesTotalDown, evts->MET_T1smear_phi_jesTotalDown, evts->run, convertedYear, evts->IsMC, evts->PV_npvs, true, false);
+      JESdown.SetPtEtaPhiM(METXYCorr_JESdown.first, 0, METXYCorr_JESdown.second, 0);
+      Met.JESdown = JESdown;
+
+      std::pair<double,double> METXYCorr_JERup = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt_jerUp, evts->MET_T1smear_phi_jerUp, evts->run, convertedYear, evts->IsMC, evts->PV_npvs, true, false);
+      JERup.SetPtEtaPhiM(METXYCorr_JERup.first, 0, METXYCorr_JERup.second, 0);
+      Met.JERup = JERup;
+
+      std::pair<double,double> METXYCorr_JERdown = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt_jerDown, evts->MET_T1smear_phi_jerDown, evts->run, convertedYear, evts->IsMC, evts->PV_npvs, true, false);
+      JERdown.SetPtEtaPhiM(METXYCorr_JERdown.first, 0, METXYCorr_JERdown.second, 0);
+      Met.JERdown = JERdown;
+    }
+    else{
+      TLorentzVector dummy;
+
+      std::pair<double,double> METXYCorr = METXYCorr_Met_MetPhi(evts->MET_T1_pt, evts->MET_T1_phi, evts->run, convertedYear, evts->IsMC, evts->PV_npvs, true, false);
+      Met.SetPtEtaPhiM(METXYCorr.first, 0, METXYCorr.second, 0);
+
+      dummy.SetPtEtaPhiM(METXYCorr.first, 0, METXYCorr.second, 0);
+      Met.JESup = dummy;
+      Met.JESdown = dummy;
+      Met.JERup = dummy;
+      Met.JERdown = dummy;
+    }
   }
 
   void ReadGenMET() {
@@ -271,19 +351,98 @@ public:
 
   bool ReadMETFilterStatus() {
     bool status = true;
-    if (!IsMC || true) {
-      status = status && evts->Flag_goodVertices;
-      status = status && evts->Flag_globalSuperTightHalo2016Filter;
-      status = status && evts->Flag_HBHENoiseFilter;
-      status = status && evts->Flag_HBHENoiseIsoFilter;
-      status = status && evts->Flag_EcalDeadCellTriggerPrimitiveFilter;
-      status = status && evts->Flag_BadPFMuonFilter;
-      status = status && evts->Flag_BadPFMuonDzFilter;
-      status = status && evts->Flag_eeBadScFilter;
-      status = status && evts->Flag_ecalBadCalibFilter;
+    status = status && evts->Flag_goodVertices;
+    status = status && evts->Flag_globalSuperTightHalo2016Filter;
+    status = status && evts->Flag_HBHENoiseFilter;
+    status = status && evts->Flag_HBHENoiseIsoFilter;
+    status = status && evts->Flag_EcalDeadCellTriggerPrimitiveFilter;
+    status = status && evts->Flag_BadPFMuonFilter;
+    status = status && evts->Flag_BadPFMuonDzFilter;
+    status = status && evts->Flag_eeBadScFilter;
+    status = status && evts->Flag_ecalBadCalibFilter;
+    return status;
+  }
+
+  //function to determine all regions an event belongs to as a function of all object pT variations
+  RegionID RegionReader(){
+    RegionID Regions;
+
+    //loop over variations: nominal, e-scale up, e-scale down, e-res up, e-res down, JES up, JES down, JER up, JER down
+    for(unsigned i = 0; i < Regions.RegionCount; ++i){
+      int RegionNumber = -1; //-1 no region
+      //check lepton multiplicity
+      int nev = 0;
+      int nel = 0;
+      int nep = 0;
+      for(unsigned j = 0; j<Electrons.size(); ++j){
+        if(i==1 && Electrons[j].ScaleUp.Pt() >= 40.){
+	  nev += Leptons[j].IsVeto;
+	  nel += Leptons[j].IsLoose;
+	  nep += Leptons[j].IsPrimary;
+	}
+	else if(i==2 && Electrons[j].ScaleDown.Pt() >= 40.){
+          nev += Leptons[j].IsVeto;
+          nel += Leptons[j].IsLoose;
+          nep += Leptons[j].IsPrimary;
+	}
+        else if(i==3 && Electrons[j].ResUp.Pt() >= 40.){
+          nev += Electrons[j].IsVeto;
+          nel += Electrons[j].IsLoose;
+          nep += Electrons[j].IsPrimary;
+        }
+        else if(i==4 && Electrons[j].ResDown.Pt() >= 40.){
+          nev += Electrons[j].IsVeto;
+          nel += Electrons[j].IsLoose;
+          nep += Electrons[j].IsPrimary;
+        }
+	else if(Electrons[j].Pt() >= 40.){
+          nev += Electrons[j].IsVeto;
+          nel += Electrons[j].IsLoose;
+          nep += Electrons[j].IsPrimary;
+	}
+      }
+
+      int nmuv = 0;
+      int nmul = 0;
+      int nmup = 0;
+      for(unsigned j = 0; j<Muons.size(); ++j){//no scale variations foreseen as of yet, due to not applying Rochester corrections
+	nmuv += Muons[j].IsVeto;
+	nmul += Muons[j].IsLoose;
+	nmup += Muons[j].IsPrimary;
+      }
+
+      //Region Formats key is in DataFormat.cc
+      if(nmuv + nev != 1) continue;
+      if(nmup == 1) RegionNumber = 1100;
+      else if(nep == 1) RegionNumber = 2100;
+      else if(nmul == 1) RegionNumber = 1200;
+      else if(nel ==1) RegionNumber = 2200;
+
+      //check trigger matching lepton flavour
+      if(RegionNumber/1000 == 2 && !isolated_electron_trigger ) continue; //FIXME: Needs lepton trigger matching for veracity
+      else if(RegionNumber/1000 == 1 && !(isolated_muon_trigger || isolated_muon_track_trigger)) continue; //FIXME: Needs lepton trigger matching for veracity
+    
+      //check jet multiplicity
+      int nj = 0;
+      int nb = 0;
+      for(unsigned j = 0; j<Jets.size(); ++j){
+	float pT = Jets[j].Pt();
+	if(i==5) pT = Jets[j].JESup.Pt();
+	else if(i==6) pT = Jets[j].JESdown.Pt();
+	else if(i==7) pT = Jets[j].JERup.Pt();
+	else if(i==8) pT = Jets[j].JERdown.Pt();
+	if(pT < 30.) continue;
+	if(!Jets[j].PUIDpasses[2]) continue;//select working point for PUID to none by commenting this line out, loose by PUIDpasses 0, medium by 1, tight by 2
+	nj++;
+	if(Jets[j].bTagPasses[2]) nb++;//select working point for b-tagging by bTagPasses[0] = loose, 1 medium and 2 tight
+      }
+      if(nj<5 || nj>6) continue; //in no region we're interested in
+      RegionNumber += nj*10;
+      RegionNumber += nb;
+      Regions.Regions[i]=RegionNumber;
     }
-    METFilterStatus = status;
-    return METFilterStatus;
+
+    return Regions;
   }
 
   Configs *conf;
@@ -304,12 +463,13 @@ public:
   GenMET GenMet;
 
   bool isolated_electron_trigger, isolated_muon_trigger, isolated_muon_track_trigger;
-  bool METFilterStatus;
   int Pileup_nPU;
   float Pileup_nTrueInt;
   int PV_npvs, PV_npvsGood;
   // nlohmann::json GoodSections;
   // bool LumiStatus;
+  
+  RegionID RegionAssociations;
 };
 
 
