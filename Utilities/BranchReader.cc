@@ -49,6 +49,16 @@ public:
   Float_t         Jet_btagDeepFlavB[25];   //[nJet]
   Int_t           Jet_hadronFlavour[25];   //[nJet]
   Int_t           Jet_partonFlavour[25];   //[nJet]
+  Float_t	  Jet_pt_nom[25];   //[nJet]
+  Float_t         Jet_pt_jesTotalUp[25];   //[nJet]
+  Float_t         Jet_pt_jesTotalDown[25];   //[nJet]
+  Float_t         Jet_pt_jerUp[25];   //[nJet]
+  Float_t         Jet_pt_jerDown[25];   //[nJet]
+  Float_t         Jet_mass_nom[25];   //[nJet]
+  Float_t         Jet_mass_jesTotalUp[25];   //[nJet]
+  Float_t         Jet_mass_jesTotalDown[25];   //[nJet]
+  Float_t         Jet_mass_jerUp[25];   //[nJet]
+  Float_t         Jet_mass_jerDown[25];   //[nJet]
 
   // Electron
   UInt_t          nElectron;
@@ -59,6 +69,8 @@ public:
   Int_t           Electron_charge[9];   //[nElectron]
   Int_t           Electron_cutBased[9];   //[nElectron]
   Bool_t          Electron_cutBased_HEEP[9];   //[nElectron]
+  Float_t	  Electron_dEsigmaDown[9];    //[nElectron]
+  Float_t	  Electron_dEsigmaUp[9];    //[nElectron]
   // Int_t           Electron_genPartIdx[9];   //[nElectron]
 
   //Muon
@@ -77,6 +89,18 @@ public:
   //MET
   Float_t         MET_phi;
   Float_t         MET_pt;
+  Float_t	  MET_T1_pt;
+  Float_t	  MET_T1_phi;
+  Float_t	  MET_T1smear_pt;
+  Float_t	  MET_T1smear_phi;
+  Float_t	  MET_T1smear_pt_jesTotalUp;
+  Float_t         MET_T1smear_phi_jesTotalUp;
+  Float_t         MET_T1smear_pt_jesTotalDown;
+  Float_t         MET_T1smear_phi_jesTotalDown;
+  Float_t	  MET_T1smear_pt_jerUp;
+  Float_t         MET_T1smear_phi_jerUp;
+  Float_t         MET_T1smear_pt_jerDown;
+  Float_t         MET_T1smear_phi_jerDown;
 
   //GenMET
   Float_t         GenMET_phi;
