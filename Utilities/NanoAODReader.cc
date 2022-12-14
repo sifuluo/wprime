@@ -296,6 +296,14 @@ public:
       //check for jet overlaps
       tmp.OverlapsJet = OverlapCheck(tmp);
 
+      //set SF and variation for primary only
+      if(passPrimary && evts->IsMC){
+	tmp.SFs[0] = evts->Electron_scaleFactor[i];
+	tmp.SFs[1] = evts->Electron_scaleFactorUp[i];
+	tmp.SFs[2] = evts->Electron_scaleFactorDown[i];
+      }
+      else tmp.SFs = {1., 1., 1.};
+
       Electrons.push_back(tmp);
       Leptons.push_back(tmp);
     }
@@ -335,10 +343,18 @@ public:
       //check for jet overlaps
       tmp.OverlapsJet = OverlapCheck(tmp);
 
+      //set SF and variation for primary only
+      if(passPrimary && evts->IsMC){
+        tmp.SFs[0] = evts->Muon_scaleFactor[i];
+        tmp.SFs[1] = evts->Muon_scaleFactor[i] + sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
+        tmp.SFs[2] = evts->Muon_scaleFactor[i] + sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
+      }
+      else tmp.SFs = {1., 1., 1.};
+
       Muons.push_back(tmp);
       Leptons.push_back(tmp);
     }
-  }
+  } 
 
   void ReadMET() {
     Met = TLorentzVector();
