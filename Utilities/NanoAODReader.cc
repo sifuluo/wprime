@@ -178,6 +178,26 @@ public:
       //set PUID flags
       tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], evts->SampleYear);
 
+      //set PUID SFs
+      if(!evts->IsMC || evts->Jet_pt_nom[i] >= 50. || evts->Jet_genJetIdx[i] < 0) tmp.PUIDSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; //unlike other SFs, PU Jets and jets failing ID are not supposed to contribute to event weights
+      else{
+	if(tmp.PUIDpasses[0]){
+	  tmp.PUIDSFweights[0][0] = evts->Jet_puIdScaleFactorLoose[i];
+	  tmp.PUIDSFweights[1][0] = evts->Jet_puIdScaleFactorLooseUp[i];
+	  tmp.PUIDSFweights[2][0] = evts->Jet_puIdScaleFactorLooseDown[i];
+	}
+	if(tmp.PUIDpasses[1]){
+          tmp.PUIDSFweights[0][1] = evts->Jet_puIdScaleFactorMedium[i];
+          tmp.PUIDSFweights[1][1] = evts->Jet_puIdScaleFactorMediumUp[i];
+          tmp.PUIDSFweights[2][1] = evts->Jet_puIdScaleFactorMediumDown[i];
+        }
+        if(tmp.PUIDpasses[2]){
+          tmp.PUIDSFweights[0][2] = evts->Jet_puIdScaleFactorTight[i];
+          tmp.PUIDSFweights[1][2] = evts->Jet_puIdScaleFactorTightUp[i];
+          tmp.PUIDSFweights[2][2] = evts->Jet_puIdScaleFactorTightDown[i];
+        }
+      }
+
       //set generator information
       if (IsMC) {
         tmp.genJetIdx = evts->Jet_genJetIdx[i];
@@ -188,7 +208,45 @@ public:
       //set btagging flags
       tmp.bTagPasses = bTag(evts->Jet_btagDeepFlavB[i], evts->SampleYear);
 
+      //set btagging SFs
+      if(!evts->IsMC) tmp.bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
+      else{
+	//FIXME: Need b-tagging efficiency per sample at some point, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/BTagSFMethods#b_tagging_efficiency_in_MC_sampl
+	float bTagEff[3] = {.9, .7, .5};
+	if(tmp.bTagPasses[0]){
+	  tmp.bJetSFweights[0][0] = evts->Jet_bTagScaleFactorLoose[i];
+          tmp.bJetSFweights[1][0] = evts->Jet_bTagScaleFactorLooseUp[i];
+          tmp.bJetSFweights[2][0] = evts->Jet_bTagScaleFactorLooseDown[i];
+	}
+	else{
+	  tmp.bJetSFweights[0][0] = (1. - bTagEff[0] * evts->Jet_bTagScaleFactorLoose[i]) / (1. - bTagEff[0]);
+          tmp.bJetSFweights[1][0] = (1. - bTagEff[0] * evts->Jet_bTagScaleFactorLooseUp[i]) / (1. - bTagEff[0]);
+          tmp.bJetSFweights[2][0] = (1. - bTagEff[0] * evts->Jet_bTagScaleFactorLooseDown[i]) / (1. - bTagEff[0]);
+	}
+        if(tmp.bTagPasses[1]){
+          tmp.bJetSFweights[0][1] = evts->Jet_bTagScaleFactorMedium[i];
+          tmp.bJetSFweights[1][1] = evts->Jet_bTagScaleFactorMediumUp[i];
+          tmp.bJetSFweights[2][1] = evts->Jet_bTagScaleFactorMediumDown[i];
+        }
+        else{
+          tmp.bJetSFweights[0][1] = (1. - bTagEff[1] * evts->Jet_bTagScaleFactorMedium[i]) / (1. - bTagEff[1]);
+          tmp.bJetSFweights[1][1] = (1. - bTagEff[1] * evts->Jet_bTagScaleFactorMediumUp[i]) / (1. - bTagEff[1]);
+          tmp.bJetSFweights[2][1] = (1. - bTagEff[1] * evts->Jet_bTagScaleFactorMediumDown[i]) / (1. - bTagEff[1]);
+        }
+        if(tmp.bTagPasses[2]){
+          tmp.bJetSFweights[0][2] = evts->Jet_bTagScaleFactorTight[i];
+          tmp.bJetSFweights[1][2] = evts->Jet_bTagScaleFactorTightUp[i];
+          tmp.bJetSFweights[2][2] = evts->Jet_bTagScaleFactorTightDown[i];
+        }
+        else{
+          tmp.bJetSFweights[0][2] = (1. - bTagEff[2] * evts->Jet_bTagScaleFactorTight[i]) / (1. - bTagEff[2]);
+          tmp.bJetSFweights[1][2] = (1. - bTagEff[2] * evts->Jet_bTagScaleFactorTightUp[i]) / (1. - bTagEff[2]);
+          tmp.bJetSFweights[2][2] = (1. - bTagEff[2] * evts->Jet_bTagScaleFactorTightDown[i]) / (1. - bTagEff[2]);
+        }
+      }
+
       Jets.push_back(tmp);
+
     }
   }
 

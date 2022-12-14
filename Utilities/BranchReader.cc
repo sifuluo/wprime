@@ -293,7 +293,30 @@ public:
       chain->SetBranchAddress("Pileup_sumEOOT", &Pileup_sumEOOT);
       chain->SetBranchAddress("Pileup_sumLOOT", &Pileup_sumLOOT);
 
-      
+      chain->SetBranchAddress("Electron_scaleFactor", &Electron_scaleFactor);
+      chain->SetBranchAddress("Electron_scaleFactorUp", &Electron_scaleFactorUp);
+      chain->SetBranchAddress("Electron_scaleFactorDown", &Electron_scaleFactorDown);
+      chain->SetBranchAddress("Muon_scaleFactor", &Muon_scaleFactor);
+      chain->SetBranchAddress("Muon_scaleFactorSyst", &Muon_scaleFactorSyst);
+      chain->SetBranchAddress("Muon_scaleFactorStat", &Muon_scaleFactorStat);
+      chain->SetBranchAddress("Jet_bTagScaleFactorTight", &Jet_bTagScaleFactorTight);
+      chain->SetBranchAddress("Jet_bTagScaleFactorTightUp", &Jet_bTagScaleFactorTightUp);
+      chain->SetBranchAddress("Jet_bTagScaleFactorTightDown", &Jet_bTagScaleFactorTightDown);
+      chain->SetBranchAddress("Jet_bTagScaleFactorMedium", &Jet_bTagScaleFactorMedium);
+      chain->SetBranchAddress("Jet_bTagScaleFactorMediumUp", &Jet_bTagScaleFactorMediumUp);
+      chain->SetBranchAddress("Jet_bTagScaleFactorMediumDown", &Jet_bTagScaleFactorMediumDown);
+      chain->SetBranchAddress("Jet_bTagScaleFactorLoose", &Jet_bTagScaleFactorLoose);
+      chain->SetBranchAddress("Jet_bTagScaleFactorLooseUp", &Jet_bTagScaleFactorLooseUp);
+      chain->SetBranchAddress("Jet_bTagScaleFactorLooseDown", &Jet_bTagScaleFactorLooseDown);
+      chain->SetBranchAddress("Jet_puIdScaleFactorTight", &Jet_puIdScaleFactorTight);
+      chain->SetBranchAddress("Jet_puIdScaleFactorTightUp", &Jet_puIdScaleFactorTightUp);
+      chain->SetBranchAddress("Jet_puIdScaleFactorTightDown", &Jet_puIdScaleFactorTightDown);
+      chain->SetBranchAddress("Jet_puIdScaleFactorMedium", &Jet_puIdScaleFactorMedium);
+      chain->SetBranchAddress("Jet_puIdScaleFactorMediumUp", &Jet_puIdScaleFactorMediumUp);
+      chain->SetBranchAddress("Jet_puIdScaleFactorMediumDown", &Jet_puIdScaleFactorMediumDown);
+      chain->SetBranchAddress("Jet_puIdScaleFactorLoose", &Jet_puIdScaleFactorLoose);
+      chain->SetBranchAddress("Jet_puIdScaleFactorLooseUp", &Jet_puIdScaleFactorLooseUp);
+      chain->SetBranchAddress("Jet_puIdScaleFactorLooseDown", &Jet_puIdScaleFactorLooseDown);
     }
 
     if (SampleYear == "2016" || SampleYear == "2016apv"){
