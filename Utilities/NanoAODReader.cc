@@ -302,11 +302,55 @@ public:
       //check for jet overlaps
       tmp.OverlapsJet = OverlapCheck(tmp);
 
-      //set SF and variation for primary only
+      //set SF and variation for primary only, HEEP as in https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaRunIIRecommendations#HEEPV7_0
       if(passPrimary && evts->IsMC){
-	tmp.SFs[0] = evts->Electron_scaleFactor[i];
-	tmp.SFs[1] = evts->Electron_scaleFactorUp[i];
-	tmp.SFs[2] = evts->Electron_scaleFactorDown[i];
+        TString sampleyear;
+        string sy = conf->SampleYear;
+        if (sy == "16apv" || sy == "2016apv") sampleyear = "2016";
+        else if (sy == "16" || sy == "2016") sampleyear = "2016";
+        else if (sy == "17" || sy == "2017") sampleyear = "2017";
+        else if (sy == "18" || sy == "2018") sampleyear = "2018";
+
+        if(absEta < 1.4442){
+	  if(sampleyear == "2016"){
+	    tmp.SFs[0] = 0.983;
+	    float unc = tmp.Et() < 90 ? 0.01 : min(1 + (tmp.Et() - 90) * 0.0022, 0.03);
+            tmp.SFs[1] = 0.983 + unc;
+            tmp.SFs[2] = 0.983 - unc;
+	  }
+	  else if(sampleyear == "2017"){
+	    tmp.SFs[0] = 0.968;
+            float unc = tmp.Et() < 90 ? 0.01 : min(1 + (tmp.Et() - 90) * 0.0022, 0.03);
+            tmp.SFs[1] = 0.968 + unc;
+            tmp.SFs[2] = 0.968 - unc;
+	  }
+	  else if(sampleyear == "2018"){
+	    tmp.SFs[0] = 0.969;
+            float unc = tmp.Et() < 90 ? 0.01 : min(1 + (tmp.Et() - 90) * 0.0022, 0.03);
+            tmp.SFs[1] = 0.969 + unc;
+            tmp.SFs[2] = 0.969 - unc;
+	  }
+	}
+	else{
+          if(sampleyear == "2016"){
+            tmp.SFs[0] = 0.991;
+            float unc = tmp.Et() < 90 ? 0.01 : min(1 + (tmp.Et() - 90) * 0.0143, 0.04);
+            tmp.SFs[1] = 0.991 + unc;
+            tmp.SFs[2] = 0.991 - unc;
+          }
+          else if(sampleyear == "2017"){
+            tmp.SFs[0] = 0.973;
+            float unc = tmp.Et() < 90 ? 0.02 : min(1 + (tmp.Et() - 90) * 0.0143, 0.05);
+            tmp.SFs[1] = 0.973 + unc;
+            tmp.SFs[2] = 0.973 - unc;
+          }
+          else if(sampleyear == "2018"){
+            tmp.SFs[0] = 0.984;
+            float unc = tmp.Et() < 90 ? 0.02 : min(1 + (tmp.Et() - 90) * 0.0143, 0.05);
+            tmp.SFs[1] = 0.984 + unc;
+            tmp.SFs[2] = 0.984 - unc;
+          }
+	}
       }
       else tmp.SFs = {1., 1., 1.};
 
@@ -430,6 +474,7 @@ public:
   }
 
   bool ReadMETFilterStatus() {
+w
     bool status = true;
     status = status && evts->Flag_goodVertices;
     status = status && evts->Flag_globalSuperTightHalo2016Filter;
