@@ -527,6 +527,7 @@ public:
 
   //function to derive event weights from SFs on objects
   void CalcEventSFweights() {
+    //set SF weights per object
     EventWeight electronW, muonW, BjetW, PUIDW, L1PreFiringW;
     electronW.source = "electron";
     electronW.variations = {1.,1.,1.};
@@ -560,13 +561,30 @@ public:
     }
     else L1PreFiringW.variations = {1.,1.,1.};
 
-    EventWeights.push_back(electronW);
-    EventWeights.push_back(muonW);
-    EventWeights.push_back(BjetW);
-    EventWeights.push_back(PUIDW);
-    EventWeights.push_back(L1PreFiringW);
+    SFweights.push_back(electronW);
+    SFweights.push_back(muonW);
+    SFweights.push_back(BjetW);
+    SFweights.push_back(PUIDW);
+    SFweights.push_back(L1PreFiringW);
     //FIXME: Needs PDF weight variations and ISR/FSR
+
+    //determine nominal event weight
+    float CentralWeight = 1.;
+    for(unsigned i = 0; i < SFweights.size(); ++i){
+      CentralWeight *= SFweights[i].variations[0];
+    }
+    EventWeights.push_back(make_pair(CentralWeight, "Nominal"));
+
+    //select source for up and down variations
+    for(unsigned i = 0; i < SFweights.size(); ++i){
+
+      //create variations with strings for later combine histograms
+      EventWeights.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[1], SFweights[i].source + "_down"));
+      EventWeights.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[2], SFweights[i].source + "_up"));
+    }
   }
+
+  
 
   Configs *conf;
 
@@ -594,7 +612,8 @@ public:
   // bool LumiStatus;
   
   RegionID RegionAssociations;
-  vector<EventWeight> EventWeights;
+  vector<EventWeight> SFweights;
+  vector<pair<double, string> > EventWeights;
 };
 
 
