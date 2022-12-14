@@ -59,6 +59,8 @@ public:
   Float_t         Jet_mass_jesTotalDown[25];   //[nJet]
   Float_t         Jet_mass_jerUp[25];   //[nJet]
   Float_t         Jet_mass_jerDown[25];   //[nJet]
+  Float_t	  Jet_bRegCorr[25];   //[nJet]
+  Float_t	  Jet_bRegRes[25];  //[nJet]
 
   // Electron
   UInt_t          nElectron;
@@ -112,6 +114,32 @@ public:
   Float_t         TrigObj_eta[49];   //[nTrigObj]
   Float_t         TrigObj_phi[49];   //[nTrigObj]
   Int_t           TrigObj_id[49];   //[nTrigObj]
+
+  //SFs
+  Float_t	  Electron_scaleFactor[9]; //nElectron
+  Float_t	  Electron_scaleFactorUp[9]; //[nElectron]
+  Float_t	  Electron_scaleFactorDown[9]; //[nElectron]
+  Float_t	  Muon_scaleFactor[18]; //[nMuon]
+  Float_t	  Muon_scaleFactorSyst[18]; //[nMuon]
+  Float_t	  Muon_scaleFactorStat[18]; //[nMuon]
+  Float_t	  Jet_bTagScaleFactorTight[25]; //[nJet]
+  Float_t	  Jet_bTagScaleFactorTightUp[25]; //[nJet]
+  Float_t	  Jet_bTagScaleFactorTightDown[25]; //[nJet]
+  Float_t         Jet_bTagScaleFactorMedium[25]; //[nJet]
+  Float_t         Jet_bTagScaleFactorMediumUp[25]; //[nJet]
+  Float_t         Jet_bTagScaleFactorMediumDown[25]; //[nJet]
+  Float_t         Jet_bTagScaleFactorLoose[25]; //[nJet]
+  Float_t         Jet_bTagScaleFactorLooseUp[25]; //[nJet]
+  Float_t         Jet_bTagScaleFactorLooseDown[25]; //[nJet]
+  Float_t	  Jet_puIdScaleFactorTight[25]; //[nJet]
+  Float_t	  Jet_puIdScaleFactorTightUp[25]; //nJet]
+  Float_t	  Jet_puIdScaleFactorTightDown[25]; //[nJet]
+  Float_t         Jet_puIdScaleFactorMedium[25]; //[nJet]
+  Float_t         Jet_puIdScaleFactorMediumUp[25]; //nJet]
+  Float_t         Jet_puIdScaleFactorMediumDown[25]; //[nJet]
+  Float_t         Jet_puIdScaleFactorLoose[25]; //[nJet]
+  Float_t         Jet_puIdScaleFactorLooseUp[25]; //nJet]
+  Float_t         Jet_puIdScaleFactorLooseDown[25]; //[nJet]
 
   //Trigger
   bool isolated_electron_trigger;
@@ -174,6 +202,10 @@ public:
     chain->SetBranchAddress("Jet_jetId", &Jet_jetId);
     chain->SetBranchAddress("Jet_puId", &Jet_puId);
     chain->SetBranchAddress("Jet_btagDeepFlavB", &Jet_btagDeepFlavB);
+    chain->SetBranchAddress("Jet_bRegCorr", &Jet_bRegCorr);
+    chain->SetBranchAddress("Jet_bRegRes", &Jet_bRegRes);
+    chain->SetBranchAddress("Jet_pt_nom", &Jet_pt_nom);
+    chain->SetBranchAddress("Jet_mass_nom", &Jet_mass_nom);
 
     chain->SetBranchAddress("nElectron", &nElectron);
     chain->SetBranchAddress("Electron_pt", &Electron_pt);
@@ -197,6 +229,8 @@ public:
 
     chain->SetBranchAddress("MET_phi", &MET_phi);
     chain->SetBranchAddress("MET_pt", &MET_pt);
+    chain->SetBranchAddress("MET_T1_pt", &MET_T1_pt);
+    chain->SetBranchAddress("MET_T1_phi", &MET_T1_phi);
 
     chain->SetBranchAddress("nTrigObj", &nTrigObj);
     chain->SetBranchAddress("TrigObj_pt", &TrigObj_pt);
@@ -208,6 +242,15 @@ public:
     chain->SetBranchAddress("luminosityBlock", &luminosityBlock);
 
     if (IsMC){
+      chain->SetBranchAddress("Jet_pt_jesTotalUp", &Jet_pt_jesTotalUp);
+      chain->SetBranchAddress("Jet_pt_jesTotalDown", &Jet_pt_jesTotalDown);
+      chain->SetBranchAddress("Jet_pt_jerUp", &Jet_pt_jerUp);
+      chain->SetBranchAddress("Jet_pt_jerDown", &Jet_pt_jerDown);
+      chain->SetBranchAddress("Jet_mass_jesTotalUp", &Jet_mass_jesTotalUp);
+      chain->SetBranchAddress("Jet_mass_jesTotalDown", &Jet_mass_jesTotalDown);
+      chain->SetBranchAddress("Jet_mass_jerUp", &Jet_mass_jerUp);
+      chain->SetBranchAddress("Jet_mass_jerDown", &Jet_mass_jerDown);
+
       chain->SetBranchAddress("Jet_hadronFlavour", &Jet_hadronFlavour);
       chain->SetBranchAddress("Jet_partonFlavour", &Jet_partonFlavour);
       chain->SetBranchAddress("Jet_genJetIdx", &Jet_genJetIdx);
@@ -219,6 +262,17 @@ public:
       chain->SetBranchAddress("GenJet_mass", &GenJet_mass);
       chain->SetBranchAddress("GenJet_hadronFlavour", &GenJet_hadronFlavour);
       chain->SetBranchAddress("GenJet_partonFlavour", &GenJet_partonFlavour);
+
+      chain->SetBranchAddress("MET_T1smear_pt", &MET_T1smear_pt);
+      chain->SetBranchAddress("MET_T1smear_phi", &MET_T1smear_phi);
+      chain->SetBranchAddress("MET_T1smear_pt_jesTotalUp", &MET_T1smear_pt_jesTotalUp);
+      chain->SetBranchAddress("MET_T1smear_phi_jesTotalUp", &MET_T1smear_phi_jesTotalUp);
+      chain->SetBranchAddress("MET_T1smear_pt_jesTotalDown", &MET_T1smear_pt_jesTotalDown);
+      chain->SetBranchAddress("MET_T1smear_phi_jesTotalDown", &MET_T1smear_phi_jesTotalDown);
+      chain->SetBranchAddress("MET_T1smear_pt_jerUp", &MET_T1smear_pt_jerUp);
+      chain->SetBranchAddress("MET_T1smear_phi_jerUp", &MET_T1smear_phi_jerUp);
+      chain->SetBranchAddress("MET_T1smear_pt_jerDown", &MET_T1smear_pt_jerDown);
+      chain->SetBranchAddress("MET_T1smear_phi_jerDown", &MET_T1smear_phi_jerDown);
 
       chain->SetBranchAddress("GenMET_phi", &GenMET_phi);
       chain->SetBranchAddress("GenMET_pt", &GenMET_pt);
@@ -238,6 +292,8 @@ public:
       chain->SetBranchAddress("Pileup_pudensity", &Pileup_pudensity);
       chain->SetBranchAddress("Pileup_sumEOOT", &Pileup_sumEOOT);
       chain->SetBranchAddress("Pileup_sumLOOT", &Pileup_sumLOOT);
+
+      
     }
 
     if (SampleYear == "2016" || SampleYear == "2016apv"){
