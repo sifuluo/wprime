@@ -90,6 +90,10 @@ public:
   }
 
   void ReadEvent(Long64_t i) {
+    //FIXME: Currently hard-coded working point choice for b-tagging and PUID
+    bTagWP = 2; //0 loose, 1 medium, 2 tight
+    PUIDWP = 2; //0 loose, 1 medium, 2 tight
+
     evts->GetEntry(i);
     if(ReadMETFilterStatus() == false) return; //skip events not passing MET filter flags
     run = evts->run;
@@ -113,6 +117,7 @@ public:
     ReadTriggers();
     ReadVertices();
     RegionAssociations = RegionReader();
+    if(IsMC) CalcEventSFweights();
   }
 
   void ReadGenParts() {
@@ -506,9 +511,9 @@ public:
 	else if(i==7) pT = Jets[j].JERup.Pt();
 	else if(i==8) pT = Jets[j].JERdown.Pt();
 	if(pT < 30.) continue;
-	if(!Jets[j].PUIDpasses[2]) continue;//select working point for PUID to none by commenting this line out, loose by PUIDpasses 0, medium by 1, tight by 2
+	if(!Jets[j].PUIDpasses[bTagWP]) continue;//select working point for PUID to none by commenting this line out, loose by PUIDpasses 0, medium by 1, tight by 2
 	nj++;
-	if(Jets[j].bTagPasses[2]) nb++;//select working point for b-tagging by bTagPasses[0] = loose, 1 medium and 2 tight
+	if(Jets[j].bTagPasses[PUIDWP]) nb++;//select working point for b-tagging by bTagPasses[0] = loose, 1 medium and 2 tight
       }
       if(nj<5 || nj>6) continue; //in no region we're interested in
       RegionNumber += nj*10;
@@ -519,9 +524,53 @@ public:
     return Regions;
   }
 
+  //function to derive event weights from SFs on objects
+  void CalcEventSFweights() {
+    EventWeight electronW, muonW, BjetW, PUIDW, L1PreFiringW;
+    electronW.source = "electron";
+    electronW.variations = {1.,1.,1.};
+    muonW.source = "muon";
+    muonW.variations = {1.,1.,1.};
+    BjetW.source = "BjetTag";
+    BjetW.variations = {1.,1.,1.};
+    PUIDW.source = "PUID";
+    PUIDW.variations = {1.,1.,1.};
+    L1PreFiringW.source = "L1PreFiring";
+    int modes[3]={0, +1, -1};
+    for(unsigned i=0; i<3; ++i){
+      for(unsigned j = 0; j < Electrons.size(); ++j) electronW.variations[i] *= Electrons[j].SFs[i];
+      for(unsigned j = 0; j < Muons.size(); ++j) muonW.variations[i] *= Muons[j].SFs[i];
+      for(unsigned j = 0; j < Jets.size(); ++j){
+	BjetW.variations[i] *= Jets[j].bJetSFweights[i][bTagWP];
+        PUIDW.variations[i] *= Jets[j].PUIDSFweights[i][PUIDWP];
+      } 
+    }
+    string sampleyear;
+    string sy = conf->SampleYear;
+    if (sy == "16apv" || sy == "2016apv") sampleyear = "2016preVFP";
+    else if (sy == "16" || sy == "2016") sampleyear = "2016postVFP";
+    else if (sy == "17" || sy == "2017") sampleyear = "2017";
+    else if (sy == "18" || sy == "2018") sampleyear = "2018";
+    //L1PrefiringWeight
+    if(sampleyear == "2016preVFP" || sampleyear == "2016postVFP" || sampleyear == "2017"){
+      L1PreFiringW.variations[0] = evts->L1PreFiringWeight_Down;
+      L1PreFiringW.variations[1] = evts->L1PreFiringWeight_Nom;
+      L1PreFiringW.variations[2] = evts->L1PreFiringWeight_Up;
+    }
+    else L1PreFiringW.variations = {1.,1.,1.};
+
+    EventWeights.push_back(electronW);
+    EventWeights.push_back(muonW);
+    EventWeights.push_back(BjetW);
+    EventWeights.push_back(PUIDW);
+    EventWeights.push_back(L1PreFiringW);
+    //FIXME: Needs PDF weight variations and ISR/FSR
+  }
+
   Configs *conf;
 
   bool IsMC;
+  int bTagWP, PUIDWP;
   TChain* chain;
   Events* evts;
   int run, luminosityBlock;
@@ -544,6 +593,7 @@ public:
   // bool LumiStatus;
   
   RegionID RegionAssociations;
+  vector<EventWeight> EventWeights;
 };
 
 
