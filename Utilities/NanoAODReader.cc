@@ -474,7 +474,6 @@ public:
   }
 
   bool ReadMETFilterStatus() {
-w
     bool status = true;
     status = status && evts->Flag_goodVertices;
     status = status && evts->Flag_globalSuperTightHalo2016Filter;
