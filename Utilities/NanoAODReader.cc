@@ -35,6 +35,7 @@ public:
 
     if (conf->iFile >= 0) { // batch mode
       vector<string> rootfiles = GetFileNames();
+      rootfiles = {"/afs/cern.ch/user/d/doverton/public/0112A6B8-1FF9-CA49-BD91-1CBDB31507DB.root"}; //FIXME: Hacked with new format file for testing
       for (string rf : rootfiles) {
         chain->Add(TString(rf));
         cout << "Successfully loaded root file: " << rf << endl;
