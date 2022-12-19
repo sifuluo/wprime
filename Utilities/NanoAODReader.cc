@@ -35,6 +35,7 @@ public:
 
     if (conf->iFile >= 0) { // batch mode
       vector<string> rootfiles = GetFileNames();
+      rootfiles = {"/afs/cern.ch/user/d/doverton/public/0112A6B8-1FF9-CA49-BD91-1CBDB31507DB.root"}; //FIXME: Hacked with new format file for testing
       for (string rf : rootfiles) {
         chain->Add(TString(rf));
         cout << "Successfully loaded root file: " << rf << endl;
@@ -90,6 +91,10 @@ public:
   }
 
   void ReadEvent(Long64_t i) {
+    //FIXME: Currently hard-coded working point choice for b-tagging and PUID
+    bTagWP = 2; //0 loose, 1 medium, 2 tight
+    PUIDWP = 2; //0 loose, 1 medium, 2 tight
+
     evts->GetEntry(i);
     if(ReadMETFilterStatus() == false) return; //skip events not passing MET filter flags
     run = evts->run;
@@ -113,6 +118,7 @@ public:
     ReadTriggers();
     ReadVertices();
     RegionAssociations = RegionReader();
+    if(IsMC) CalcEventSFweights();
   }
 
   void ReadGenParts() {
@@ -178,6 +184,26 @@ public:
       //set PUID flags
       tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], evts->SampleYear);
 
+      //set PUID SFs
+      if(!evts->IsMC || evts->Jet_pt_nom[i] >= 50. || evts->Jet_genJetIdx[i] < 0) tmp.PUIDSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; //unlike other SFs, PU Jets and jets failing ID are not supposed to contribute to event weights
+      else{
+	if(tmp.PUIDpasses[0]){
+	  tmp.PUIDSFweights[0][0] = evts->Jet_puIdScaleFactorLoose[i];
+	  tmp.PUIDSFweights[1][0] = evts->Jet_puIdScaleFactorLooseUp[i];
+	  tmp.PUIDSFweights[2][0] = evts->Jet_puIdScaleFactorLooseDown[i];
+	}
+	if(tmp.PUIDpasses[1]){
+          tmp.PUIDSFweights[0][1] = evts->Jet_puIdScaleFactorMedium[i];
+          tmp.PUIDSFweights[1][1] = evts->Jet_puIdScaleFactorMediumUp[i];
+          tmp.PUIDSFweights[2][1] = evts->Jet_puIdScaleFactorMediumDown[i];
+        }
+        if(tmp.PUIDpasses[2]){
+          tmp.PUIDSFweights[0][2] = evts->Jet_puIdScaleFactorTight[i];
+          tmp.PUIDSFweights[1][2] = evts->Jet_puIdScaleFactorTightUp[i];
+          tmp.PUIDSFweights[2][2] = evts->Jet_puIdScaleFactorTightDown[i];
+        }
+      }
+
       //set generator information
       if (IsMC) {
         tmp.genJetIdx = evts->Jet_genJetIdx[i];
@@ -188,7 +214,45 @@ public:
       //set btagging flags
       tmp.bTagPasses = bTag(evts->Jet_btagDeepFlavB[i], evts->SampleYear);
 
+      //set btagging SFs
+      if(!evts->IsMC) tmp.bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
+      else{
+	//FIXME: Need b-tagging efficiency per sample at some point, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/BTagSFMethods#b_tagging_efficiency_in_MC_sampl
+	float bTagEff[3] = {.9, .7, .5};
+	if(tmp.bTagPasses[0]){
+	  tmp.bJetSFweights[0][0] = evts->Jet_bTagScaleFactorLoose[i];
+          tmp.bJetSFweights[1][0] = evts->Jet_bTagScaleFactorLooseUp[i];
+          tmp.bJetSFweights[2][0] = evts->Jet_bTagScaleFactorLooseDown[i];
+	}
+	else{
+	  tmp.bJetSFweights[0][0] = (1. - bTagEff[0] * evts->Jet_bTagScaleFactorLoose[i]) / (1. - bTagEff[0]);
+          tmp.bJetSFweights[1][0] = (1. - bTagEff[0] * evts->Jet_bTagScaleFactorLooseUp[i]) / (1. - bTagEff[0]);
+          tmp.bJetSFweights[2][0] = (1. - bTagEff[0] * evts->Jet_bTagScaleFactorLooseDown[i]) / (1. - bTagEff[0]);
+	}
+        if(tmp.bTagPasses[1]){
+          tmp.bJetSFweights[0][1] = evts->Jet_bTagScaleFactorMedium[i];
+          tmp.bJetSFweights[1][1] = evts->Jet_bTagScaleFactorMediumUp[i];
+          tmp.bJetSFweights[2][1] = evts->Jet_bTagScaleFactorMediumDown[i];
+        }
+        else{
+          tmp.bJetSFweights[0][1] = (1. - bTagEff[1] * evts->Jet_bTagScaleFactorMedium[i]) / (1. - bTagEff[1]);
+          tmp.bJetSFweights[1][1] = (1. - bTagEff[1] * evts->Jet_bTagScaleFactorMediumUp[i]) / (1. - bTagEff[1]);
+          tmp.bJetSFweights[2][1] = (1. - bTagEff[1] * evts->Jet_bTagScaleFactorMediumDown[i]) / (1. - bTagEff[1]);
+        }
+        if(tmp.bTagPasses[2]){
+          tmp.bJetSFweights[0][2] = evts->Jet_bTagScaleFactorTight[i];
+          tmp.bJetSFweights[1][2] = evts->Jet_bTagScaleFactorTightUp[i];
+          tmp.bJetSFweights[2][2] = evts->Jet_bTagScaleFactorTightDown[i];
+        }
+        else{
+          tmp.bJetSFweights[0][2] = (1. - bTagEff[2] * evts->Jet_bTagScaleFactorTight[i]) / (1. - bTagEff[2]);
+          tmp.bJetSFweights[1][2] = (1. - bTagEff[2] * evts->Jet_bTagScaleFactorTightUp[i]) / (1. - bTagEff[2]);
+          tmp.bJetSFweights[2][2] = (1. - bTagEff[2] * evts->Jet_bTagScaleFactorTightDown[i]) / (1. - bTagEff[2]);
+        }
+      }
+
       Jets.push_back(tmp);
+
     }
   }
 
@@ -238,6 +302,58 @@ public:
       //check for jet overlaps
       tmp.OverlapsJet = OverlapCheck(tmp);
 
+      //set SF and variation for primary only, HEEP as in https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaRunIIRecommendations#HEEPV7_0
+      if(passPrimary && evts->IsMC){
+        TString sampleyear;
+        string sy = conf->SampleYear;
+        if (sy == "16apv" || sy == "2016apv") sampleyear = "2016";
+        else if (sy == "16" || sy == "2016") sampleyear = "2016";
+        else if (sy == "17" || sy == "2017") sampleyear = "2017";
+        else if (sy == "18" || sy == "2018") sampleyear = "2018";
+
+        if(absEta < 1.4442){
+	  if(sampleyear == "2016"){
+	    tmp.SFs[0] = 0.983;
+	    float unc = tmp.Et() < 90 ? 0.01 : min(1 + (tmp.Et() - 90) * 0.0022, 0.03);
+            tmp.SFs[1] = 0.983 + unc;
+            tmp.SFs[2] = 0.983 - unc;
+	  }
+	  else if(sampleyear == "2017"){
+	    tmp.SFs[0] = 0.968;
+            float unc = tmp.Et() < 90 ? 0.01 : min(1 + (tmp.Et() - 90) * 0.0022, 0.03);
+            tmp.SFs[1] = 0.968 + unc;
+            tmp.SFs[2] = 0.968 - unc;
+	  }
+	  else if(sampleyear == "2018"){
+	    tmp.SFs[0] = 0.969;
+            float unc = tmp.Et() < 90 ? 0.01 : min(1 + (tmp.Et() - 90) * 0.0022, 0.03);
+            tmp.SFs[1] = 0.969 + unc;
+            tmp.SFs[2] = 0.969 - unc;
+	  }
+	}
+	else{
+          if(sampleyear == "2016"){
+            tmp.SFs[0] = 0.991;
+            float unc = tmp.Et() < 90 ? 0.01 : min(1 + (tmp.Et() - 90) * 0.0143, 0.04);
+            tmp.SFs[1] = 0.991 + unc;
+            tmp.SFs[2] = 0.991 - unc;
+          }
+          else if(sampleyear == "2017"){
+            tmp.SFs[0] = 0.973;
+            float unc = tmp.Et() < 90 ? 0.02 : min(1 + (tmp.Et() - 90) * 0.0143, 0.05);
+            tmp.SFs[1] = 0.973 + unc;
+            tmp.SFs[2] = 0.973 - unc;
+          }
+          else if(sampleyear == "2018"){
+            tmp.SFs[0] = 0.984;
+            float unc = tmp.Et() < 90 ? 0.02 : min(1 + (tmp.Et() - 90) * 0.0143, 0.05);
+            tmp.SFs[1] = 0.984 + unc;
+            tmp.SFs[2] = 0.984 - unc;
+          }
+	}
+      }
+      else tmp.SFs = {1., 1., 1.};
+
       Electrons.push_back(tmp);
       Leptons.push_back(tmp);
     }
@@ -277,10 +393,18 @@ public:
       //check for jet overlaps
       tmp.OverlapsJet = OverlapCheck(tmp);
 
+      //set SF and variation for primary only
+      if(passPrimary && evts->IsMC){
+        tmp.SFs[0] = evts->Muon_scaleFactor[i];
+        tmp.SFs[1] = evts->Muon_scaleFactor[i] + sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
+        tmp.SFs[2] = evts->Muon_scaleFactor[i] + sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
+      }
+      else tmp.SFs = {1., 1., 1.};
+
       Muons.push_back(tmp);
       Leptons.push_back(tmp);
     }
-  }
+  } 
 
   void ReadMET() {
     Met = TLorentzVector();
@@ -432,9 +556,9 @@ public:
 	else if(i==7) pT = Jets[j].JERup.Pt();
 	else if(i==8) pT = Jets[j].JERdown.Pt();
 	if(pT < 30.) continue;
-	if(!Jets[j].PUIDpasses[2]) continue;//select working point for PUID to none by commenting this line out, loose by PUIDpasses 0, medium by 1, tight by 2
+	if(!Jets[j].PUIDpasses[bTagWP]) continue;//select working point for PUID to none by commenting this line out, loose by PUIDpasses 0, medium by 1, tight by 2
 	nj++;
-	if(Jets[j].bTagPasses[2]) nb++;//select working point for b-tagging by bTagPasses[0] = loose, 1 medium and 2 tight
+	if(Jets[j].bTagPasses[PUIDWP]) nb++;//select working point for b-tagging by bTagPasses[0] = loose, 1 medium and 2 tight
       }
       if(nj<5 || nj>6) continue; //in no region we're interested in
       RegionNumber += nj*10;
@@ -445,9 +569,71 @@ public:
     return Regions;
   }
 
+  //function to derive event weights from SFs on objects
+  void CalcEventSFweights() {
+    //set SF weights per object
+    EventWeight electronW, muonW, BjetW, PUIDW, L1PreFiringW;
+    electronW.source = "electron";
+    electronW.variations = {1.,1.,1.};
+    muonW.source = "muon";
+    muonW.variations = {1.,1.,1.};
+    BjetW.source = "BjetTag";
+    BjetW.variations = {1.,1.,1.};
+    PUIDW.source = "PUID";
+    PUIDW.variations = {1.,1.,1.};
+    L1PreFiringW.source = "L1PreFiring";
+    int modes[3]={0, +1, -1};
+    for(unsigned i=0; i<3; ++i){
+      for(unsigned j = 0; j < Electrons.size(); ++j) electronW.variations[i] *= Electrons[j].SFs[i];
+      for(unsigned j = 0; j < Muons.size(); ++j) muonW.variations[i] *= Muons[j].SFs[i];
+      for(unsigned j = 0; j < Jets.size(); ++j){
+	BjetW.variations[i] *= Jets[j].bJetSFweights[i][bTagWP];
+        PUIDW.variations[i] *= Jets[j].PUIDSFweights[i][PUIDWP];
+      } 
+    }
+    string sampleyear;
+    string sy = conf->SampleYear;
+    if (sy == "16apv" || sy == "2016apv") sampleyear = "2016preVFP";
+    else if (sy == "16" || sy == "2016") sampleyear = "2016postVFP";
+    else if (sy == "17" || sy == "2017") sampleyear = "2017";
+    else if (sy == "18" || sy == "2018") sampleyear = "2018";
+    //L1PrefiringWeight
+    if(sampleyear == "2016preVFP" || sampleyear == "2016postVFP" || sampleyear == "2017"){
+      L1PreFiringW.variations[0] = evts->L1PreFiringWeight_Down;
+      L1PreFiringW.variations[1] = evts->L1PreFiringWeight_Nom;
+      L1PreFiringW.variations[2] = evts->L1PreFiringWeight_Up;
+    }
+    else L1PreFiringW.variations = {1.,1.,1.};
+
+    SFweights.push_back(electronW);
+    SFweights.push_back(muonW);
+    SFweights.push_back(BjetW);
+    SFweights.push_back(PUIDW);
+    SFweights.push_back(L1PreFiringW);
+    //FIXME: Needs PDF weight variations and ISR/FSR
+
+    //determine nominal event weight
+    float CentralWeight = 1.;
+    for(unsigned i = 0; i < SFweights.size(); ++i){
+      CentralWeight *= SFweights[i].variations[0];
+    }
+    EventWeights.push_back(make_pair(CentralWeight, "Nominal"));
+
+    //select source for up and down variations
+    for(unsigned i = 0; i < SFweights.size(); ++i){
+
+      //create variations with strings for later combine histograms
+      EventWeights.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[1], SFweights[i].source + "_down"));
+      EventWeights.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[2], SFweights[i].source + "_up"));
+    }
+  }
+
+  
+
   Configs *conf;
 
   bool IsMC;
+  int bTagWP, PUIDWP;
   TChain* chain;
   Events* evts;
   int run, luminosityBlock;
@@ -470,6 +656,8 @@ public:
   // bool LumiStatus;
   
   RegionID RegionAssociations;
+  vector<EventWeight> SFweights;
+  vector<pair<double, string> > EventWeights;
 };
 
 

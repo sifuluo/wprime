@@ -48,10 +48,13 @@ struct Jet : PO {
   Jet(TLorentzVector v_ = TLorentzVector()) : PO(v_) {};
   TLorentzVector JESup, JESdown, JERup, JERdown;
   vector<bool> PUIDpasses; // {loose, medium, tight}
+  vector<vector<float> > PUIDSFweights; // {nominal, up, down} x {loose, medium, tight}
+  
   int genJetIdx;
   int hadronFlavour;
   int partonFlavour;
   vector<bool> bTagPasses; // {loose, medium, tight}
+  vector<vector<float> > bJetSFweights; // {nominal, up, down} x {loose, medium, tight}
 };
 
 struct Lepton : PO {
@@ -62,6 +65,7 @@ struct Lepton : PO {
   bool IsLoose;
   bool IsVeto;
   vector<bool> OverlapsJet; //{PUID: loose, medium, tight}
+  vector<float> SFs;
   // float jetRelIso;
   // int pdgId;
   // int jetIdx;
@@ -94,8 +98,7 @@ struct GenMET : PO {
 
 struct EventWeight{
   string source;
-  bool IsActive;
-  float variations[3];
+  vector<float> variations;
 };
 
 struct RegionID{
