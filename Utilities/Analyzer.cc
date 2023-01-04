@@ -16,7 +16,7 @@
 #include "ProgressBar.cc"
 #include "ScaleFactor.cc"
 #include "DataSelection.cc"
-// #include "PUReweight.cc"
+#include "PUReweight.cc"
 
 using namespace std;
 
@@ -32,20 +32,20 @@ public:
     // SampleType = Constants::SampleTypes[ist_];
     // Trigger = Constants::Triggers[itr_];
     conf = conf_;
-    IsMC = (conf->iSampleType > 1);
+    IsMC = (conf->IsMC);
     Init();
   };
 
   void Init() {
     r = new NanoAODReader(conf);
+    if (conf->PUEvaluation) return;
     EntryMax = r->GetEntries();
     progress = new Progress(EntryMax, conf->ProgressInterval);
-    if (conf->PUEvaluation) return;
     bt = new BTag(conf);
     r->SetBTagger(bt);
     sf = new ScaleFactor(r);
     if (!IsMC) datasel = new DataSelection(conf);
-    // pureweight = new PUReweight(iSampleYear);
+    if (IsMC) pureweight = new PUReweight(conf);
   }
 
   Long64_t GetEntryMax() {return EntryMax;}
@@ -127,7 +127,6 @@ public:
     // if (lepcount != 1) cout << "Lepton size not equal to 1, this event will be skipped" << endl;
     if (lepcount == 1) return true;
     else return false;
-
   }
 
   bool BaseLineSelections() {
@@ -141,8 +140,13 @@ public:
 
   double GetEventScaleFactor() {
     if (IsMC) EventScaleFactor = sf->CalcEventSF();
-    else EventScaleFactor = -1.;
+    else EventScaleFactor = 1.;
     return EventScaleFactor;
+  }
+
+  double GetEventPUWeight() {
+    if (!IsMC) return 1.;
+    else return pureweight->GetWeight(r->Pileup_nTrueInt);
   }
 
   void FillTree() {
@@ -179,15 +183,8 @@ public:
   GenMET& GenMet() {return r->GenMet;}
   MET& Met() {return r->Met;}
 
-  // vector< vector<int> >& BJets() {return r->BJets;}
-  // vector< vector<int> >& NBJets() {return r->NBJets;}
-  // vector<int>& BJets_Loose(){return r->BJets[0];}
-  // vector<int>& BJets_Medium(){return r->BJets[1];}
-  // vector<int>& BJets_Tight(){return r->BJets[2];}
-  // vector<int>& NBJets_Loose(){return r->NBJets[0];}
-  // vector<int>& NBJets_Medium(){return r->NBJets[1];}
-  // vector<int>& NBJets_Tight(){return r->NBJets[2];}
-
+  vector<int> & nBJets() {return r->nBJets;}
+  vector<int> & nNBJets() {return r->nNBJets;}
 
   virtual void BookBranches() {
     t->Branch("PassedSelections",&PassedSelections);
@@ -204,8 +201,12 @@ public:
     evtCounter->Fill("Lumi Sec",1);
     if (!TriggerSelection()) return;
     evtCounter->Fill("Trigger",1);
-    if (Leptons().size() != 1) return;
-    evtCounter->Fill("1 Lep",1);
+    if (!(r->ReadMETFilterStatus())) return;
+    evtCounter->Fill("METFilter",1);
+    if (Jets().size() <= 4) return;
+    evtCounter->Fill("5 J",1);
+    if (!LeptonSelection(true)) return;
+    evtCounter->Fill("Lep",1);
     return;
   }
 
@@ -219,7 +220,7 @@ public:
   ScaleFactor *sf;
   DataSelection *datasel;
   Progress* progress;
-  // PUReweight* pureweight;
+  PUReweight* pureweight;
 
   Configs *conf;
   bool IsMC;

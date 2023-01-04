@@ -24,11 +24,6 @@
 #include <map>
 
 #include "Utilities/Analyzer.cc"
-#include "Utilities/NanoAODReader.cc"
-#include "Utilities/DataFormat.cc"
-#include "Utilities/BTag.cc"
-#include "Utilities/ScaleFactor.cc"
-#include "Utilities/ProgressBar.cc"
 
 class ThisAnalysis : public Analyzer {
 public:
@@ -36,49 +31,60 @@ public:
     // Reimplementation of Analyzer to customize the branches to save
   };
 
-  int nPU;
+  // int nPU;
   double nTrueInt;
-  int nPV, nPVGood;
+  // int nPV;
+  int nPVGood;
+  double PUWeight;
+  TH1F* nPVGoodBeforePUReweight, *nPVGoodAfterPUReweight;
 
   void BookBranches() {
     // t->Branch("PassedSelections",&PassedSelections);
     // t->Branch("EventScaleFactor",&EventScaleFactor);
-    t->Branch("nPU", &nPU);
-    t->Branch("nTrueInt", &nTrueInt);
-    t->Branch("nPV", &nPV);
-    t->Branch("nPVGood", &nPVGood);
+    // // t->Branch("nPU", &nPU);
+    // t->Branch("nTrueInt", &nTrueInt);
+    // // t->Branch("nPV", &nPV);
+    // t->Branch("nPVGood", &nPVGood);
+    // t->Branch("PUweight", &PUWeight);
+    nPVGoodBeforePUReweight = new TH1F("nPVGoodBeforePUReweight","nPVGoodBeforePUReweight", 99,0,99);
+    nPVGoodAfterPUReweight = new TH1F("nPVGoodAfterPUReweight","nPVGoodAfterPUReweight", 99,0,99);
   }
 
-  void BranchContent() {
+  void FillBranchContent() {
     if (IsMC) {
-      nPU = r->Pileup_nPU;
+      // nPU = r->Pileup_nPU;
       nTrueInt = r->Pileup_nTrueInt;
+      PUWeight = GetEventPUWeight();
     }
     else {
-      nPU = 0;
+      // nPU = 0;
       nTrueInt = 0;
+      PUWeight = 1;
     }
-    nPV = r->PV_npvs;
+    // nPV = r->PV_npvs;
     nPVGood = r->PV_npvsGood;
+    nPVGoodBeforePUReweight->Fill(nPVGood, EventScaleFactor);
+    nPVGoodAfterPUReweight->Fill(nPVGood, EventScaleFactor * PUWeight);
   }
 };
 
-void PileupDist(int isampleyear = 1, int isampletype = 2, int itrigger = 0, int ifile = 0) {
+void PileupDist(int isampleyear = 3, int isampletype = 16, int itrigger = 1, int ifile = 0) {
   Configs *conf = new Configs(isampleyear, isampletype, itrigger, ifile);
   conf->Debug = false;
-  conf->PUEvaluation = true;
-  conf->DASInput = true;
+  // conf->PUEvaluation = true;
+  // conf->DASInput = true;
   conf->PrintProgress = true;
-  conf->InputFile = "ttbar_2016.root";
+  // conf->FilesPerJob = 100;
+  conf->SetSwitch("LocalOutput",true);
+  conf->InputFile = "All";
   ThisAnalysis *a = new ThisAnalysis(conf);
   a->SetOutput("PUEval");
   // a->SetEntryMax(10000);
   for (Long64_t iEvent = 0; iEvent < a->GetEntryMax(); ++iEvent) {
-    bool pass = a->ReadEvent(iEvent);
-    // if (pass) continue;
-    a->FillTree();
+    bool failed = a->ReadEvent(iEvent);
+    if (failed) continue;
+    a->FillBranchContent();
   }
   a->SaveOutput();
   a->CloseOutput();
-  a->SuccessFlag();
 }

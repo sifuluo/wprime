@@ -8,6 +8,8 @@
 
 #include "TString.h"
 
+#include "Constants.cc"
+
 struct Configs {
   Configs(int isy_ = 2, int ist_ = 2, int itr_ = 0, int ifile_ = 0) {
     iSampleYear = isy_;
@@ -17,19 +19,21 @@ struct Configs {
     SampleYear = Constants::SampleYears[isy_];
     SampleType = Constants::SampleTypes[ist_];
     Trigger = Constants::Triggers[itr_];
+    IsMC = iSampleType > 1;
   };
 
   int iSampleYear;
   string SampleYear;
   int iSampleType;
   string SampleType;
+  bool IsMC;
   int iTrigger;
   string Trigger;
   int iFile;
 
   TString InputFile = ""; // InputFile override
 
-  int FilePerJob = 1;
+  int FilesPerJob = 1;
   int Btag_WP = 2;
 
   map<string,bool> Switches;

@@ -42,7 +42,7 @@ public:
       //This is the style with the bar. Best used in dryrun.
       // cout <<Form("\r[%s] %i / %lli, (%.1f%%), %s, %s",bar.Data(), ie, EntryMax, per, ptime_s.c_str(), rtime_s.c_str()) <<flush;
       //This is the style withou the bar. Best used in batch, because flushed text are also in the log.
-      cout <<Form("\r %i / %lli, (%.1f%%), %s, %s",ie, EntryMax, per, ptime_s.c_str(), rtime_s.c_str()) <<flush;
+      cout <<Form("\r %i / %lli, (%.1f%%), %s, %s          ",ie, EntryMax, per, ptime_s.c_str(), rtime_s.c_str()) <<flush;
       // if (ie % 100 == 0) cout <<endl;
     }
   }
