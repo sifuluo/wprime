@@ -45,10 +45,12 @@ public:
   }
 
   double GetElectronSF(Electron& e) {
+    if (e.Pt() < 40) return 1.0;
     return Electron_SF->evaluate({sampleyear, "sf", "wp90iso", e.Eta(), e.Pt()});
   }
 
   double GetMuonSF(Muon& m) {
+    if (m.Pt() < 35.) return 1.0;
     return Muon_Med_SF->evaluate({sampleyear + "_UL", fabs(m.Eta()), m.Pt(), "sf"});
   }
 

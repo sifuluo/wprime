@@ -113,9 +113,30 @@ public:
   }
 
   virtual bool ObjectsRequirement() {
-    bool ob = (Leptons().size() == 1);
+    bool ob = true;
+    // ob = ob && LeptonSelection();
     ob = ob && (Jets().size() > 4);
     return ob;
+  }
+
+  bool LeptonSelection(bool debug_ = false) {
+    int lepcount = 0;
+    for (unsigned i = 0; i < Leptons().size(); ++i) {
+      if (Leptons()[i].IsVeto) {
+        // if (debug_) cout << "Vetoed" <<endl;
+        return false;
+      }
+      else if (Leptons()[i].IsLoose || Leptons()[i].IsPrimary) lepcount++;
+    }
+    // if (lepcount != 1) cout << "Lepton size not equal to 1, this event will be skipped" << endl;
+    if (lepcount == 1) {
+      // if (debug_) cout << "Passed" << endl;
+      return true;
+    }
+    else {
+      // if (debug_) cout << "lepton count : " << lepcount <<endl;
+      return false;
+    }
   }
 
   bool BaseLineSelections() {
@@ -129,7 +150,7 @@ public:
 
   double GetEventScaleFactor() {
     if (IsMC) EventScaleFactor = sf->CalcEventSF();
-    else EventScaleFactor = -1.;
+    else EventScaleFactor = 1.;
     return EventScaleFactor;
   }
 
@@ -191,8 +212,12 @@ public:
     evtCounter->Fill("Lumi Sec",1);
     if (!TriggerSelection()) return;
     evtCounter->Fill("Trigger",1);
-    if (Leptons().size() != 1) return;
-    evtCounter->Fill("1 Lep",1);
+    if (!(r->ReadMETFilterStatus())) return;
+    evtCounter->Fill("METFilter",1);
+    if (Jets().size() <= 4) return;
+    evtCounter->Fill("5 J",1);
+    if (!LeptonSelection(true)) return;
+    evtCounter->Fill("Lep",1);
     return;
   }
 

@@ -63,8 +63,8 @@ public:
     }
     // nPV = r->PV_npvs;
     nPVGood = r->PV_npvsGood;
-    // nPVGoodBeforePUReweight->Fill(nPVGood, EventScaleFactor);
-    // nPVGoodAfterPUReweight->Fill(nPVGood, EventScaleFactor * PUWeight);
+    nPVGoodBeforePUReweight->Fill(nPVGood, EventScaleFactor);
+    nPVGoodAfterPUReweight->Fill(nPVGood, EventScaleFactor * PUWeight);
   }
 };
 
@@ -73,19 +73,17 @@ void PileupDist(int isampleyear = 3, int isampletype = 16, int itrigger = 1, int
   conf->Debug = false;
   // conf->PUEvaluation = true;
   // conf->DASInput = true;
-  conf->PrintProgress = false;
+  conf->PrintProgress = true;
   // conf->FilesPerJob = 100;
   conf->SetSwitch("LocalOutput",true);
-  // conf->InputFile = "ttbar_2016.root";
+  conf->InputFile = "All";
   ThisAnalysis *a = new ThisAnalysis(conf);
   a->SetOutput("PUEval");
   // a->SetEntryMax(10000);
   for (Long64_t iEvent = 0; iEvent < a->GetEntryMax(); ++iEvent) {
     bool failed = a->ReadEvent(iEvent);
     if (failed) continue;
-    cout << "Event " << iEvent << endl;
     a->FillBranchContent();
-    cout << "Event " << iEvent << " Done" << endl;
   }
   a->SaveOutput();
   a->CloseOutput();
