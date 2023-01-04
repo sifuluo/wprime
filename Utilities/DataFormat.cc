@@ -9,7 +9,6 @@
 #include "TString.h"
 
 #include "Constants.cc"
-#include "BTag.cc"
 #include "Configs.cc"
 using namespace std;
 
@@ -47,38 +46,31 @@ struct GenJet : PO {
 
 struct Jet : PO {
   Jet(TLorentzVector v_ = TLorentzVector()) : PO(v_) {};
-    // jetId==1 means: pass loose ID, fail tight, fail tightLepVeto
-    // jetId==3 means: pass loose and tight ID, fail tightLepVeto
-    // jetId==7 means: pass loose, tight, tightLepVeto ID.
-  int jetId;
-  int puId;
+  TLorentzVector JESup, JESdown, JERup, JERdown;
+  vector<bool> PUIDpasses; // {loose, medium, tight}
+  vector<vector<float> > PUIDSFweights; // {nominal, up, down} x {loose, medium, tight}
+  
   int genJetIdx;
   int hadronFlavour;
   int partonFlavour;
-  bool btag;
-  vector<bool> btags; // {loose, medium, tight}
-  float btagDeepFlavB;
-
-  static BTag* btagger;
-  void SetBtags() {
-    btags = btagger->GetBtags(btagDeepFlavB);
-    btag = btagger->IsBtag(btagDeepFlavB);
-  }
+  vector<bool> bTagPasses; // {loose, medium, tight}
+  vector<vector<float> > bJetSFweights; // {nominal, up, down} x {loose, medium, tight}
 };
-
-BTag* Jet::btagger = nullptr;
 
 struct Lepton : PO {
   Lepton(TLorentzVector v_ = TLorentzVector()) : PO(v_) {};
+  TLorentzVector ScaleUp, ScaleDown, ResUp, ResDown;
   int charge;
   bool IsPrimary;
   bool IsLoose;
   bool IsVeto;
+  vector<bool> OverlapsJet; //{PUID: loose, medium, tight}
+  vector<float> SFs;
   // float jetRelIso;
   // int pdgId;
   // int jetIdx;
   // int genPartIdx;
-  // int type; // 0 for electron, 1 for muon
+  //int type; // 0 for electron, 1 for muon
 };
 
 struct Electron : Lepton {
@@ -96,11 +88,24 @@ struct Muon: Lepton {
 
 struct MET : PO {
   MET(TLorentzVector v_ = TLorentzVector()) : PO(v_) {};
+  TLorentzVector JESup, JESdown, JERup, JERdown;
 };
 
 struct GenMET : PO {
   GenMET(TLorentzVector v_ = TLorentzVector()) : PO(v_) {};
+  TLorentzVector JESup, JESdown, JERup, JERdown;
 };
 
+struct EventWeight{
+  string source;
+  vector<float> variations;
+};
+
+struct RegionID{
+  unsigned RegionCount;
+  int Regions[9]; //identifiers are -1: no region; otherwise number of jets first digit number of btags 2nd digit
+  string RegionNames[9]; //Central; Electron scale up, down; Electron resolution up, down; Jet Energy Scale up, down; Jet Energy resolution up, down
+} RegionID_default = {9,{-1, -1, -1, -1, -1, -1, -1, -1, -1}, {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown"}};
+//region identifier key: 1xyz muon region, 2xyz electron region; x=1 primary, x=2 loose; y=jet multiplicity; z=b-tag multiplicity
 
 #endif
