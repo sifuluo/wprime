@@ -29,10 +29,10 @@ public:
     weights.clear();
     TFile* f = new TFile(filename);
     // Read once and close file to avoid congestion accessing the same file.
-    for (unsigned ilumi = 0; ilumi < 4; ++ilumi) {
-      TString weightname = Form("weight%i",ilumi);
-      weighthist = (TH1D*) f->Get(weightname);
-      weighttmp = vector<double>(98,1);
+    for (unsigned ixsec = 0; ixsec < 4; ++ixsec) {
+      TString weightname = Form("weight%i",ixsec);
+      TH1D* weighthist = (TH1D*) f->Get(weightname);
+      vector<double> weightstmp = vector<double>(98,1);
       for (unsigned i = 0; i < weightstmp.size(); ++i) {
         // bin x corresponds to pileup = x - 1, which again comparable to nTrueInt = x - 2 ;
         // For example if there is 1 additional interaction, nTrueInt = 1, pileup = 2 and bin = 3
@@ -45,13 +45,13 @@ public:
     f->Close();
   }
 
-  double GetWeight(int nTrueInt, int ilumi = 1) {
+  double GetWeight(int nTrueInt, int ixsec = 1) {
     if (!conf->IsMC) return 1.;
     if (nTrueInt > 97 || nTrueInt < 0) {
       cout << "PUReweight: nTrueInt = " << nTrueInt << ", out of range [0,97], using 1.0 as weight" << endl;
       return 1.;
     }
-    return weights[ilumi][nTrueInt];
+    return weights[ixsec][nTrueInt];
   }
 
 

@@ -68,7 +68,7 @@ public:
   }
 };
 
-void PileupDist(int isampleyear = 3, int isampletype = 16, int itrigger = 1, int ifile = 0) {
+void PileupDist(int isampleyear = 3, int isampletype = 3, int itrigger = 1, int ifile = 0) {
   Configs *conf = new Configs(isampleyear, isampletype, itrigger, ifile);
   conf->Debug = false;
   // conf->PUEvaluation = true;
@@ -76,7 +76,7 @@ void PileupDist(int isampleyear = 3, int isampletype = 16, int itrigger = 1, int
   conf->PrintProgress = true;
   // conf->FilesPerJob = 100;
   conf->SetSwitch("LocalOutput",true);
-  conf->InputFile = "All";
+  // conf->InputFile = "All";
   ThisAnalysis *a = new ThisAnalysis(conf);
   a->SetOutput("PUEval");
   // a->SetEntryMax(10000);

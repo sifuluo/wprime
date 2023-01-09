@@ -93,16 +93,16 @@ public:
   Float_t         MET_pt;
   Float_t	  MET_T1_pt;
   Float_t	  MET_T1_phi;
-  Float_t	  MET_T1smear_pt;
-  Float_t	  MET_T1smear_phi;
-  Float_t	  MET_T1smear_pt_jesTotalUp;
-  Float_t         MET_T1smear_phi_jesTotalUp;
-  Float_t         MET_T1smear_pt_jesTotalDown;
-  Float_t         MET_T1smear_phi_jesTotalDown;
-  Float_t	  MET_T1smear_pt_jerUp;
-  Float_t         MET_T1smear_phi_jerUp;
-  Float_t         MET_T1smear_pt_jerDown;
-  Float_t         MET_T1smear_phi_jerDown;
+  Float_t	  MET_T1Smear_pt;
+  Float_t	  MET_T1Smear_phi;
+  Float_t	  MET_T1Smear_pt_jesTotalUp;
+  Float_t         MET_T1Smear_phi_jesTotalUp;
+  Float_t         MET_T1Smear_pt_jesTotalDown;
+  Float_t         MET_T1Smear_phi_jesTotalDown;
+  Float_t	  MET_T1Smear_pt_jerUp;
+  Float_t         MET_T1Smear_phi_jerUp;
+  Float_t         MET_T1Smear_pt_jerDown;
+  Float_t         MET_T1Smear_phi_jerDown;
 
   //GenMET
   Float_t         GenMET_phi;
@@ -263,16 +263,16 @@ public:
       chain->SetBranchAddress("GenJet_hadronFlavour", &GenJet_hadronFlavour);
       chain->SetBranchAddress("GenJet_partonFlavour", &GenJet_partonFlavour);
 
-      chain->SetBranchAddress("MET_T1smear_pt", &MET_T1smear_pt);
-      chain->SetBranchAddress("MET_T1smear_phi", &MET_T1smear_phi);
-      chain->SetBranchAddress("MET_T1smear_pt_jesTotalUp", &MET_T1smear_pt_jesTotalUp);
-      chain->SetBranchAddress("MET_T1smear_phi_jesTotalUp", &MET_T1smear_phi_jesTotalUp);
-      chain->SetBranchAddress("MET_T1smear_pt_jesTotalDown", &MET_T1smear_pt_jesTotalDown);
-      chain->SetBranchAddress("MET_T1smear_phi_jesTotalDown", &MET_T1smear_phi_jesTotalDown);
-      chain->SetBranchAddress("MET_T1smear_pt_jerUp", &MET_T1smear_pt_jerUp);
-      chain->SetBranchAddress("MET_T1smear_phi_jerUp", &MET_T1smear_phi_jerUp);
-      chain->SetBranchAddress("MET_T1smear_pt_jerDown", &MET_T1smear_pt_jerDown);
-      chain->SetBranchAddress("MET_T1smear_phi_jerDown", &MET_T1smear_phi_jerDown);
+      chain->SetBranchAddress("MET_T1Smear_pt", &MET_T1Smear_pt);
+      chain->SetBranchAddress("MET_T1Smear_phi", &MET_T1Smear_phi);
+      chain->SetBranchAddress("MET_T1Smear_pt_jesTotalUp", &MET_T1Smear_pt_jesTotalUp);
+      chain->SetBranchAddress("MET_T1Smear_phi_jesTotalUp", &MET_T1Smear_phi_jesTotalUp);
+      chain->SetBranchAddress("MET_T1Smear_pt_jesTotalDown", &MET_T1Smear_pt_jesTotalDown);
+      chain->SetBranchAddress("MET_T1Smear_phi_jesTotalDown", &MET_T1Smear_phi_jesTotalDown);
+      chain->SetBranchAddress("MET_T1Smear_pt_jerUp", &MET_T1Smear_pt_jerUp);
+      chain->SetBranchAddress("MET_T1Smear_phi_jerUp", &MET_T1Smear_phi_jerUp);
+      chain->SetBranchAddress("MET_T1Smear_pt_jerDown", &MET_T1Smear_pt_jerDown);
+      chain->SetBranchAddress("MET_T1Smear_phi_jerDown", &MET_T1Smear_phi_jerDown);
 
       chain->SetBranchAddress("GenMET_phi", &GenMET_phi);
       chain->SetBranchAddress("GenMET_pt", &GenMET_pt);

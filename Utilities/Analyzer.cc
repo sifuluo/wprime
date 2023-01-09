@@ -14,7 +14,7 @@
 // #include "BTag.cc"
 #include "Constants.cc"
 #include "ProgressBar.cc"
-#include "ScaleFactor.cc"
+// #include "ScaleFactor.cc"
 #include "DataSelection.cc"
 #include "PUReweight.cc"
 
@@ -43,7 +43,7 @@ public:
     progress = new Progress(EntryMax, conf->ProgressInterval);
     // bt = new BTag(conf);
     // r->SetBTagger(bt);
-    sf = new ScaleFactor(r);
+    // sf = new ScaleFactor(r);
     if (!IsMC) datasel = new DataSelection(conf);
     if (IsMC) pureweight = new PUReweight(conf);
   }
@@ -139,7 +139,10 @@ public:
   }
 
   double GetEventScaleFactor() {
-    if (IsMC) EventScaleFactor = sf->CalcEventSF();
+    if (IsMC) {
+      EventScaleFactor = r->EventWeights[0].first;
+      // EventScaleFactor = sf->CalcEventSF();
+    }
     else EventScaleFactor = 1.;
     return EventScaleFactor;
   }
@@ -217,7 +220,7 @@ public:
   TH1F* evtCounter;
   NanoAODReader *r;
   // BTag* bt;
-  ScaleFactor *sf;
+  // ScaleFactor *sf;
   DataSelection *datasel;
   Progress* progress;
   PUReweight* pureweight;

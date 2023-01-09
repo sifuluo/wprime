@@ -35,7 +35,8 @@ public:
     if (conf->iFile >= 0 || conf->InputFile == "All") { // batch mode
 
       vector<string> rootfiles = GetFileNames();
-      rootfiles = {"/afs/cern.ch/user/d/doverton/public/0112A6B8-1FF9-CA49-BD91-1CBDB31507DB.root"}; //FIXME: Hacked with new format file for testing
+      // rootfiles = {"/afs/cern.ch/user/d/doverton/public/0112A6B8-1FF9-CA49-BD91-1CBDB31507DB.root"}; //FIXME: Hacked with new format file for testing
+      rootfiles = {"/eos/user/p/pflanaga/andrewsdata/skimmed_samples/ttbar/2018/B047029C-C11B-A54B-A5F3-91981AB3D5DC.root"};
       for (string rf : rootfiles) {
         chain->Add(TString(rf));
         cout << "Successfully loaded root file: " << rf << endl;
@@ -149,8 +150,8 @@ public:
 
   void ReadJets() {
     Jets.clear();
-    nBJets.clear();
-    nNBJets.clear();
+    // nBJets.clear();
+    // nNBJets.clear();
 
 
     for (unsigned i = 0; i < evts->nJet; ++i) {
@@ -383,7 +384,8 @@ public:
       passCommon &= (tmp.Pt() > 35.); //change pT cut for non-veto muons to be on trigger plateau
       bool passLoose = (evts->Muon_tightId[i]) && passCommon;
       passCommon &= (evts->Muon_pfRelIso04_all[i] < 0.15); //change isolation cut for primary muons
-      bool passPrimary = (evts->Muon_highPtId[i] == 2) && passCommon;
+      // bool passPrimary = (evts->Muon_highPtId[i] == 2) && passCommon;
+      bool passPrimary = (evts->Muon_tightId[i]) && passCommon;
 
       tmp.IsPrimary = passPrimary;
       tmp.IsLoose = passLoose;
@@ -420,22 +422,22 @@ public:
     if(IsMC){
       TLorentzVector JESup, JESdown, JERup, JERdown;
 
-      std::pair<double,double> METXYCorr = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt, evts->MET_T1smear_phi, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
+      std::pair<double,double> METXYCorr = METXYCorr_Met_MetPhi(evts->MET_T1Smear_pt, evts->MET_T1Smear_phi, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       Met.SetPtEtaPhiM(METXYCorr.first, 0, METXYCorr.second, 0);
 
-      std::pair<double,double> METXYCorr_JESup = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt_jesTotalUp, evts->MET_T1smear_phi_jesTotalUp, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
+      std::pair<double,double> METXYCorr_JESup = METXYCorr_Met_MetPhi(evts->MET_T1Smear_pt_jesTotalUp, evts->MET_T1Smear_phi_jesTotalUp, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       JESup.SetPtEtaPhiM(METXYCorr_JESup.first, 0, METXYCorr_JESup.second, 0);
       Met.JESup = JESup;
 
-      std::pair<double,double> METXYCorr_JESdown = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt_jesTotalDown, evts->MET_T1smear_phi_jesTotalDown, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
+      std::pair<double,double> METXYCorr_JESdown = METXYCorr_Met_MetPhi(evts->MET_T1Smear_pt_jesTotalDown, evts->MET_T1Smear_phi_jesTotalDown, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       JESdown.SetPtEtaPhiM(METXYCorr_JESdown.first, 0, METXYCorr_JESdown.second, 0);
       Met.JESdown = JESdown;
 
-      std::pair<double,double> METXYCorr_JERup = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt_jerUp, evts->MET_T1smear_phi_jerUp, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
+      std::pair<double,double> METXYCorr_JERup = METXYCorr_Met_MetPhi(evts->MET_T1Smear_pt_jerUp, evts->MET_T1Smear_phi_jerUp, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       JERup.SetPtEtaPhiM(METXYCorr_JERup.first, 0, METXYCorr_JERup.second, 0);
       Met.JERup = JERup;
 
-      std::pair<double,double> METXYCorr_JERdown = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt_jerDown, evts->MET_T1smear_phi_jerDown, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
+      std::pair<double,double> METXYCorr_JERdown = METXYCorr_Met_MetPhi(evts->MET_T1Smear_pt_jerDown, evts->MET_T1Smear_phi_jerDown, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       JERdown.SetPtEtaPhiM(METXYCorr_JERdown.first, 0, METXYCorr_JERdown.second, 0);
       Met.JERdown = JERdown;
     }
@@ -641,7 +643,7 @@ public:
   float JetPtThreshold;
   int JetIdThreshold;
   vector<Jet> AllJets, Jets;
-  vector<int> nBJets, nNBJets;
+  // vector<int> nBJets, nNBJets;
   float LepPtThreshold;
   vector<Lepton> Leptons;
   vector<Electron> Electrons;

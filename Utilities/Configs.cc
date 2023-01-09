@@ -34,7 +34,7 @@ struct Configs {
   TString InputFile = ""; // InputFile override
 
   int FilesPerJob = 1;
-  int Btag_WP = 2;
+  // int Btag_WP = 2;
 
   map<string,bool> Switches;
   bool Debug = false;

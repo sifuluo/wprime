@@ -98,7 +98,8 @@ struct GenMET : PO {
 
 struct EventWeight{
   string source;
-  vector<float> variations = vector<float>{1.,1.,1.};
+  // bool IsActive;
+  vector<float> variations = vector<float>{1.,1.,1.}; // nominal, down, up
 };
 
 struct RegionID{
