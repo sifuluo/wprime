@@ -49,7 +49,7 @@ struct Jet : PO {
   TLorentzVector JESup, JESdown, JERup, JERdown;
   vector<bool> PUIDpasses; // {loose, medium, tight}
   vector<vector<float> > PUIDSFweights; // {nominal, up, down} x {loose, medium, tight}
-  
+
   int genJetIdx;
   int hadronFlavour;
   int partonFlavour;
@@ -102,10 +102,12 @@ struct EventWeight{
 };
 
 struct RegionID{
-  unsigned RegionCount;
-  int Regions[9]; //identifiers are -1: no region; otherwise number of jets first digit number of btags 2nd digit
-  string RegionNames[9]; //Central; Electron scale up, down; Electron resolution up, down; Jet Energy Scale up, down; Jet Energy resolution up, down
-} RegionID_default = {9,{-1, -1, -1, -1, -1, -1, -1, -1, -1}, {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown"}};
+  unsigned RegionCount = 9;
+  //identifiers are -1: no region; otherwise number of jets first digit number of btags 2nd digit
+  int Regions[9] = {-1, -1, -1, -1, -1, -1, -1, -1, -1};
+  //Central; Electron scale up, down; Electron resolution up, down; Jet Energy Scale up, down; Jet Energy resolution up, down
+  string RegionNames[9] = {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown"};
+}; 
 //region identifier key: 1xyz muon region, 2xyz electron region; x=1 primary, x=2 loose; y=jet multiplicity; z=b-tag multiplicity
 
 #endif

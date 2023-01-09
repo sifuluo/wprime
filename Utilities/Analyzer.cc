@@ -11,7 +11,7 @@
 
 #include "DataFormat.cc"
 #include "NanoAODReader.cc"
-#include "BTag.cc"
+// #include "BTag.cc"
 #include "Constants.cc"
 #include "ProgressBar.cc"
 #include "ScaleFactor.cc"
@@ -41,8 +41,8 @@ public:
     if (conf->PUEvaluation) return;
     EntryMax = r->GetEntries();
     progress = new Progress(EntryMax, conf->ProgressInterval);
-    bt = new BTag(conf);
-    r->SetBTagger(bt);
+    // bt = new BTag(conf);
+    // r->SetBTagger(bt);
     sf = new ScaleFactor(r);
     if (!IsMC) datasel = new DataSelection(conf);
     if (IsMC) pureweight = new PUReweight(conf);
@@ -183,8 +183,8 @@ public:
   GenMET& GenMet() {return r->GenMet;}
   MET& Met() {return r->Met;}
 
-  vector<int> & nBJets() {return r->nBJets;}
-  vector<int> & nNBJets() {return r->nNBJets;}
+  // vector<int> & nBJets() {return r->nBJets;}
+  // vector<int> & nNBJets() {return r->nNBJets;}
 
   virtual void BookBranches() {
     t->Branch("PassedSelections",&PassedSelections);
@@ -205,7 +205,7 @@ public:
     evtCounter->Fill("METFilter",1);
     if (Jets().size() <= 4) return;
     evtCounter->Fill("5 J",1);
-    if (!LeptonSelection(true)) return;
+    if (!LeptonSelection()) return;
     evtCounter->Fill("Lep",1);
     return;
   }
@@ -216,7 +216,7 @@ public:
   TTree *t;
   TH1F* evtCounter;
   NanoAODReader *r;
-  BTag* bt;
+  // BTag* bt;
   ScaleFactor *sf;
   DataSelection *datasel;
   Progress* progress;
