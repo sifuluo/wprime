@@ -27,7 +27,7 @@ public:
 
     conf = conf_;
 
-    IsMC = (conf->iSampleType > 1);
+    IsMC = conf->IsMC;
 
     JetPtThreshold = 30.;
     JetIdThreshold = 6;
@@ -189,7 +189,7 @@ public:
       tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], evts->SampleYear);
 
       //set PUID SFs
-      if(!evts->IsMC || evts->Jet_pt_nom[i] >= 50. || evts->Jet_genJetIdx[i] < 0) tmp.PUIDSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; //unlike other SFs, PU Jets and jets failing ID are not supposed to contribute to event weights
+      if(!IsMC || evts->Jet_pt_nom[i] >= 50. || evts->Jet_genJetIdx[i] < 0) tmp.PUIDSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; //unlike other SFs, PU Jets and jets failing ID are not supposed to contribute to event weights
       else{
         if(tmp.PUIDpasses[0]){
           tmp.PUIDSFweights[0][0] = evts->Jet_puIdScaleFactorLoose[i];
@@ -219,7 +219,7 @@ public:
       tmp.bTagPasses = bTag(evts->Jet_btagDeepFlavB[i], evts->SampleYear);
 
       //set btagging SFs
-      if(!evts->IsMC) tmp.bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
+      if(!IsMC) tmp.bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
       else{
         //FIXME: Need b-tagging efficiency per sample at some point, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/BTagSFMethods#b_tagging_efficiency_in_MC_sampl
         float bTagEff[3] = {.9, .7, .5};
@@ -306,13 +306,11 @@ public:
       tmp.OverlapsJet = OverlapCheck(tmp);
 
       //set SF and variation for primary only, HEEP as in https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaRunIIRecommendations#HEEPV7_0
-      if(passPrimary && evts->IsMC){
+      if(passPrimary && IsMC){
         TString sampleyear;
         string sy = conf->SampleYear;
-        if (sy == "16apv" || sy == "2016apv") sampleyear = "2016";
-        else if (sy == "16" || sy == "2016") sampleyear = "2016";
-        else if (sy == "17" || sy == "2017") sampleyear = "2017";
-        else if (sy == "18" || sy == "2018") sampleyear = "2018";
+        if (sy == "2016" || sy == "2016apv") sampleyear = "2016";
+        else sampleyear = sy;
 
         if(absEta < 1.4442){
           if(sampleyear == "2016"){
@@ -397,7 +395,7 @@ public:
       tmp.OverlapsJet = OverlapCheck(tmp);
 
       //set SF and variation for primary only
-      if(passPrimary && evts->IsMC){
+      if(passPrimary && IsMC){
         tmp.SFs[0] = evts->Muon_scaleFactor[i];
         tmp.SFs[1] = evts->Muon_scaleFactor[i] + sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
         tmp.SFs[2] = evts->Muon_scaleFactor[i] + sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
@@ -414,37 +412,37 @@ public:
 
     //conversion of the constant SampleYear into the correction's year string where needed
     string convertedYear = "";
-    if(evts->SampleYear      == "2016apv") convertedYear = "2016APV";
-    else if(evts->SampleYear == "2016")    convertedYear = "2016nonAPV";
+    if(conf->SampleYear      == "2016apv") convertedYear = "2016APV";
+    else if(conf->SampleYear == "2016")    convertedYear = "2016nonAPV";
     else                                   convertedYear = evts->SampleYear;
 
 
     if(IsMC){
       TLorentzVector JESup, JESdown, JERup, JERdown;
 
-      std::pair<double,double> METXYCorr = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt, evts->MET_T1smear_phi, evts->run, convertedYear, evts->IsMC, evts->PV_npvs, true, false);
+      std::pair<double,double> METXYCorr = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt, evts->MET_T1smear_phi, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       Met.SetPtEtaPhiM(METXYCorr.first, 0, METXYCorr.second, 0);
 
-      std::pair<double,double> METXYCorr_JESup = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt_jesTotalUp, evts->MET_T1smear_phi_jesTotalUp, evts->run, convertedYear, evts->IsMC, evts->PV_npvs, true, false);
+      std::pair<double,double> METXYCorr_JESup = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt_jesTotalUp, evts->MET_T1smear_phi_jesTotalUp, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       JESup.SetPtEtaPhiM(METXYCorr_JESup.first, 0, METXYCorr_JESup.second, 0);
       Met.JESup = JESup;
 
-      std::pair<double,double> METXYCorr_JESdown = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt_jesTotalDown, evts->MET_T1smear_phi_jesTotalDown, evts->run, convertedYear, evts->IsMC, evts->PV_npvs, true, false);
+      std::pair<double,double> METXYCorr_JESdown = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt_jesTotalDown, evts->MET_T1smear_phi_jesTotalDown, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       JESdown.SetPtEtaPhiM(METXYCorr_JESdown.first, 0, METXYCorr_JESdown.second, 0);
       Met.JESdown = JESdown;
 
-      std::pair<double,double> METXYCorr_JERup = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt_jerUp, evts->MET_T1smear_phi_jerUp, evts->run, convertedYear, evts->IsMC, evts->PV_npvs, true, false);
+      std::pair<double,double> METXYCorr_JERup = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt_jerUp, evts->MET_T1smear_phi_jerUp, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       JERup.SetPtEtaPhiM(METXYCorr_JERup.first, 0, METXYCorr_JERup.second, 0);
       Met.JERup = JERup;
 
-      std::pair<double,double> METXYCorr_JERdown = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt_jerDown, evts->MET_T1smear_phi_jerDown, evts->run, convertedYear, evts->IsMC, evts->PV_npvs, true, false);
+      std::pair<double,double> METXYCorr_JERdown = METXYCorr_Met_MetPhi(evts->MET_T1smear_pt_jerDown, evts->MET_T1smear_phi_jerDown, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       JERdown.SetPtEtaPhiM(METXYCorr_JERdown.first, 0, METXYCorr_JERdown.second, 0);
       Met.JERdown = JERdown;
     }
     else{
       TLorentzVector dummy;
 
-      std::pair<double,double> METXYCorr = METXYCorr_Met_MetPhi(evts->MET_T1_pt, evts->MET_T1_phi, evts->run, convertedYear, evts->IsMC, evts->PV_npvs, true, false);
+      std::pair<double,double> METXYCorr = METXYCorr_Met_MetPhi(evts->MET_T1_pt, evts->MET_T1_phi, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       Met.SetPtEtaPhiM(METXYCorr.first, 0, METXYCorr.second, 0);
 
       dummy.SetPtEtaPhiM(METXYCorr.first, 0, METXYCorr.second, 0);
@@ -596,10 +594,10 @@ public:
     }
     string sampleyear;
     string sy = conf->SampleYear;
-    if (sy == "16apv" || sy == "2016apv") sampleyear = "2016preVFP";
-    else if (sy == "16" || sy == "2016") sampleyear = "2016postVFP";
-    else if (sy == "17" || sy == "2017") sampleyear = "2017";
-    else if (sy == "18" || sy == "2018") sampleyear = "2018";
+    if (sy == "2016apv") sampleyear = "2016preVFP";
+    else if (sy == "2016") sampleyear = "2016postVFP";
+    else if (sy == "2017") sampleyear = "2017";
+    else if (sy == "2018") sampleyear = "2018";
     //L1PrefiringWeight
     if(sampleyear == "2016preVFP" || sampleyear == "2016postVFP" || sampleyear == "2017"){
       L1PreFiringW.variations[0] = evts->L1PreFiringWeight_Down;
@@ -630,6 +628,7 @@ public:
       EventWeights.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[2], SFweights[i].source + "_up"));
     }
   }
+
   Configs *conf;
 
   bool IsMC;

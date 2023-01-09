@@ -14,67 +14,67 @@ enum TheRunEra{
   yUL2018MC
 };
 
-std::pair<double,double> METXYCorr_Met_MetPhi(double uncormet, double uncormet_phi, int runnb, TString year, bool isMC, int npv, bool isUL =false,bool ispuppi=false){
+std::pair<double,double> METXYCorr_Met_MetPhi(double uncormet, double uncormet_phi, int runnb, TString year, bool IsMC, int npv, bool isUL =false,bool ispuppi=false){
 
   std::pair<double,double>  TheXYCorr_Met_MetPhi(uncormet,uncormet_phi);
-  
+
   if(npv>100) npv=100;
   int runera =-1;
   bool usemetv2 =false;
-  if(isMC && year == "2016" && !isUL) runera = y2016MC;
-  else if(isMC && year == "2017" && !isUL) {runera = y2017MC; usemetv2 =true;}
-  else if(isMC && year == "2018" && !isUL) runera = y2018MC;
-  else if(isMC && year == "2016APV" && isUL) runera = yUL2016MCAPV;
-  else if(isMC && year == "2016nonAPV" && isUL) runera = yUL2016MCnonAPV;
-  else if(isMC && year == "2017" && isUL) runera = yUL2017MC;
-  else if(isMC && year == "2018" && isUL) runera = yUL2018MC;
-  
-  
-  else if(!isMC && runnb >=272007 && runnb <=275376 && !isUL) runera = y2016B;
-  else if(!isMC && runnb >=275657 && runnb <=276283 && !isUL) runera = y2016C;
-  else if(!isMC && runnb >=276315 && runnb <=276811 && !isUL) runera = y2016D;
-  else if(!isMC && runnb >=276831 && runnb <=277420 && !isUL) runera = y2016E;
-  else if(!isMC && runnb >=277772 && runnb <=278808 && !isUL) runera = y2016F;
-  else if(!isMC && runnb >=278820 && runnb <=280385 && !isUL) runera = y2016G;
-  else if(!isMC && runnb >=280919 && runnb <=284044 && !isUL) runera = y2016H;
-  
-  else if(!isMC && runnb >=297020 && runnb <=299329 && !isUL){ runera = y2017B; usemetv2 =true;}
-  else if(!isMC && runnb >=299337 && runnb <=302029 && !isUL){ runera = y2017C; usemetv2 =true;}
-  else if(!isMC && runnb >=302030 && runnb <=303434 && !isUL){ runera = y2017D; usemetv2 =true;}
-  else if(!isMC && runnb >=303435 && runnb <=304826 && !isUL){ runera = y2017E; usemetv2 =true;}
-  else if(!isMC && runnb >=304911 && runnb <=306462 && !isUL){ runera = y2017F; usemetv2 =true;}
-  
-  else if(!isMC && runnb >=315252 && runnb <=316995 && !isUL) runera = y2018A;
-  else if(!isMC && runnb >=316998 && runnb <=319312 && !isUL) runera = y2018B;
-  else if(!isMC && runnb >=319313 && runnb <=320393 && !isUL) runera = y2018C;
-  else if(!isMC && runnb >=320394 && runnb <=325273 && !isUL) runera = y2018D;
+  if(IsMC && year == "2016" && !isUL) runera = y2016MC;
+  else if(IsMC && year == "2017" && !isUL) {runera = y2017MC; usemetv2 =true;}
+  else if(IsMC && year == "2018" && !isUL) runera = y2018MC;
+  else if(IsMC && year == "2016APV" && isUL) runera = yUL2016MCAPV;
+  else if(IsMC && year == "2016nonAPV" && isUL) runera = yUL2016MCnonAPV;
+  else if(IsMC && year == "2017" && isUL) runera = yUL2017MC;
+  else if(IsMC && year == "2018" && isUL) runera = yUL2018MC;
 
-  else if(!isMC && runnb >=315252 && runnb <=316995 && isUL) runera = yUL2018A;
-  else if(!isMC && runnb >=316998 && runnb <=319312 && isUL) runera = yUL2018B;
-  else if(!isMC && runnb >=319313 && runnb <=320393 && isUL) runera = yUL2018C;
-  else if(!isMC && runnb >=320394 && runnb <=325273 && isUL) runera = yUL2018D;
 
-  else if(!isMC && runnb >=297020 && runnb <=299329 && isUL){ runera = yUL2017B; usemetv2 =false;}
-  else if(!isMC && runnb >=299337 && runnb <=302029 && isUL){ runera = yUL2017C; usemetv2 =false;}
-  else if(!isMC && runnb >=302030 && runnb <=303434 && isUL){ runera = yUL2017D; usemetv2 =false;}
-  else if(!isMC && runnb >=303435 && runnb <=304826 && isUL){ runera = yUL2017E; usemetv2 =false;}
-  else if(!isMC && runnb >=304911 && runnb <=306462 && isUL){ runera = yUL2017F; usemetv2 =false;}
+  else if(!IsMC && runnb >=272007 && runnb <=275376 && !isUL) runera = y2016B;
+  else if(!IsMC && runnb >=275657 && runnb <=276283 && !isUL) runera = y2016C;
+  else if(!IsMC && runnb >=276315 && runnb <=276811 && !isUL) runera = y2016D;
+  else if(!IsMC && runnb >=276831 && runnb <=277420 && !isUL) runera = y2016E;
+  else if(!IsMC && runnb >=277772 && runnb <=278808 && !isUL) runera = y2016F;
+  else if(!IsMC && runnb >=278820 && runnb <=280385 && !isUL) runera = y2016G;
+  else if(!IsMC && runnb >=280919 && runnb <=284044 && !isUL) runera = y2016H;
 
-  else if(!isMC && runnb >=272007 && runnb <=275376 && isUL) runera = yUL2016B;
-  else if(!isMC && runnb >=275657 && runnb <=276283 && isUL) runera = yUL2016C;
-  else if(!isMC && runnb >=276315 && runnb <=276811 && isUL) runera = yUL2016D;
-  else if(!isMC && runnb >=276831 && runnb <=277420 && isUL) runera = yUL2016E;
-  else if(!isMC && ((runnb >=277772 && runnb <=278768) || runnb==278770) && isUL) runera = yUL2016F;
-  else if(!isMC && ((runnb >=278801 && runnb <=278808) || runnb==278769) && isUL) runera = yUL2016Flate;
-  else if(!isMC && runnb >=278820 && runnb <=280385 && isUL) runera = yUL2016G;
-  else if(!isMC && runnb >=280919 && runnb <=284044 && isUL) runera = yUL2016H;
+  else if(!IsMC && runnb >=297020 && runnb <=299329 && !isUL){ runera = y2017B; usemetv2 =true;}
+  else if(!IsMC && runnb >=299337 && runnb <=302029 && !isUL){ runera = y2017C; usemetv2 =true;}
+  else if(!IsMC && runnb >=302030 && runnb <=303434 && !isUL){ runera = y2017D; usemetv2 =true;}
+  else if(!IsMC && runnb >=303435 && runnb <=304826 && !isUL){ runera = y2017E; usemetv2 =true;}
+  else if(!IsMC && runnb >=304911 && runnb <=306462 && !isUL){ runera = y2017F; usemetv2 =true;}
+
+  else if(!IsMC && runnb >=315252 && runnb <=316995 && !isUL) runera = y2018A;
+  else if(!IsMC && runnb >=316998 && runnb <=319312 && !isUL) runera = y2018B;
+  else if(!IsMC && runnb >=319313 && runnb <=320393 && !isUL) runera = y2018C;
+  else if(!IsMC && runnb >=320394 && runnb <=325273 && !isUL) runera = y2018D;
+
+  else if(!IsMC && runnb >=315252 && runnb <=316995 && isUL) runera = yUL2018A;
+  else if(!IsMC && runnb >=316998 && runnb <=319312 && isUL) runera = yUL2018B;
+  else if(!IsMC && runnb >=319313 && runnb <=320393 && isUL) runera = yUL2018C;
+  else if(!IsMC && runnb >=320394 && runnb <=325273 && isUL) runera = yUL2018D;
+
+  else if(!IsMC && runnb >=297020 && runnb <=299329 && isUL){ runera = yUL2017B; usemetv2 =false;}
+  else if(!IsMC && runnb >=299337 && runnb <=302029 && isUL){ runera = yUL2017C; usemetv2 =false;}
+  else if(!IsMC && runnb >=302030 && runnb <=303434 && isUL){ runera = yUL2017D; usemetv2 =false;}
+  else if(!IsMC && runnb >=303435 && runnb <=304826 && isUL){ runera = yUL2017E; usemetv2 =false;}
+  else if(!IsMC && runnb >=304911 && runnb <=306462 && isUL){ runera = yUL2017F; usemetv2 =false;}
+
+  else if(!IsMC && runnb >=272007 && runnb <=275376 && isUL) runera = yUL2016B;
+  else if(!IsMC && runnb >=275657 && runnb <=276283 && isUL) runera = yUL2016C;
+  else if(!IsMC && runnb >=276315 && runnb <=276811 && isUL) runera = yUL2016D;
+  else if(!IsMC && runnb >=276831 && runnb <=277420 && isUL) runera = yUL2016E;
+  else if(!IsMC && ((runnb >=277772 && runnb <=278768) || runnb==278770) && isUL) runera = yUL2016F;
+  else if(!IsMC && ((runnb >=278801 && runnb <=278808) || runnb==278769) && isUL) runera = yUL2016Flate;
+  else if(!IsMC && runnb >=278820 && runnb <=280385 && isUL) runera = yUL2016G;
+  else if(!IsMC && runnb >=280919 && runnb <=284044 && isUL) runera = yUL2016H;
 
 
   else {
     //Couldn't find data/MC era => no correction applied
     return TheXYCorr_Met_MetPhi;
   }
-  
+
   double METxcorr(0.),METycorr(0.);
 
   if(!usemetv2){//Current recommendation for 2016 and 2018
@@ -117,7 +117,7 @@ std::pair<double,double> METXYCorr_Met_MetPhi(double uncormet, double uncormet_p
     if(runera==y2017MC) METycorr = -(0.177058*npv -0.336648);
     if(runera==y2018MC) METxcorr = -(0.296713*npv -0.141506);
     if(runera==y2018MC) METycorr = -(0.115685*npv +0.0128193);
-    
+
     //UL2017
     if(runera==yUL2017B) METxcorr = -(-0.211161*npv +0.419333);
     if(runera==yUL2017B) METycorr = -(0.251789*npv +-1.28089);
@@ -169,7 +169,7 @@ std::pair<double,double> METXYCorr_Met_MetPhi(double uncormet, double uncormet_p
 
 
     }
-    
+
     //UL2017Puppi
     if(ispuppi){
     if(runera==yUL2017B) METxcorr = -(-0.00382117*npv +-0.666228);
@@ -267,7 +267,7 @@ std::pair<double,double> METXYCorr_Met_MetPhi(double uncormet, double uncormet_p
 
 
 
-    
+
   }
 
   double CorrectedMET_x = uncormet *cos( uncormet_phi)+METxcorr;

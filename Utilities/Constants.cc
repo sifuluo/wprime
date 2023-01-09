@@ -42,13 +42,6 @@ namespace Constants {
   const vector<float> DeepJetCuts_2018{0.0490,0.2783,0.7100};
   const vector<float> DeepJetEff_2018 {0.929 ,0.819 ,0.652};
   const vector<float> DeepJetMR_2018  {0.1   ,0.01  ,0.001};
-
-  vector<string> DataPileupHist{
-    "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-preVFP-69200ub-99bins.root",
-    "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-postVFP-69200ub-99bins.root",
-    "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2017-69200ub-99bins.root",
-    "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2018-69200ub-99bins.root"
-  };
 }
 
 #endif

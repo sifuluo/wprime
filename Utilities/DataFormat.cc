@@ -98,7 +98,7 @@ struct GenMET : PO {
 
 struct EventWeight{
   string source;
-  vector<float> variations;
+  vector<float> variations = vector<float>{1.,1.,1.};
 };
 
 struct RegionID{
@@ -107,7 +107,7 @@ struct RegionID{
   int Regions[9] = {-1, -1, -1, -1, -1, -1, -1, -1, -1};
   //Central; Electron scale up, down; Electron resolution up, down; Jet Energy Scale up, down; Jet Energy resolution up, down
   string RegionNames[9] = {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown"};
-}; 
+};
 //region identifier key: 1xyz muon region, 2xyz electron region; x=1 primary, x=2 loose; y=jet multiplicity; z=b-tag multiplicity
 
 #endif
