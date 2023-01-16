@@ -3,3 +3,6 @@ SuccessFlags/
 filenames/
 outputs/*.root
 ObsoleteCodes/
+*.err
+*.out
+*.log
