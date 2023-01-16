@@ -28,7 +28,7 @@ if get_data:
           else:
             foutput.write(line)
         os.remove("filelist.txt")
-      finput.close()
+        finput.close()
       foutput.close()
       foutput_apv.close()
       if year != "2016": os.remove(f"filenames/DASFileNames/DAS_{ds}_{year}apv.txt")

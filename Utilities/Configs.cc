@@ -20,6 +20,7 @@ struct Configs {
     SampleType = Constants::SampleTypes[ist_];
     Trigger = Constants::Triggers[itr_];
     IsMC = iSampleType > 1;
+    EntryMax = 0;
   };
 
   int iSampleYear;
@@ -30,13 +31,16 @@ struct Configs {
   int iTrigger;
   string Trigger;
   int iFile;
+  Long64_t EntryMax;
 
   TString InputFile = ""; // InputFile override
 
   int FilesPerJob = 1;
   // int Btag_WP = 2;
 
+  // Idealy the container for all bool configs, practically only the ones not used extensively should rest in here.
   map<string,bool> Switches;
+
   bool Debug = false;
 
   bool PrintProgress = false;
@@ -50,6 +54,15 @@ struct Configs {
 
   bool GetSwitch(string sw) {
     return Switches[sw];
+  }
+
+  void TestSwitch() {
+    bool out = false;
+    for (unsigned i = 0; i < 100; ++i) {
+      string ss = Form("%d",i);
+      out = out || GetSwitch(ss);
+    }
+    if (out) throw runtime_error("Switch initialized as true");
   }
 
 };

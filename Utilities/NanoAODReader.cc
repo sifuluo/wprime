@@ -52,7 +52,6 @@ public:
     evts = new Events(chain, conf->SampleYear, IsMC);
     if (conf->InputFile != "All" && conf->FilesPerJob == 1) cout << "This iteration contains " << GetEntries() << " events" <<endl;
   };
-
   vector<string> GetFileNames() {
     vector<string> out;
     string basepath = "/afs/cern.ch/work/s/siluo/wprime/filenames/";

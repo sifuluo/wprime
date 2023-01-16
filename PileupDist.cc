@@ -40,12 +40,12 @@ public:
 
   void BookBranches() {
     // t->Branch("PassedSelections",&PassedSelections);
-    // t->Branch("EventScaleFactor",&EventScaleFactor);
+    t->Branch("EventScaleFactor",&EventScaleFactor);
     // // t->Branch("nPU", &nPU);
     // t->Branch("nTrueInt", &nTrueInt);
     // // t->Branch("nPV", &nPV);
-    // t->Branch("nPVGood", &nPVGood);
-    // t->Branch("PUweight", &PUWeight);
+    t->Branch("nPVGood", &nPVGood);
+    t->Branch("PUweight", &PUWeight);
     nPVGoodBeforePUReweight = new TH1F("nPVGoodBeforePUReweight","nPVGoodBeforePUReweight", 99,0,99);
     nPVGoodAfterPUReweight = new TH1F("nPVGoodAfterPUReweight","nPVGoodAfterPUReweight", 99,0,99);
   }
@@ -75,11 +75,12 @@ void PileupDist(int isampleyear = 3, int isampletype = 3, int itrigger = 1, int 
   // conf->DASInput = true;
   conf->PrintProgress = true;
   // conf->FilesPerJob = 100;
+  conf->EntryMax = 10000;
   conf->SetSwitch("LocalOutput",true);
+  conf->TestSwitch();
   // conf->InputFile = "All";
   ThisAnalysis *a = new ThisAnalysis(conf);
   a->SetOutput("PUEval");
-  // a->SetEntryMax(10000);
   for (Long64_t iEvent = 0; iEvent < a->GetEntryMax(); ++iEvent) {
     bool failed = a->ReadEvent(iEvent);
     if (failed) continue;

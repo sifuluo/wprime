@@ -5,6 +5,7 @@
 #include <cmath>
 #include <string>
 
+using namespace std;
 
 namespace Constants {
   const vector<string> SampleYears{"2016apv","2016","2017","2018"};

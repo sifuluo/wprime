@@ -39,7 +39,8 @@ public:
   void Init() {
     r = new NanoAODReader(conf);
     if (conf->PUEvaluation) return;
-    EntryMax = r->GetEntries();
+    if (conf->EntryMax > 0 && conf->EntryMax < r->GetEntries()) EntryMax = conf->EntryMax;
+    else EntryMax = r->GetEntries();
     progress = new Progress(EntryMax, conf->ProgressInterval);
     // bt = new BTag(conf);
     // r->SetBTagger(bt);
@@ -139,7 +140,7 @@ public:
   }
 
   double GetEventScaleFactor() {
-    if (IsMC) {
+    if (IsMC && false) {
       EventScaleFactor = r->EventWeights[0].first;
       // EventScaleFactor = sf->CalcEventSF();
     }
