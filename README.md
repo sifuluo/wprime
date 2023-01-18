@@ -6,9 +6,9 @@ This is an analysis framework to read from the nanoAOD files, process the conten
 ## Step 1: Listing files to run over
 This package runs on Andrew's skimmed samples.
 To create a file list. Running the python scipt ```python GetLocalFileNames.py```
-After line 21, the samples going to be run are listed with their folder name.
-Right now the default configuration is for running tWprime analysis with signal samples loaded from line 41 to line 48.
-Note the syntax to append a dataset is ```datasets.append(["name"])```. with the parameter being a list of string.
+After line 22, the samples going to be run are listed with their folder name.
+Right now the default configuration is for running tWprime analysis with signal samples loaded from line 42 to line 49.
+Note the syntax to append a dataset is ```datasets.append(["name"])```. with the ```name```parameter being a list of string.
 
 
 ## Step 2: Creating folders and submission scripts
@@ -16,12 +16,12 @@ Note the syntax to append a dataset is ```datasets.append(["name"])```. with the
 You will need to configure the ```SampleTypes``` to the dataset you want to process.
 It is a list of strings of the folder names same as in the Step 1.
 The submission scripts are located in ```Submits/```
-This script also creates folders in the EOS, that is configured at line 93 (***Subject to change***).
+This script also creates folders in the EOS, that is configured at line 18 and 19.
 
 
 ## Step 3: Configure the Submit.sh
-In ```Submits/Submit.sh``` the next to last line is the macro to be run that needs to be configured.
-And the line before that should be changed to your working folder.
+In ```Submits/Submit.sh``` line 4 is the macro to be run that needs to be configured.
+And the line 3 before that should be changed to your working folder.
 
 ## Step 4: Main analysis code
 In the base path of this package is where your analysis macro should be placed.
@@ -59,7 +59,16 @@ In the previous statements, ```Analyzer. ``` should be replaced by the name of y
 
 Detailed configurations will be explained next.
 
-### Step 5: Plotting from the tree
+### Step 5: Submitting the job
+Before batch submitting the job, you need first compile the code once with something like: ```root Validation.cc+(0,1,2,3)```,
+where the four parameters are corresponding to the ones set in the main analysis code.
+Otherwise the jobs will all try to compile the code and lead to conflicts.
+This step can also serve as test run.
+
+After it compiled, you can simple go to ```Submits/``` and do ```condor_submit xxx.sub```,
+where the .sub files are created by MakeSubmission.py
+
+### Step 6: Plotting from the tree
 https://github.com/sifuluo/DrawTools is the package that takes care of the output tree and draw plots.
 
 In https://github.com/sifuluo/DrawTools/blob/master/Dataset.cc the cross-section, number of events before skimming, luminosity of each year.

@@ -13,10 +13,11 @@ def GetLocalDataSet(names, iy):
   else: inname = inname + "/"
 
   infile = basepath + inname + inyears[iy] + "/*"
+  if not os.path.exists("filenames/"):
+    os.makedirs("filenames")
   outfile = "filenames/" + outname + "_" + outyears[iy] + ".txt"
   if os.path.exists(outfile): os.remove(outfile)
   os.system("ls -d " + infile + " >> " + outfile)
-
 
 datasets = []
 datasets.append(["SingleElectron"])

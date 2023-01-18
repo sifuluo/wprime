@@ -1,46 +1,25 @@
 import os
 
 SampleYears = ["2016apv","2016","2017","2018"]
-SampleTypes = ["SingleElectron","SingleMuon","ttbar"]
+SampleTypes = ["SingleElectron","SingleMuon"]
+SampleTypes.extend(["ttbar"])
 SampleTypes.extend(["wjets_HT_70_100", "wjets_HT_100_200", "wjets_HT_200_400", "wjets_HT_400_600","wjets_HT_600_800", "wjets_HT_800_1200", "wjets_HT_1200_2500", "wjets_HT_2500_inf"])
 SampleTypes.extend(["single_antitop_tchan","single_antitop_tw","single_top_schan","single_top_tchan","single_top_tw"])
 SampleTypes.extend(["Private_FL_M500"])
 Triggers = ["SE","SM"]
 
+
+#Remove Running stuff.
 RunningYears = ["2018"]
 # RunningTypes = ["SingleMuon","ttbar"]
 RunningTypes = SampleTypes
 RunningTriggers = ["SM"]
 
-EOSFolderName = "Validation"
+EOSPath = "/eos/user/s/siluo/WPrimeAnalysis/"
+EOSSubFolderName = "Validation"
 
 if not os.path.exists("Submits"):
   os.makedirs("Submits")
-
-GetFileNames = False
-
-if GetFileNames:
-  skimmedsamplepath = "/eos/user/d/doverton/skimmed_samples/"
-  for st in SampleTypes:
-    # Datasets are not in Andrew's skimmed samples
-    if ("Private" in st or "WPrime_tbOnly" in st) continue;
-    for year in SampleYears:
-      outputfilenames = "filenames/" + st + "_" + year + ".txt"
-      year_ = year
-      if year == "2016apv": year_ = "2016_APV"
-      datasetpath = st + "/" + year_ + "/"
-      # Emunerate exceptions
-      if (year == "2018" and st == "SingleElectron"): datasetpath = "EGamma/2018/"
-
-      datasetpath = skimmedsamplepath + datasetpath
-      if not os.path.exists(datasetpath):
-        print(datasetpath + " does not exsit")
-        continue
-      command = "ls -d " + datasetpath + "* >> " + outputfilenames
-      if os.path.exists(outputfilenames): os.remove(outputfilenames)
-      os.system(command)
-      print("Saving " + datasetpath + " to " + outputfilenames)
-
 
 
 for iy, year in enumerate(SampleYears):
@@ -49,9 +28,8 @@ for iy, year in enumerate(SampleYears):
     if not (sampletype in RunningTypes): continue
     for itr, trigger in enumerate(Triggers):
       if not (trigger in RunningTriggers): continue
-      # filenamesfolder = "/afs/cern.ch/work/s/siluo/wprime/datafiles/" if (sampletype == "SingleElectron" or sampletype == "SingleMuon") else "/afs/cern.ch/work/s/siluo/wprime/mcfiles/"
       if isa + itr == 1: continue
-      filenamesfolder = "/afs/cern.ch/work/s/siluo/wprime/filenames/"
+      filenamesfolder = "filenames/"
       filenamesfile = (sampletype + "_" + year + ".txt")
       runname = year + "_" + sampletype + "_" +trigger
       fnfile = filenamesfolder + filenamesfile
@@ -60,8 +38,9 @@ for iy, year in enumerate(SampleYears):
 
       nf = len(open(fnfile).readlines())
       lines = []
-      lines.append("Proxy_path   = /afs/cern.ch/user/s/siluo/x509up\n")
-      lines.append("arguments    = $(Proxy_path) $(ProcID) "+str(iy)+ " " + str(isa) + " " + str(itr) + "\n")
+      # lines.append("Proxy_path   = /afs/cern.ch/user/s/siluo/x509up\n")
+      # lines.append("arguments    = $(Proxy_path) $(ProcID) "+str(iy)+ " " + str(isa) + " " + str(itr) + "\n")
+      lines.append("arguments    = $(ProcID) "+str(iy)+ " " + str(isa) + " " + str(itr) + "\n")
       lines.append("executable   = Submit.sh\n")
       lines.append("max_retries  = 10\n")
       # lines.append("+JobBatchName= " + runname +"\n")
@@ -85,8 +64,8 @@ for iy, year in enumerate(SampleYears):
       if not os.path.exists("Submits/logs/" + runname):
         os.makedirs("Submits/logs/" + runname)
 
-      eossubfolder = EOSFolderName + "/"
+      eossubfolder = EOSSubFolderName + "/"
       jobsubfolder = year + "_" + sampletype + "_" + trigger + "/"
-      jobpath = "/eos/user/s/siluo/WPrimeAnalysis/" + eossubfolder + jobsubfolder
+      jobpath = EOSPath + eossubfolder + jobsubfolder
       if not os.path.exists(jobpath):
         os.makedirs(jobpath)
