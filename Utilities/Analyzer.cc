@@ -36,15 +36,15 @@ public:
     Init();
   };
 
+  ~Analyzer() {
+    cout << "Analyzer Destructed" << endl;
+  }
   void Init() {
     r = new NanoAODReader(conf);
-    if (conf->PUEvaluation) return;
     if (conf->EntryMax > 0 && conf->EntryMax < r->GetEntries()) EntryMax = conf->EntryMax;
     else EntryMax = r->GetEntries();
+    cout << "Processing " << EntryMax << " events" << endl;
     progress = new Progress(EntryMax, conf->ProgressInterval);
-    // bt = new BTag(conf);
-    // r->SetBTagger(bt);
-    // sf = new ScaleFactor(r);
     if (!IsMC) datasel = new DataSelection(conf);
     if (IsMC) pureweight = new PUReweight(conf);
   }
@@ -73,7 +73,6 @@ public:
     t = new TTree("t","EventTree");
     BookBranches();
     evtCounter = new TH1F("EventCounter","Event Counter", 10, 0.5, 10.5);
-    const char *evtCounterLabel[20] = {"All", "Lumi Sec", "Trigger", "1 Lep", "5J", "2BJ"};
   }
 
   int ReadEvent(Long64_t ievt) {
@@ -142,7 +141,6 @@ public:
   double GetEventScaleFactor() {
     if (IsMC && false) {
       EventScaleFactor = r->EventWeights[0].first;
-      // EventScaleFactor = sf->CalcEventSF();
     }
     else EventScaleFactor = 1.;
     return EventScaleFactor;
@@ -228,7 +226,7 @@ public:
 
   Configs *conf;
   bool IsMC;
-  int PassedSelections;
+  bool PassedSelections;
   float EventScaleFactor;
 
 };

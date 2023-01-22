@@ -23,18 +23,28 @@ struct Configs {
     EntryMax = 0;
   };
 
-  int iSampleYear;
+  ~Configs() {
+    cout << "Configs Destructed" << endl;
+  }
+
+  // Indices and items are emumerated in Constants.cc
+  int iSampleYear; 
   string SampleYear;
   int iSampleType;
   string SampleType;
   bool IsMC;
   int iTrigger;
   string Trigger;
-  int iFile;
+
+  // iFile >=0 will be index of files in the text file containing the path to files
+  // if iFile < 0, a InputFile must be specified to be run on.
+  int iFile; 
+  // InputFile override. If InputFile = "All", all files in the text file will be processed.
+  TString InputFile = "";
+
+  //Number of entry to process
   Long64_t EntryMax;
-
-  TString InputFile = ""; // InputFile override
-
+  //Number of files to process
   int FilesPerJob = 1;
   // int Btag_WP = 2;
 
@@ -43,8 +53,10 @@ struct Configs {
 
   bool Debug = false;
 
+  // In batch mode, it is suggested to turn off, or will result in a large log file.
   bool PrintProgress = false;
   int ProgressInterval = 1000;
+
   bool PUEvaluation = false;
   bool DASInput = false;
 

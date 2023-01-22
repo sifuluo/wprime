@@ -185,6 +185,7 @@ public:
   ~Events() {
      if (!chain) return;
      delete chain->GetCurrentFile();
+     cout << "Events Destructed" << endl;
   };
 
   Int_t GetEntry(Long64_t entry) {
@@ -224,7 +225,7 @@ public:
     chain->SetBranchAddress("Muon_charge", &Muon_charge);
     chain->SetBranchAddress("Muon_looseId", &Muon_looseId);
     chain->SetBranchAddress("Muon_tightId", &Muon_tightId);
-    chain->SetBranchAddress("Muon_highPtId", &Muon_highPtId);
+    // chain->SetBranchAddress("Muon_highPtId", &Muon_highPtId);
     chain->SetBranchAddress("Muon_pfRelIso04_all", &Muon_pfRelIso04_all);
 
     chain->SetBranchAddress("MET_phi", &MET_phi);

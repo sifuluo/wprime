@@ -50,7 +50,12 @@ public:
     nPVGoodAfterPUReweight = new TH1F("nPVGoodAfterPUReweight","nPVGoodAfterPUReweight", 99,0,99);
   }
 
+  void FillEventCounter() {
+    return;
+  }
+
   void FillBranchContent() {
+    // PUWeight = 1;
     if (IsMC) {
       // nPU = r->Pileup_nPU;
       nTrueInt = r->Pileup_nTrueInt;
@@ -68,7 +73,7 @@ public:
   }
 };
 
-void PileupDist(int isampleyear = 3, int isampletype = 3, int itrigger = 1, int ifile = 0) {
+void PileupDist(int isampleyear = 3, int isampletype = 2, int itrigger = 1, int ifile = 1) {
   Configs *conf = new Configs(isampleyear, isampletype, itrigger, ifile);
   conf->Debug = false;
   // conf->PUEvaluation = true;
@@ -77,7 +82,6 @@ void PileupDist(int isampleyear = 3, int isampletype = 3, int itrigger = 1, int 
   // conf->FilesPerJob = 100;
   conf->EntryMax = 10000;
   conf->SetSwitch("LocalOutput",true);
-  conf->TestSwitch();
   // conf->InputFile = "All";
   ThisAnalysis *a = new ThisAnalysis(conf);
   a->SetOutput("PUEval");
@@ -85,6 +89,7 @@ void PileupDist(int isampleyear = 3, int isampletype = 3, int itrigger = 1, int 
     bool failed = a->ReadEvent(iEvent);
     if (failed) continue;
     a->FillBranchContent();
+    a->FillTree();
   }
   a->SaveOutput();
   a->CloseOutput();
