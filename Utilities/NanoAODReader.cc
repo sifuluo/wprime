@@ -11,7 +11,6 @@
 #include "DataFormat.cc"
 #include "BranchReader.cc"
 
-// #include "FileLists.cc"
 #include "bTag.cc"
 #include "PUID.cc"
 #include "Constants.cc"
@@ -35,8 +34,7 @@ public:
     if (conf->iFile >= 0 || conf->InputFile == "All") { // batch mode
 
       vector<string> rootfiles = GetFileNames();
-      // rootfiles = {"/afs/cern.ch/user/d/doverton/public/0112A6B8-1FF9-CA49-BD91-1CBDB31507DB.root"}; //FIXME: Hacked with new format file for testing
-      rootfiles = {"/eos/user/p/pflanaga/andrewsdata/skimmed_samples/ttbar/2018/B047029C-C11B-A54B-A5F3-91981AB3D5DC.root"};
+      // rootfiles = {"/eos/user/p/pflanaga/andrewsdata/skimmed_samples/ttbar/2018/B047029C-C11B-A54B-A5F3-91981AB3D5DC.root"};
       for (string rf : rootfiles) {
         chain->Add(TString(rf));
         cout << "Successfully loaded root file: " << rf << endl;
@@ -52,6 +50,10 @@ public:
     evts = new Events(chain, conf->SampleYear, IsMC);
     if (conf->InputFile != "All" && conf->FilesPerJob == 1) cout << "This iteration contains " << GetEntries() << " events" <<endl;
   };
+
+  ~NanoAODReader() {
+    cout << "NanoAODReader Destructed" << endl;
+  }
   vector<string> GetFileNames() {
     vector<string> out;
     string basepath = "/afs/cern.ch/work/s/siluo/wprime/filenames/";
