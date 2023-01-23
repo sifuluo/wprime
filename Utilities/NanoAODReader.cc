@@ -104,16 +104,15 @@ public:
     luminosityBlock = evts->luminosityBlock;
     if (!IsMC && (run < 0 || luminosityBlock < 0)) cout << "Run/LuminosityBlock number is negative" <<endl;
     if (conf->PUEvaluation) { // It will only run on MC
-      // ReadPileup();
+      ReadPileup();
       ReadVertices();
       return;
     }
-
     if (IsMC) {
       ReadGenParts();
       ReadGenJets();
       ReadGenMET();
-      // ReadPileup();
+      ReadPileup();
     }
     ReadJets();
     ReadLeptons();
@@ -191,6 +190,7 @@ public:
       tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], conf->SampleYear);
 
       //set PUID SFs
+      tmp.PUIDSFweights = vector<vector<float> >{{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
       if(!IsMC || evts->Jet_pt_nom[i] >= 50. || evts->Jet_genJetIdx[i] < 0) tmp.PUIDSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; //unlike other SFs, PU Jets and jets failing ID are not supposed to contribute to event weights
       else{
         if(tmp.PUIDpasses[0]){
@@ -221,10 +221,11 @@ public:
       tmp.bTagPasses = bTag(evts->Jet_btagDeepFlavB[i], conf->SampleYear);
 
       //set btagging SFs
-      if(!IsMC) tmp.bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
-      else{
+      tmp.bJetSFweights = vector<vector<float> >{{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
+      if (!IsMC) tmp.bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
+      else {
         //FIXME: Need b-tagging efficiency per sample at some point, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/BTagSFMethods#b_tagging_efficiency_in_MC_sampl
-        float bTagEff[3] = {.9, .7, .5};
+        float bTagEff[3] = vector<float>{.9, .7, .5};
         if(tmp.bTagPasses[0]){
           tmp.bJetSFweights[0][0] = evts->Jet_bTagScaleFactorLoose[i];
           tmp.bJetSFweights[1][0] = evts->Jet_bTagScaleFactorLooseUp[i];
@@ -308,6 +309,7 @@ public:
       tmp.OverlapsJet = OverlapCheck(tmp);
 
       //set SF and variation for primary only, HEEP as in https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaRunIIRecommendations#HEEPV7_0
+      tmp.SFs = vector<float>{1., 1., 1.};
       if(passPrimary && IsMC){
         TString sampleyear;
         string sy = conf->SampleYear;
