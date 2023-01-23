@@ -595,6 +595,7 @@ public:
         PUIDW.variations[i] *= Jets[j].PUIDSFweights[i][PUIDWP];
       }
     }
+    // return;
     string sampleyear;
     string sy = conf->SampleYear;
     if (sy == "2016apv") sampleyear = "2016preVFP";
@@ -609,6 +610,7 @@ public:
     }
     else L1PreFiringW.variations = {1.,1.,1.};
 
+    SFweights.clear();
     SFweights.push_back(electronW);
     SFweights.push_back(muonW);
     SFweights.push_back(BjetW);
@@ -621,6 +623,7 @@ public:
     for(unsigned i = 0; i < SFweights.size(); ++i){
       CentralWeight *= SFweights[i].variations[0];
     }
+    EventWeights.clear();
     EventWeights.push_back(make_pair(CentralWeight, "Nominal"));
 
     //select source for up and down variations
