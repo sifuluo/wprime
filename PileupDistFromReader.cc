@@ -102,8 +102,8 @@
 void PileupDistFromReader() {
   TChain *chain = new TChain("Events");
   chain->Add("/eos/user/p/pflanaga/andrewsdata/skimmed_samples/ttbar/2018/014BDC65-BE41-D14F-B57A-ABD0054C28FE.root");
-  Events *evts = new Events(chain,"2018",true);
-  // Events *evts = new Events(chain);
+  // Events *evts = new Events(chain,"2018",true);
+  Events *evts = new Events(chain);
   // TFile *fout = new TFile("outputs/test.root","RECREATE");
   // TH1F* nPVGoodBeforePUReweight = new TH1F("nPVGoodBeforePUReweight","nPVGoodBeforePUReweight", 99,0,99);
   for (Long64_t iEvent = 0; iEvent < 10; ++iEvent) {
