@@ -180,6 +180,8 @@ public:
   Float_t L1PreFiringWeight_Up;
   Float_t L1PreFiringWeight_Down;
 
+  Float_t Pileup_scaleFactor, Pileup_scaleFactorUp, Pileup_scaleFactorDown;
+
 
   Events(TChain *chain_, string sy_ = "2018", Bool_t mc_ = true) : chain(0){
      chain = chain_;
@@ -329,6 +331,10 @@ public:
       chain->SetBranchAddress("Jet_puIdScaleFactorLoose", Jet_puIdScaleFactorLoose);
       chain->SetBranchAddress("Jet_puIdScaleFactorLooseUp", Jet_puIdScaleFactorLooseUp);
       chain->SetBranchAddress("Jet_puIdScaleFactorLooseDown", Jet_puIdScaleFactorLooseDown);
+
+      chain->SetBranchAddress("Pileup_scaleFactor", &Pileup_scaleFactor);
+      chain->SetBranchAddress("Pileup_scaleFactorUp", &Pileup_scaleFactorUp);
+      chain->SetBranchAddress("Pileup_scaleFactorDown", &Pileup_scaleFactorDown);
     }
     if (SampleYear == "2016" || SampleYear == "2016apv"){
       chain->SetBranchAddress("HLT_Ele27_WPTight_Gsf", &isolated_electron_trigger, &b_isolated_electron_trigger);
