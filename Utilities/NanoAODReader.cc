@@ -11,9 +11,9 @@
 #include "DataFormat.cc"
 #include "BranchReader.cc"
 
+#include "Configs.cc"
 #include "bTag.cc"
 #include "PUID.cc"
-#include "Constants.cc"
 
 #include "XYMETCorrection_withUL17andUL18andUL16.h"
 
@@ -22,7 +22,7 @@ using namespace std;
 class NanoAODReader {
 public:
   NanoAODReader(Configs *conf_) {
-    chain = new TChain("Events");
+    chain = new TChain("Events;2");
 
     conf = conf_;
 
@@ -188,7 +188,7 @@ public:
       tmp.JERdown = PtVars;
 
       //set PUID flags
-      tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], evts->SampleYear);
+      tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], conf->SampleYear);
 
       //set PUID SFs
       if(!IsMC || evts->Jet_pt_nom[i] >= 50. || evts->Jet_genJetIdx[i] < 0) tmp.PUIDSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; //unlike other SFs, PU Jets and jets failing ID are not supposed to contribute to event weights
@@ -218,7 +218,7 @@ public:
       }
 
       //set btagging flags
-      tmp.bTagPasses = bTag(evts->Jet_btagDeepFlavB[i], evts->SampleYear);
+      tmp.bTagPasses = bTag(evts->Jet_btagDeepFlavB[i], conf->SampleYear);
 
       //set btagging SFs
       if(!IsMC) tmp.bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
@@ -417,7 +417,7 @@ public:
     string convertedYear = "";
     if(conf->SampleYear      == "2016apv") convertedYear = "2016APV";
     else if(conf->SampleYear == "2016")    convertedYear = "2016nonAPV";
-    else                                   convertedYear = evts->SampleYear;
+    else                                   convertedYear = conf->SampleYear;
 
 
     if(IsMC){
@@ -488,6 +488,7 @@ public:
     status = status && evts->Flag_BadPFMuonDzFilter;
     status = status && evts->Flag_eeBadScFilter;
     status = status && evts->Flag_ecalBadCalibFilter;
+    // cout << "1 " << evts->Flag_goodVertices << " 2 " << evts->Flag_globalSuperTightHalo2016Filter << " 3 " << evts->Flag_HBHENoiseFilter <<endl;
     return status;
   }
 

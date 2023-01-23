@@ -146,9 +146,9 @@ public:
     return EventScaleFactor;
   }
 
-  double GetEventPUWeight() {
+  double GetEventPUWeight(int ixsec = 1) {
     if (!IsMC) return 1.;
-    else return pureweight->GetWeight(r->Pileup_nTrueInt);
+    else return pureweight->GetWeight(r->Pileup_nTrueInt, ixsec);
   }
 
   void FillTree() {

@@ -142,9 +142,9 @@ public:
   Float_t         Jet_puIdScaleFactorLooseDown[25]; //[nJet]
 
   //Trigger
-  bool isolated_electron_trigger;
-  bool isolated_muon_trigger;
-  bool isolated_muon_track_trigger;
+  Bool_t isolated_electron_trigger;
+  Bool_t isolated_muon_trigger;
+  Bool_t isolated_muon_track_trigger;
 
   //Pileup
   Float_t         Pileup_nTrueInt;
@@ -159,15 +159,16 @@ public:
   Int_t PV_npvsGood;
 
   // Flags
-  bool Flag_goodVertices;
-  bool Flag_globalSuperTightHalo2016Filter;
-  bool Flag_HBHENoiseFilter;
-  bool Flag_HBHENoiseIsoFilter;
-  bool Flag_EcalDeadCellTriggerPrimitiveFilter;
-  bool Flag_BadPFMuonFilter;
-  bool Flag_BadPFMuonDzFilter;
-  bool Flag_eeBadScFilter;
-  bool Flag_ecalBadCalibFilter;
+  Bool_t Flag_goodVertices;
+  TBranch        *b_Flag_goodVertices;
+  Bool_t Flag_globalSuperTightHalo2016Filter;
+  Bool_t Flag_HBHENoiseFilter;
+  Bool_t Flag_HBHENoiseIsoFilter;
+  Bool_t Flag_EcalDeadCellTriggerPrimitiveFilter;
+  Bool_t Flag_BadPFMuonFilter;
+  Bool_t Flag_BadPFMuonDzFilter;
+  Bool_t Flag_eeBadScFilter;
+  Bool_t Flag_ecalBadCalibFilter;
 
   // L1PreFiring weights for 2016 and 2017
   Float_t L1PreFiringWeight_Nom;
@@ -175,11 +176,11 @@ public:
   Float_t L1PreFiringWeight_Down;
 
 
-  Events(TChain *chain_, string sy_, bool mc_){
-     chain = chain_;
+  Events(TTree *chain_, string sy_ = "2018", bool mc_ = true) : chain(0){
+    //  chain = chain_;
      SampleYear = sy_;
      IsMC = mc_;
-     Init();
+     Init(chain_);
   };
 
   ~Events() {
@@ -191,10 +192,16 @@ public:
   Int_t GetEntry(Long64_t entry) {
   // Read contents of entry.
      if (!chain) return 0;
-     return chain->GetEntry(entry);
+     Int_t out = chain->GetEntry(entry);
+    //  std::cout <<"flag1 " <<  Flag_goodVertices <<std::endl;
+     return out;
   }
 
-  void Init() {
+  void Init(TTree *t) {
+    chain = t;
+    fCurrent = -1;
+    chain->SetMakeClass(1);
+
     chain->SetBranchAddress("nJet", &nJet);
     chain->SetBranchAddress("Jet_pt", &Jet_pt);
     chain->SetBranchAddress("Jet_eta", &Jet_eta);
@@ -345,13 +352,14 @@ public:
     if(SampleYear == "2016" || SampleYear == "2016apv" || SampleYear == "2017"){
       chain->SetBranchAddress("L1PreFiringWeight_Nom", &L1PreFiringWeight_Nom);
       chain->SetBranchAddress("L1PreFiringWeight_Up", &L1PreFiringWeight_Up);
-      chain->SetBranchAddress("L1PreFiringWeight_Down", &L1PreFiringWeight_Down);
+      chain->SetBranchAddress("L1PreFiringWeight_Dn", &L1PreFiringWeight_Down);
     }
 
     chain->SetBranchAddress("PV_npvs", &PV_npvs);
     chain->SetBranchAddress("PV_npvsGood", &PV_npvsGood);
 
-    chain->SetBranchAddress("Flag_goodVertices", &Flag_goodVertices);
+    // chain->SetBranchAddress("Flag_goodVertices", &Flag_goodVertices);
+    chain->SetBranchAddress("Flag_goodVertices", &Flag_goodVertices, &b_Flag_goodVertices);
     chain->SetBranchAddress("Flag_globalSuperTightHalo2016Filter", &Flag_globalSuperTightHalo2016Filter);
     chain->SetBranchAddress("Flag_HBHENoiseFilter", &Flag_HBHENoiseFilter);
     chain->SetBranchAddress("Flag_HBHENoiseIsoFilter", &Flag_HBHENoiseIsoFilter);
@@ -359,6 +367,31 @@ public:
     chain->SetBranchAddress("Flag_BadPFMuonFilter", &Flag_BadPFMuonFilter);
     chain->SetBranchAddress("Flag_BadPFMuonDzFilter", &Flag_BadPFMuonDzFilter);
   }
+
+  
+  Long64_t LoadTree(Long64_t entry)
+  {
+// Set the environment to read one entry
+   if (!chain) return -5;
+   Long64_t centry = chain->LoadTree(entry);
+   if (centry < 0) return centry;
+   if (chain->GetTreeNumber() != fCurrent) {
+      fCurrent = chain->GetTreeNumber();
+      Notify();
+   }
+   return centry;
+}
+
+Bool_t Notify()
+{
+   // The Notify() function is called when a new file is opened. This
+   // can be either for a new TTree in a TChain or when when a new TTree
+   // is started when using PROOF. It is normally not necessary to make changes
+   // to the generated code, but the routine can be extended by the
+   // user if needed. The return value is currently not used.
+
+   return kTRUE;
+}
 
 };
 
