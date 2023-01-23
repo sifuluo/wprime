@@ -90,7 +90,7 @@ void PileupDist(int isampleyear = 3, int isampletype = 2, int itrigger = 1, int 
   // conf->InputFile = "All";
   ThisAnalysis *a = new ThisAnalysis(conf);
   a->SetOutput("PUEval");
-  for (Long64_t iEvent = 0; iEvent < a->GetEntryMax(); ++iEvent) {
+  for (Long64_t iEvent = 6000; iEvent < a->GetEntryMax(); ++iEvent) {
     bool failed = a->ReadEvent(iEvent);
     if (failed) continue;
     cout << "Event passed" <<endl;

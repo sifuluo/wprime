@@ -3,7 +3,7 @@
 
 //working points for PU jet ID implemented as in https://twiki.cern.ch/twiki/bin/view/CMS/PileupJetIDUL
 std::vector<bool> PUID(float pT_, float absEta_, float PUIDdisc_, string year_){
- std::vector<bool> output;
+ std::vector<bool> output = {false, false, false};
   if(pT_ >= 50.) output = {true, true, true};
   else if(year_ == "2016apv" || year_ == "2016"){
     if(absEta_ < 2.5){

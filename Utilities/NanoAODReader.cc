@@ -225,7 +225,7 @@ public:
       if (!IsMC) tmp.bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
       else {
         //FIXME: Need b-tagging efficiency per sample at some point, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/BTagSFMethods#b_tagging_efficiency_in_MC_sampl
-        float bTagEff[3] = vector<float>{.9, .7, .5};
+        float bTagEff[3] = {.9, .7, .5};
         if(tmp.bTagPasses[0]){
           tmp.bJetSFweights[0][0] = evts->Jet_bTagScaleFactorLoose[i];
           tmp.bJetSFweights[1][0] = evts->Jet_bTagScaleFactorLooseUp[i];
