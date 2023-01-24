@@ -105,16 +105,15 @@ public:
     luminosityBlock = evts->luminosityBlock;
     if (!IsMC && (run < 0 || luminosityBlock < 0)) cout << "Run/LuminosityBlock number is negative" <<endl;
     if (conf->PUEvaluation) { // It will only run on MC
-      // ReadPileup();
+      ReadPileup();
       ReadVertices();
       return;
     }
-
     if (IsMC) {
       ReadGenParts();
       ReadGenJets();
       ReadGenMET();
-      // ReadPileup();
+      ReadPileup();
     }
     ReadJets();
     ReadLeptons();
@@ -218,8 +217,8 @@ public:
       tmp.bTagPasses = bTag(evts->Jet_btagDeepFlavB[i], conf->SampleYear);
 
       //set btagging SFs
-      if(!IsMC) tmp.bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
-      else{
+      tmp.bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
+      if (IsMC) {
         //FIXME: Need b-tagging efficiency per sample at some point, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/BTagSFMethods#b_tagging_efficiency_in_MC_sampl
         float bTagEff[3] = {.9, .7, .5};
         if(tmp.bTagPasses[0]){
@@ -305,6 +304,7 @@ public:
       tmp.OverlapsJet = OverlapCheck(tmp);
 
       //set SF and variation for primary only, HEEP as in https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaRunIIRecommendations#HEEPV7_0
+      tmp.SFs = {1., 1., 1.};
       if(passPrimary && IsMC){
         TString sampleyear;
         string sy = conf->SampleYear;
@@ -352,7 +352,6 @@ public:
           }
         }
       }
-      else tmp.SFs = {1., 1., 1.};
 
       Electrons.push_back(tmp);
       Leptons.push_back(tmp);
@@ -597,6 +596,7 @@ public:
         PUIDW.variations[i] *= Jets[j].PUIDSFweights[i][PUIDWP];
       }
     }
+    // return;
     string sampleyear;
     string sy = conf->SampleYear;
     if (sy == "2016apv") sampleyear = "2016preVFP";
@@ -617,7 +617,6 @@ public:
       PUreweight.variations[1] = evts->Pileup_scaleFactor;
       PUreweight.variations[2] = evts->Pileup_scaleFactorUp;
     }
-
     SFweights.push_back(electronW);
     SFweights.push_back(muonW);
     SFweights.push_back(BjetW);

@@ -50,6 +50,7 @@ struct Jet : PO {
   vector<bool> PUIDpasses = {false, false, false}; // {loose, medium, tight}
   vector<vector<float> > PUIDSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; // {nominal, up, down} x {loose, medium, tight}
 
+
   int genJetIdx;
   int hadronFlavour;
   int partonFlavour;
@@ -99,7 +100,7 @@ struct GenMET : PO {
 struct EventWeight{
   string source;
   // bool IsActive;
-  vector<float> variations = vector<float>{1.,1.,1.}; // nominal, down, up
+  vector<float> variations = {1.,1.,1.}; // nominal, down, up
 };
 
 struct RegionID{
