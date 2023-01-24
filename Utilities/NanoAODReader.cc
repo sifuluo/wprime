@@ -54,9 +54,10 @@ public:
   ~NanoAODReader() {
     cout << "NanoAODReader Destructed" << endl;
   }
+
   vector<string> GetFileNames() {
     vector<string> out;
-    string basepath = "/afs/cern.ch/work/s/siluo/wprime/filenames/";
+    string basepath = "filenames/";
     if (conf->DASInput) basepath = basepath + "DASFileNames/DAS_";
     string filename = basepath + conf->SampleType + "_" + conf->SampleYear + ".txt";
     ifstream infile(filename);
@@ -120,7 +121,7 @@ public:
     ReadTriggers();
     ReadVertices();
     RegionAssociations = RegionReader();
-    if(IsMC) CalcEventSFweights();
+    if(IsMC) EventWeights = CalcEventSFweights();
   }
 
   void ReadGenParts() {
@@ -150,9 +151,6 @@ public:
 
   void ReadJets() {
     Jets.clear();
-    // nBJets.clear();
-    // nNBJets.clear();
-
 
     for (unsigned i = 0; i < evts->nJet; ++i) {
 
@@ -190,8 +188,7 @@ public:
       tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], conf->SampleYear);
 
       //set PUID SFs
-      tmp.PUIDSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
-      if(IsMC && evts->Jet_pt_nom[i] < 50. && evts->Jet_genJetIdx[i] >= 0) { //unlike other SFs, PU Jets and jets failing ID are not supposed to contribute to event weights
+      if(IsMC && evts->Jet_pt_nom[i] < 50. && evts->Jet_genJetIdx[i] >= 0){ //unlike other SFs, PU Jets and jets failing ID are not supposed to contribute to event weights
         if(tmp.PUIDpasses[0]){
           tmp.PUIDSFweights[0][0] = evts->Jet_puIdScaleFactorLoose[i];
           tmp.PUIDSFweights[1][0] = evts->Jet_puIdScaleFactorLooseUp[i];
@@ -574,9 +571,10 @@ public:
   }
 
   //function to derive event weights from SFs on objects
-  void CalcEventSFweights() {
+  vector<pair<double, string> > CalcEventSFweights() {
+    vector<EventWeight> SFweights;
     //set SF weights per object
-    EventWeight electronW, muonW, BjetW, PUIDW, L1PreFiringW;
+    EventWeight electronW, muonW, BjetW, PUIDW, L1PreFiringW, PUreweight;
     electronW.source = "electron";
     electronW.variations = {1.,1.,1.};
     muonW.source = "muon";
@@ -586,6 +584,9 @@ public:
     PUIDW.source = "PUID";
     PUIDW.variations = {1.,1.,1.};
     L1PreFiringW.source = "L1PreFiring";
+    PUreweight.source = "PUreweight";
+    PUreweight.variations = {1.,1.,1.};
+
     int modes[3]={0, +1, -1};
     for(unsigned i=0; i<3; ++i){
       for(unsigned j = 0; j < Electrons.size(); ++j) electronW.variations[i] *= Electrons[j].SFs[i];
@@ -610,29 +611,36 @@ public:
     }
     else L1PreFiringW.variations = {1.,1.,1.};
 
-    SFweights.clear();
+    //PUreweight
+    if(IsMC){
+      PUreweight.variations[0] = evts->Pileup_scaleFactorDown;
+      PUreweight.variations[1] = evts->Pileup_scaleFactor;
+      PUreweight.variations[2] = evts->Pileup_scaleFactorUp;
+    }
     SFweights.push_back(electronW);
     SFweights.push_back(muonW);
     SFweights.push_back(BjetW);
     SFweights.push_back(PUIDW);
     SFweights.push_back(L1PreFiringW);
+    SFweights.push_back(PUreweight);
     //FIXME: Needs PDF weight variations and ISR/FSR
 
     //determine nominal event weight
+    vector<pair<double, string> > EventWeight;
     float CentralWeight = 1.;
     for(unsigned i = 0; i < SFweights.size(); ++i){
       CentralWeight *= SFweights[i].variations[0];
     }
-    EventWeights.clear();
-    EventWeights.push_back(make_pair(CentralWeight, "Nominal"));
+    EventWeight.push_back(make_pair(CentralWeight, "Nominal"));
 
     //select source for up and down variations
     for(unsigned i = 0; i < SFweights.size(); ++i){
 
       //create variations with strings for later combine histograms
-      EventWeights.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[1], SFweights[i].source + "_down"));
-      EventWeights.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[2], SFweights[i].source + "_up"));
+      EventWeight.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[1], SFweights[i].source + "_down"));
+      EventWeight.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[2], SFweights[i].source + "_up"));
     }
+    return EventWeight;
   }
 
   Configs *conf;
@@ -646,7 +654,7 @@ public:
   vector<GenJet> GenJets;
   float JetPtThreshold;
   int JetIdThreshold;
-  vector<Jet> AllJets, Jets;
+  vector<Jet> Jets;
   // vector<int> nBJets, nNBJets;
   float LepPtThreshold;
   vector<Lepton> Leptons;
@@ -663,7 +671,6 @@ public:
   // bool LumiStatus;
 
   RegionID RegionAssociations;
-  vector<EventWeight> SFweights;
   vector<pair<double, string> > EventWeights;
 };
 

@@ -48,13 +48,14 @@ struct Jet : PO {
   Jet(TLorentzVector v_ = TLorentzVector()) : PO(v_) {};
   TLorentzVector JESup, JESdown, JERup, JERdown;
   vector<bool> PUIDpasses = {false, false, false}; // {loose, medium, tight}
-  vector<vector<float> > PUIDSFweights = vector<vector<float> >{{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; // {nominal, up, down} x {loose, medium, tight}
+  vector<vector<float> > PUIDSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; // {nominal, up, down} x {loose, medium, tight}
+
 
   int genJetIdx;
   int hadronFlavour;
   int partonFlavour;
   vector<bool> bTagPasses = {false, false, false}; // {loose, medium, tight}
-  vector<vector<float> > bJetSFweights = vector<vector<float> >{{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; // {nominal, up, down} x {loose, medium, tight}
+  vector<vector<float> > bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; // {nominal, up, down} x {loose, medium, tight}
 };
 
 struct Lepton : PO {
