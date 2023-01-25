@@ -16,7 +16,7 @@
 #include "ProgressBar.cc"
 // #include "ScaleFactor.cc"
 #include "DataSelection.cc"
-//#include "PUReweight.cc"
+#include "PUReweight.cc"
 
 using namespace std;
 
@@ -37,6 +37,7 @@ public:
     else EntryMax = r->GetEntries();
     cout << "Processing " << EntryMax << " events" << endl;
     progress = new Progress(EntryMax, conf->ProgressInterval);
+    if (IsMC) pureweight = new PUReweight(conf);
   }
 
   Long64_t GetEntryMax() {return EntryMax;}
@@ -61,6 +62,15 @@ public:
     cout << "Output will be saved to " << ofname << endl;
     ofile->cd();
     t = new TTree("t","EventTree");
+    BookBranches();
+  }
+
+  virtual void BookBranches() {
+    return;
+  }
+
+  virtual void FillBranchContent() {
+    return;
   }
 
   void ReadEvent(Long64_t ievt) {
@@ -87,6 +97,7 @@ public:
   TTree *t;
   NanoAODReader *r;
   Progress* progress;
+  PUReweight* pureweight;
 
   Configs *conf;
   bool IsMC;

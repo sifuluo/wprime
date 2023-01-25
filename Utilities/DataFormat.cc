@@ -109,7 +109,45 @@ struct RegionID{
   int Regions[9] = {-1, -1, -1, -1, -1, -1, -1, -1, -1};
   //Central; Electron scale up, down; Electron resolution up, down; Jet Energy Scale up, down; Jet Energy resolution up, down
   string RegionNames[9] = {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown"};
+  vector<int> V() { // output a vector type of RegionIDs
+    vector<int> out;
+    out.clear();
+    for (unsigned i = 0; i < RegionCount; ++i) out.push_back(Regions[i]);
+    return out;
+  }
 };
 //region identifier key: 1xyz muon region, 2xyz electron region; x=1 primary, x=2 loose; y=jet multiplicity; z=b-tag multiplicity
+
+class RegionIDSelection {
+  RegionIDSelection(int b1_, int b2_) {
+    b1 = b1_;
+    b2 = b2_;
+  };
+  int b1 = 0;
+  int b2 = 0;
+
+  bool InRange(int x_, int digit) {
+    x_ = x_ / digit % 10;
+    int b1_ = b1 / digit % 10;
+    int b2_ = b2 / digit % 10;
+    return (x_ - b1_) * (x_ - b2_) <= 0;
+  }
+  bool PassTrigger(int id) {
+    return InRange(id, 1000);
+  }
+  bool PassLepton(int id) {
+    return InRange(id, 100);
+  }
+  bool PassnJet(int id) {
+    return InRange(id, 10);
+  }
+  bool PassbTag(int id) {
+    return InRange(id, 1);
+  }
+  bool Pass(int id) {
+    bool p = TriggerPass(id) && LeptonPass(id) && nJetPass(id) && Pass(id);
+    return p;
+  }
+};
 
 #endif
