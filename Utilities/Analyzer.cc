@@ -79,9 +79,10 @@ public:
   }
 
   bool ReadEvent(Long64_t ievt) {
+    if (conf->PrintProgress) progress->Print(ievt);
     iEvent = ievt;
     r->ReadEvent(ievt);
-    return r->RegionAssociations.KeepEvent();
+    return r->KeepEvent;
   }
 
   double GetEventPUWeight(int ixsec = 1) {
@@ -100,6 +101,7 @@ public:
 
   void CloseOutput() {
     ofile->Close();
+    if (conf->PrintProgress) progress->JobEnd();
   }
 
   Long64_t EntryMax;

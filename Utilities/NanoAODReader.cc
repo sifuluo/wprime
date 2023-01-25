@@ -120,6 +120,7 @@ public:
     ReadTriggers();
     ReadVertices();
     RegionAssociations = RegionReader();
+    KeepEvent = RegionAssociations.KeepEvent();
     EventWeights = CalcEventSFweights();
   }
 
@@ -677,6 +678,7 @@ public:
   // bool LumiStatus;
 
   RegionID RegionAssociations;
+  bool KeepEvent;
   vector<pair<double, string> > EventWeights;
 };
 
