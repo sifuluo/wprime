@@ -46,7 +46,9 @@ struct Configs {
   Long64_t EntryMax;
   //Number of files to process
   int FilesPerJob = 1;
-  // int Btag_WP = 2;
+
+  int bTagWP = 2; //0 loose, 1 medium, 2 tight
+  int PUIDWP = 2; //0 loose, 1 medium, 2 tight
 
   // Idealy the container for all bool configs, practically only the ones not used extensively should rest in here.
   map<string,bool> Switches;

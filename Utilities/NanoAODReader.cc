@@ -95,9 +95,8 @@ public:
   }
 
   void ReadEvent(Long64_t i) {
-    //FIXME: Currently hard-coded working point choice for b-tagging and PUID
-    bTagWP = 2; //0 loose, 1 medium, 2 tight
-    PUIDWP = 2; //0 loose, 1 medium, 2 tight
+    bTagWP = conf->bTagWP;
+    PUIDWP = conf->PUIDWP;
 
     evts->GetEntry(i);
     if(ReadMETFilterStatus() == false) return; //skip events not passing MET filter flags
