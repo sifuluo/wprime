@@ -78,9 +78,10 @@ public:
     return;
   }
 
-  void ReadEvent(Long64_t ievt) {
+  bool ReadEvent(Long64_t ievt) {
     iEvent = ievt;
     r->ReadEvent(ievt);
+    return r->RegionAssociations.KeepEvent();
   }
 
   double GetEventPUWeight(int ixsec = 1) {
