@@ -67,10 +67,14 @@ public:
   }
 
   virtual void BookBranches() {
+    t->Branch("ExampleArray",&ExampleArray);
     return;
   }
 
   virtual void FillBranchContent() {
+    for (unsigned i = 0; i < 10; ++i) {
+      ExampleArray[i] = i;
+    }
     return;
   }
 
@@ -104,6 +108,8 @@ public:
   NanoAODReader *r;
   Progress* progress;
   PUReweight* pureweight;
+
+  std::array<int, 10> ExampleArray;
 
   Configs *conf;
   bool IsMC;

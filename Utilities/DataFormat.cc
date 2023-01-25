@@ -66,7 +66,7 @@ struct Lepton : PO {
   bool IsLoose;
   bool IsVeto;
   vector<bool> OverlapsJet = {false, false, false}; //{PUID: loose, medium, tight}
-  vector<float> SFs = {1.,1.,1.};
+  vector<float> SFs = {1.,1.,1.}; // {nominal, up, down}
   // float jetRelIso;
   // int pdgId;
   // int jetIdx;
@@ -100,7 +100,7 @@ struct GenMET : PO {
 struct EventWeight{
   string source;
   // bool IsActive;
-  vector<float> variations = {1.,1.,1.}; // nominal, down, up
+  vector<float> variations = {1.,1.,1.}; // {nominal, up, down}
 };
 
 struct RegionID{

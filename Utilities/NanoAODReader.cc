@@ -397,7 +397,7 @@ public:
       if(passPrimary && IsMC){
         tmp.SFs[0] = evts->Muon_scaleFactor[i];
         tmp.SFs[1] = evts->Muon_scaleFactor[i] + sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
-        tmp.SFs[2] = evts->Muon_scaleFactor[i] + sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
+        tmp.SFs[2] = evts->Muon_scaleFactor[i] - sqrt( pow(evts->Muon_scaleFactorStat[i],2) - pow(evts->Muon_scaleFactorSyst[i],2) );
       }
       else tmp.SFs = {1., 1., 1.};
 
