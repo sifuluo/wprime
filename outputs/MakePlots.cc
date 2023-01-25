@@ -6,46 +6,24 @@
 #include <iostream>
 #include <vector>
 
-void MakePlots(int isy_ = 3, int itr_ = 1) {
-  const vector<string> SampleYears{"2016apv","2016","2017","2018"};
-  const vector<string> SampleTypes{"SingleElectron","SingleMuon", // 0,1
-  "ttbar", // 2,
-  "wjets_HT_70_100", "wjets_HT_100_200", "wjets_HT_200_400", "wjets_HT_400_600",
-  // 3                  4                     5                    6
-  "wjets_HT_600_800", "wjets_HT_800_1200", "wjets_HT_1200_2500", "wjets_HT_2500_inf",
-  // 7                  8                     9                    10
-  "single_antitop_tchan","single_antitop_tw","single_top_schan","single_top_tchan","single_top_tw",
-  // 11                        12                  13                 14                 15
-  "Private_FL_M500"};
-  // 16
-  const unsigned MCSampleStartIndex = 2;
-  const vector<string> Triggers{"SE","SM"};
+#include "../Utilities/DataFormat.cc"
 
-  vector<string> RunningTypes{"SingleElectron","ttbar"};
-  RunningTypes = SampleTypes;
+void MakePlots(int isy_ = 3) {
+  string SampleYear = Constants::SampleYears[isy_];
+  string SampleTrigger = "SM";
 
-  string SampleYear = SampleYears[isy_];
-  string SampleTrigger = Triggers[itr_];
+  vector<string> SampleTypes = {"SingleMuon","ttbar"};
+
+  RegionIDSelection *rsel = new RegionIDSelection(1050,1999);
+
   // ==========================================================================
   //   Branch Leafs declearation
-  float EventScaleFactor;
-  double LeptonPt, LeptonEta, METPt;
-  int nJets;
-  vector<double> *JetPt, *JetEta;
-  JetPt = new vector<double>;
-  JetEta = new vector<double>;
+  int RegionIdentifier[9];
+  float EventWeight[18];
+  float PUWeight[7];
 
-  // double PUWeight;
-  // int nPU;
-  // double nTrueInt;
-  // int nPV, nPVGood;
-
-  vector<int> *nBJets, *nNBJets; // {loose, medium, tight}
-  nBJets = new vector<int>;
-  nNBJets = new vector<int>;
-
-  vector<double>* WPrimeMassSimple;
-  WPrimeMassSimple = new vector<double>;
+  double nTrueInt;
+  int nPVGood;
   //   Branch Leafs declearation
   // ==========================================================================
 
@@ -57,10 +35,7 @@ void MakePlots(int isy_ = 3, int itr_ = 1) {
   cout << "Creating plots for Year " << SampleYear << ", Trigger: " << SampleTrigger <<endl;
 
   for (unsigned i = 0; i < SampleTypes.size(); ++i) {
-    if (find(RunningTypes.begin(), RunningTypes.end(), SampleTypes[i]) == RunningTypes.end()) continue;
-    if (i < MCSampleStartIndex && i != itr_) continue;
-
-    string fn = SampleYear + "_" + SampleTypes[i] + "_" + SampleTrigger + ".root";
+    string fn = SampleYear + "_" + SampleTypes[i] + "_" + SampleTrigger + "_0.root";
     TFile *f = TFile::Open(fn.c_str(),"READ");
     if (!f) continue;
     // TFile *f = new TFile(fn.c_str(),"READ"); // Alternative way to open a file
@@ -68,91 +43,46 @@ void MakePlots(int isy_ = 3, int itr_ = 1) {
     cout << "Reading from " <<fn.c_str() <<endl;
     InFiles.push_back(f);
     TString sn = SampleTypes[i];
-
     fout->cd();
+    vector<TString> weightnames = {"noweight","nomweight","weightup","weightdown","weight0","weight1","weight2","weight3"};
+    vector<TH1F*> hnpvsgood;
+    vector<TH1F*> hnTrueInt;
 
-    vector< vector<TH1F*> > wpmass;
-    vector<TH2F*> jetmulti;
-
-    TH1F* evtCounter = (TH1F*) f->Get("EventCounter")->Clone();
-    evtCounter->SetName(sn + "_EventCounter");
-    // double TotalEvents = evtCounter->GetBinContent(1);
+    for (unsigned j = 0; j < weightnames.size(); ++j) {
+      TString hn = sn + "_" + weightnames[j];
+      TString hn1 = hn + "_nPVGood";
+      TString hn2 = hn + "_nTrueInt";
+      hnpvsgood.push_back(new TH1F(hn1, hn1,99,0,99));
+      hnTrueInt.push_back(new TH1F(hn2, hn2, 99,0,99));
+      // histograms.push_back(hnpvsgood.back());
+      // histograms.push_back(hnTrueInt.back());
+      if (i == 0) break;
+    }
 
     TTree* t = (TTree*) f->Get("t");
-
-    t->SetBranchAddress("EventScaleFactor",&EventScaleFactor);
-
-    t->SetBranchAddress("LeptonPt",&LeptonPt);
-    TH1F* hLeptonPt = new TH1F(sn + "_LeptonPt","LeptonPt",1000,0,1000);
-
-    t->SetBranchAddress("LeptonEta",&LeptonEta);
-    TH1F* hLeptonEta = new TH1F(sn + "_LeptonEta","LeptonEta", 80,-4,4);
-
-    t->SetBranchAddress("METPt",&METPt);
-    TH1F* hMETPt = new TH1F(sn + "_METPt","METPt", 1000,0,1000);
-
-    t->SetBranchAddress("nJets",&nJets);
-    TH1F* hnJets = new TH1F(sn + "_nJets","nJets",20,0,20);
-
-    t->SetBranchAddress("JetPt",&JetPt);
-    TH1F* hJetPt = new TH1F(sn + "_JetPt","JetPt",2000,0,2000);
-
-    t->SetBranchAddress("JetEta",&JetEta);
-    TH1F* hJetEta = new TH1F(sn + "_JetEta","JetEta",80,-4.,4.);
-
-
-    // t->SetBranchAddress("PUWeight", &PUWeight);
-    // t->SetBranchAddress("nPU", &nPU);
-    // t->SetBranchAddress("nTrueInt", &nTrueInt);
-    //
-    // t->SetBranchAddress("nPV", &nPV);
-    // t->SetBranchAddress("nPVGood", &nPVGood);
-
-    t->SetBranchAddress("EventScaleFactor",&EventScaleFactor);
-    t->SetBranchAddress("nBJets",&nBJets);
-    t->SetBranchAddress("nNBJets",&nNBJets);
-    t->SetBranchAddress("WPrimeMassSimple",&WPrimeMassSimple);
-
-    for (unsigned bwp = 0; bwp < 3; ++bwp) {
-      // wpmass[bwp].resize(3);
-      vector<TH1F*> wpmasswp;
-      TString plotname = Form("%s_%iwp_JetMultiplicity", sn.Data(), bwp);
-      TString plottitle= plotname + "; Number of Light Jets; Number of b jets";
-      jetmulti.push_back(new TH2F(plotname, plottitle, 10,-0.5,9.5,10,-0.5,9.5));
-      for (unsigned nb = 0; nb < 3; ++nb) {
-        TString plotname2 = Form("%s_%i_bjets_%iwp_WPrimeMass", sn.Data(), nb, bwp);
-        TString plottitle2 = plotname2 + "; M_{W'}; Number of Entries";
-        wpmasswp.push_back(new TH1F(plotname2, plottitle2, 1000,0,1000));
-      }
-      wpmass.push_back(wpmasswp);
-    }
+    t->SetBranchAddress("RegionIdentifier",&RegionIdentifier);
+    t->SetBranchAddress("EventWeight",&EventWeight);
+    t->SetBranchAddress("PUWeight",&PUWeight);
+    t->SetBranchAddress("nTrueInt",&nTrueInt);
+    t->SetBranchAddress("nPVGood",&nPVGood);
 
 
     for (Long64_t ie = 0; ie < t->GetEntries(); ++ie) {
       t->GetEntry(ie);
       if (ie % 10000 == 0) cout << Form("\r %lli/ %lli, (%.1f%%) in %s", ie, t->GetEntries(), double(ie) / double(t->GetEntries()) * 100., sn.Data()) << flush;
       if (ie == t->GetEntries() - 1) cout << endl << sn << " Done" <<endl;
-      double sf = EventScaleFactor;
-      if (sf < 0) sf = 1.0;
-      for (unsigned iwp = 0; iwp < 3; ++iwp) {
-        jetmulti[iwp]->Fill(nNBJets->at(iwp), nBJets->at(iwp));
-        for (unsigned inb = 0; inb < nBJets->at(iwp); ++inb) {
-          unsigned inb_ = inb;
-          if (inb_ > 2) inb_ = 2;
-          wpmass[iwp][inb_]->Fill(WPrimeMassSimple->at(iwp), sf);
-        }
-      }
-      if (nBJets->at(2) < 2) continue;
-      hLeptonPt->Fill(LeptonPt, sf);
-      hLeptonEta->Fill(LeptonEta, sf);
-      hMETPt->Fill(METPt, sf);
-      hnJets->Fill(nJets, sf);
-      for (unsigned ij = 0; ij < JetPt->size(); ++ij) {
-        hJetPt->Fill(JetPt->at(ij), sf);
-        hJetEta->Fill(JetEta->at(ij), sf);
+      double sf = EventWeight[0] / PUWeight[1];
+      for (unsigned iw = 0; iw < weightnames.size(); ++iw) {
+        double sf_ = sf;
+        if (iw > 0) sf_ = sf_* PUWeight[iw - 1];
+        if (i == 0) sf_ = 1;
+        hnpvsgood[iw]->Fill(nPVGood, sf_);
+        hnTrueInt[iw]->Fill(nTrueInt, sf_);
+        if (i == 0) break;
       }
 
     }
+    // fout->Write();
   }
   fout->Write();
   fout->Save();

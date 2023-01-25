@@ -28,72 +28,64 @@
 class ThisAnalysis : public Analyzer {
 public:
   ThisAnalysis(Configs *conf_) : Analyzer(conf_) {
-    // Reimplementation of Analyzer to customize the branches to save
   };
 
-  // int nPU;
+  std::array<int,9> RegionIdentifier;
+  std::array<float,18> EventWeight;
+  std::array<float,7> PUWeight;
+
   double nTrueInt;
-  // int nPV;
   int nPVGood;
-  vector<double> *PUWeight;
-  TH1F* nPVGoodBeforePUReweight;
-  vector<TH1F*> nPVGoodAfterPUReweight;
 
   void BookBranches() {
-    // t->Branch("PassedSelections",&PassedSelections);
-    t->Branch("EventScaleFactor",&EventScaleFactor);
-    // // t->Branch("nPU", &nPU);
-    // t->Branch("nTrueInt", &nTrueInt);
-    // // t->Branch("nPV", &nPV);
+    t->Branch("RegionIdentifier", &RegionIdentifier);
+    t->Branch("EventWeight", &EventWeight);
+    t->Branch("PUWeight", &PUWeight);
+    
+    t->Branch("nTrueInt", &nTrueInt);
     t->Branch("nPVGood", &nPVGood);
-    PUWeight = new vector<double>;
-    t->Branch("PUweight", &PUWeight);
-    nPVGoodBeforePUReweight = new TH1F("nPVGoodBeforePUReweight","nPVGoodBeforePUReweight", 99,0,99);
-    nPVGoodAfterPUReweight.clear();
-    nPVGoodAfterPUReweight.push_back(new TH1F("nPVGoodAfterPUReweight0","nPVGoodAfterPUReweight0", 99,0,99));
-    nPVGoodAfterPUReweight.push_back(new TH1F("nPVGoodAfterPUReweight1","nPVGoodAfterPUReweight1", 99,0,99));
-    nPVGoodAfterPUReweight.push_back(new TH1F("nPVGoodAfterPUReweight2","nPVGoodAfterPUReweight2", 99,0,99));
-    nPVGoodAfterPUReweight.push_back(new TH1F("nPVGoodAfterPUReweight3","nPVGoodAfterPUReweight3", 99,0,99));
-  }
-
-  void FillEventCounter() {
-    return;
   }
 
   void FillBranchContent() {
     nTrueInt = 0;
-    *PUWeight = vector<double>(4,1);
-    // nPV = r->PV_npvs;
     nPVGood = r->PV_npvsGood;
-    nPVGoodBeforePUReweight->Fill(nPVGood, EventScaleFactor);
+
+    for (unsigned i = 0; i < r-> RegionAssociations.RegionCount; ++i) {
+      RegionIdentifier[i] = r->RegionAssociations.Regions[i];
+    }
+
+    for (unsigned i = 0; i < r->EventWeights.size(); ++i) {
+      EventWeight[i] = r->EventWeights[i].first;
+    }
+
     if (IsMC) {
-      // nPU = r->Pileup_nPU;
       nTrueInt = r->Pileup_nTrueInt;
+      PUWeight[0] = r->evts->Pileup_scaleFactor;
+      PUWeight[1] = r->evts->Pileup_scaleFactorUp;
+      PUWeight[2] = r->evts->Pileup_scaleFactorDown;
       for (unsigned i = 0; i < 4; ++i) {
-        PUWeight->at(i) = GetEventPUWeight(i);
-        nPVGoodAfterPUReweight.at(i)->Fill(nPVGood, EventScaleFactor * PUWeight->at(i));
+        PUWeight[i + 3] = GetEventPUWeight(i);
       }
     }
   }
 };
 
-void PileupDist(int isampleyear = 3, int isampletype = 2, int itrigger = 1, int ifile = 1) {
+void PileupDist(int isampleyear = 3, int isampletype = 2, int ifile = 0, int nfile = 1) {
+  int itrigger = 1;
   Configs *conf = new Configs(isampleyear, isampletype, itrigger, ifile);
   conf->Debug = false;
   // conf->PUEvaluation = true;
   // conf->DASInput = true;
   conf->PrintProgress = true;
-  // conf->FilesPerJob = 100;
+  conf->FilesPerJob = nfile;
   // conf->EntryMax = 10000;
   conf->SetSwitch("LocalOutput",true);
-  // conf->FilesPerJob = 20;
   // conf->InputFile = "All";
   ThisAnalysis *a = new ThisAnalysis(conf);
   a->SetOutput("PUEval");
-  for (Long64_t iEvent = 6000; iEvent < a->GetEntryMax(); ++iEvent) {
-    bool failed = a->ReadEvent(iEvent);
-    if (failed) continue;
-    cout << "Event passed" <<endl;
+  for (Long64_t iEvent = 0; iEvent < a->GetEntryMax(); ++iEvent) {
+    bool KeepEvent = a->ReadEvent(iEvent);
+    if (!KeepEvent) continue;
     a->FillBranchContent();
     a->FillTree();
   }
