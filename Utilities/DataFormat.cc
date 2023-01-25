@@ -105,7 +105,7 @@ struct EventWeight{
 
 struct RegionID{
   unsigned RegionCount = 9;
-  //identifiers are -1: no region; otherwise number of jets first digit number of btags 2nd digit
+  //identifiers are -1: not assigned, -2: Lepton Failed, -3: Trigger Failed, -4: nJet failed
   int Regions[9] = {-1, -1, -1, -1, -1, -1, -1, -1, -1};
   //Central; Electron scale up, down; Electron resolution up, down; Jet Energy Scale up, down; Jet Energy resolution up, down
   string RegionNames[9] = {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown"};

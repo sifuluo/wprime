@@ -536,15 +536,24 @@ public:
       }
 
       //Region Formats key is in DataFormat.cc
-      if(nmuv + nev != 1) continue;
+      if(nmuv + nev != 1) {
+        Regions.Regions[i] = -2; // Lepton failed
+        continue;
+      }
       if(nmup == 1) RegionNumber = 1100;
       else if(nep == 1) RegionNumber = 2100;
       else if(nmul == 1) RegionNumber = 1200;
       else if(nel ==1) RegionNumber = 2200;
 
       //check trigger matching lepton flavour
-      if(RegionNumber/1000 == 2 && !isolated_electron_trigger ) continue; //FIXME: Needs lepton trigger matching for veracity
-      else if(RegionNumber/1000 == 1 && !(isolated_muon_trigger || isolated_muon_track_trigger)) continue; //FIXME: Needs lepton trigger matching for veracity
+      if(RegionNumber/1000 == 2 && !isolated_electron_trigger ) {
+        Regions.Regions[i] = -3;
+        continue; //FIXME: Needs lepton trigger matching for veracity
+      }
+      else if(RegionNumber/1000 == 1 && !(isolated_muon_trigger || isolated_muon_track_trigger)) {
+        Regions.Regions[i] = -3;
+        continue; //FIXME: Needs lepton trigger matching for veracity
+      }
 
       //check jet multiplicity
       int nj = 0;
@@ -560,7 +569,10 @@ public:
         nj++;
         if(Jets[j].bTagPasses[PUIDWP]) nb++;//select working point for b-tagging by bTagPasses[0] = loose, 1 medium and 2 tight
       }
-      if(nj<5 || nj>6) continue; //in no region we're interested in
+      if(nj<5 || nj>6) {
+        Regions.Regions[i] = -4;
+        continue; //in no region we're interested in
+      }
       RegionNumber += nj*10;
       RegionNumber += nb;
       Regions.Regions[i]=RegionNumber;
