@@ -397,7 +397,7 @@ public:
       if(passPrimary && IsMC){
         tmp.SFs[0] = evts->Muon_scaleFactor[i];
         tmp.SFs[1] = evts->Muon_scaleFactor[i] + sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
-        tmp.SFs[2] = evts->Muon_scaleFactor[i] - sqrt( pow(evts->Muon_scaleFactorStat[i],2) - pow(evts->Muon_scaleFactorSyst[i],2) );
+        tmp.SFs[2] = evts->Muon_scaleFactor[i] - sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
       }
       else tmp.SFs = {1., 1., 1.};
 
@@ -637,8 +637,8 @@ public:
     for(unsigned i = 0; i < SFweights.size(); ++i){
 
       //create variations with strings for later combine histograms
-      EventWeight.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[1], SFweights[i].source + "_down"));
-      EventWeight.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[2], SFweights[i].source + "_up"));
+      EventWeight.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[1], SFweights[i].source + "_up"));
+      EventWeight.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[2], SFweights[i].source + "_down"));
     }
     return EventWeight;
   }
