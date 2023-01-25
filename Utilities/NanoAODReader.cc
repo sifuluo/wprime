@@ -121,7 +121,7 @@ public:
     ReadTriggers();
     ReadVertices();
     RegionAssociations = RegionReader();
-    if(IsMC) EventWeights = CalcEventSFweights();
+    EventWeights = CalcEventSFweights();
   }
 
   void ReadGenParts() {
@@ -576,47 +576,42 @@ public:
     //set SF weights per object
     EventWeight electronW, muonW, BjetW, PUIDW, L1PreFiringW, PUreweight;
     electronW.source = "electron";
-    electronW.variations = {1.,1.,1.};
     muonW.source = "muon";
-    muonW.variations = {1.,1.,1.};
     BjetW.source = "BjetTag";
-    BjetW.variations = {1.,1.,1.};
     PUIDW.source = "PUID";
-    PUIDW.variations = {1.,1.,1.};
     L1PreFiringW.source = "L1PreFiring";
     PUreweight.source = "PUreweight";
-    PUreweight.variations = {1.,1.,1.};
 
-    int modes[3]={0, +1, -1};
-    for(unsigned i=0; i<3; ++i){
-      for(unsigned j = 0; j < Electrons.size(); ++j) electronW.variations[i] *= Electrons[j].SFs[i];
-      for(unsigned j = 0; j < Muons.size(); ++j) muonW.variations[i] *= Muons[j].SFs[i];
-      for(unsigned j = 0; j < Jets.size(); ++j){
-        BjetW.variations[i] *= Jets[j].bJetSFweights[i][bTagWP];
-        PUIDW.variations[i] *= Jets[j].PUIDSFweights[i][PUIDWP];
+    if (IsMC) {
+      int modes[3]={0, +1, -1};
+      for(unsigned i=0; i<3; ++i){
+        for(unsigned j = 0; j < Electrons.size(); ++j) electronW.variations[i] *= Electrons[j].SFs[i];
+        for(unsigned j = 0; j < Muons.size(); ++j) muonW.variations[i] *= Muons[j].SFs[i];
+        for(unsigned j = 0; j < Jets.size(); ++j){
+          BjetW.variations[i] *= Jets[j].bJetSFweights[i][bTagWP];
+          PUIDW.variations[i] *= Jets[j].PUIDSFweights[i][PUIDWP];
+        }
       }
-    }
-    // return;
-    string sampleyear;
-    string sy = conf->SampleYear;
-    if (sy == "2016apv") sampleyear = "2016preVFP";
-    else if (sy == "2016") sampleyear = "2016postVFP";
-    else if (sy == "2017") sampleyear = "2017";
-    else if (sy == "2018") sampleyear = "2018";
-    //L1PrefiringWeight
-    if(sampleyear == "2016preVFP" || sampleyear == "2016postVFP" || sampleyear == "2017"){
-      L1PreFiringW.variations[0] = evts->L1PreFiringWeight_Nom;
-      L1PreFiringW.variations[1] = evts->L1PreFiringWeight_Up;
-      L1PreFiringW.variations[2] = evts->L1PreFiringWeight_Down;
-    }
-    else L1PreFiringW.variations = {1.,1.,1.};
+      // return;
+      string sampleyear;
+      string sy = conf->SampleYear;
+      if (sy == "2016apv") sampleyear = "2016preVFP";
+      else if (sy == "2016") sampleyear = "2016postVFP";
+      else if (sy == "2017") sampleyear = "2017";
+      else if (sy == "2018") sampleyear = "2018";
+      //L1PrefiringWeight
+      if(sampleyear == "2016preVFP" || sampleyear == "2016postVFP" || sampleyear == "2017"){
+        L1PreFiringW.variations[0] = evts->L1PreFiringWeight_Nom;
+        L1PreFiringW.variations[1] = evts->L1PreFiringWeight_Up;
+        L1PreFiringW.variations[2] = evts->L1PreFiringWeight_Down;
+      }
 
-    //PUreweight
-    if(IsMC){
+      //PUreweight
       PUreweight.variations[0] = evts->Pileup_scaleFactor;
       PUreweight.variations[1] = evts->Pileup_scaleFactorUp;
       PUreweight.variations[2] = evts->Pileup_scaleFactorDown;
     }
+
     SFweights.push_back(electronW);
     SFweights.push_back(muonW);
     SFweights.push_back(BjetW);
