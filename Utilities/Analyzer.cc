@@ -17,6 +17,7 @@
 // #include "ScaleFactor.cc"
 #include "DataSelection.cc"
 #include "PUReweight.cc"
+#include "UserSpecifics.cc"
 
 using namespace std;
 
@@ -50,7 +51,7 @@ public:
   }
 
   void SetOutput(string folder = "Validation") {
-    string path = "/eos/user/r/rathjd/WPrimeAnalysis/" + folder + "/"; //FIXME: Needs to be propagated from elsewhere
+    string path = UserSpecifics::EOSBasePath + folder + "/"; //FIXME: Needs to be propagated from elsewhere
     string subpath = Form("%s_%s_%s/",conf->SampleYear.c_str(), conf->SampleType.c_str(), conf->Trigger.c_str());
     string outname = Form("%s_%s_%s_%i.root",conf->SampleYear.c_str(), conf->SampleType.c_str(), conf->Trigger.c_str(), conf->iFile);
     if (conf->GetSwitch("LocalOutput")) {
@@ -76,6 +77,11 @@ public:
   void ReadEvent(Long64_t ievt) {
     iEvent = ievt;
     r->ReadEvent(ievt);
+  }
+
+  double GetEventPUWeight(int ixsec = 1) {
+    if (!IsMC) return 1.;
+    else return pureweight->GetWeight(r->Pileup_nTrueInt, ixsec);
   }
 
   void FillTree() {

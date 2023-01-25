@@ -3,7 +3,7 @@ SuccessFlags/
 filenames/
 outputs/*.root
 ObsoleteCodes/
-Utilities/UserSpecific.cc
+Utilities/UserSpecifics.cc
 *.err
 *.out
 *.log

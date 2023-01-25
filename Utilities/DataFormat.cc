@@ -145,7 +145,7 @@ class RegionIDSelection {
     return InRange(id, 1);
   }
   bool Pass(int id) {
-    bool p = TriggerPass(id) && LeptonPass(id) && nJetPass(id) && Pass(id);
+    bool p = PassTrigger(id) && PassLepton(id) && PassnJet(id) && PassbTag(id);
     return p;
   }
 };
