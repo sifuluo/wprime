@@ -605,17 +605,17 @@ public:
     else if (sy == "2018") sampleyear = "2018";
     //L1PrefiringWeight
     if(sampleyear == "2016preVFP" || sampleyear == "2016postVFP" || sampleyear == "2017"){
-      L1PreFiringW.variations[0] = evts->L1PreFiringWeight_Down;
-      L1PreFiringW.variations[1] = evts->L1PreFiringWeight_Nom;
-      L1PreFiringW.variations[2] = evts->L1PreFiringWeight_Up;
+      L1PreFiringW.variations[0] = evts->L1PreFiringWeight_Nom;
+      L1PreFiringW.variations[1] = evts->L1PreFiringWeight_Up;
+      L1PreFiringW.variations[2] = evts->L1PreFiringWeight_Down;
     }
     else L1PreFiringW.variations = {1.,1.,1.};
 
     //PUreweight
     if(IsMC){
-      PUreweight.variations[0] = evts->Pileup_scaleFactorDown;
-      PUreweight.variations[1] = evts->Pileup_scaleFactor;
-      PUreweight.variations[2] = evts->Pileup_scaleFactorUp;
+      PUreweight.variations[0] = evts->Pileup_scaleFactor;
+      PUreweight.variations[1] = evts->Pileup_scaleFactorUp;
+      PUreweight.variations[2] = evts->Pileup_scaleFactorDown;
     }
     SFweights.push_back(electronW);
     SFweights.push_back(muonW);
