@@ -46,7 +46,7 @@ public:
       chain->Add(conf->InputFile);
       cout << "Loaded test InputFile: " << conf->InputFile << endl;
     }
-    cout << "Running with SampleYear = " << conf->SampleYear << ", SampleType = " << conf->SampleType << ", Trigger = " << conf->Trigger << endl;
+    cout << "Running with SampleYear = " << conf->SampleYear << ", SampleType = " << conf->SampleType <<  endl;
     evts = new Events(chain, conf->SampleYear, IsMC);
     if (conf->InputFile != "All" && conf->FilesPerJob == 1) cout << "This iteration contains " << GetEntries() << " events" <<endl;
   };

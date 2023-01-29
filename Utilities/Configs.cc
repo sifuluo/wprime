@@ -9,16 +9,15 @@
 #include "TString.h"
 
 #include "Constants.cc"
+#include "Dataset.cc"
 
 struct Configs {
-  Configs(int isy_ = 2, int ist_ = 2, int itr_ = 0, int ifile_ = 0) {
+  Configs(int isy_ = 2, int ist_ = 2, int ifile_ = 0) {
     iSampleYear = isy_;
     iSampleType = ist_;
-    iTrigger = itr_;
     iFile = ifile_;
     SampleYear = Constants::SampleYears[isy_];
     SampleType = Constants::SampleTypes[ist_];
-    Trigger = Constants::Triggers[itr_];
     IsMC = iSampleType > 1;
     EntryMax = 0;
   };
@@ -33,8 +32,6 @@ struct Configs {
   int iSampleType;
   string SampleType;
   bool IsMC;
-  int iTrigger;
-  string Trigger;
 
   // iFile >=0 will be index of files in the text file containing the path to files
   // if iFile < 0, a InputFile must be specified to be run on.

@@ -7,8 +7,6 @@
 // #include "TChain.h"
 #include "TLorentzVector.h"
 #include "TString.h"
-
-#include "Constants.cc"
 #include "Configs.cc"
 using namespace std;
 
