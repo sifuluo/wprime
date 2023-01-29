@@ -1,6 +1,6 @@
 import os
 
-def GetLocalDataSet(names, iy):
+def GetLocalDataset(names, iy):
   outname = names[0]
   inname = names[0]
   if len(names) == 2:
@@ -19,7 +19,7 @@ def GetLocalDataSet(names, iy):
   if os.path.exists(outfile): os.remove(outfile)
   os.system("ls -d " + infile + " >> " + outfile)
 
-def GetDataSetNames():
+def GetDatasetNames():
   datasets = []
   # Each dataset entry is a list of two strings
   # The first string is the name to store the .txt file in filenames
@@ -59,11 +59,12 @@ def GetDataSetNames():
 
 def GetSampleTypes():
   sts = []
-  for ds in GetDataSetNames():
+  for ds in GetDatasetNames():
     sts.append(ds[0])
   return sts
 
-
-for iy in range(4):
-  for ids in GetDataSetNames():
-    GetLocalDataSet(ids, iy)
+CreateFileNames = False
+if CreateFileNames:
+  for iy in range(4):
+    for ids in GetDatasetNames():
+      GetLocalDataset(ids, iy)
