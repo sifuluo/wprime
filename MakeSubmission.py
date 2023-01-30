@@ -34,6 +34,7 @@ for iy, year in enumerate(SampleYears):
     if not os.path.exists(fnfile): continue
 
     nf = len(open(fnfile).readlines())
+    if nf == 0: continue
     lines = []
     # lines.append("Proxy_path   = /afs/cern.ch/user/s/siluo/x509up\n")
     # lines.append("arguments    = $(Proxy_path) $(ProcID) "+str(iy)+ " " + str(isa) + "\n")

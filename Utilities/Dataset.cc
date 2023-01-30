@@ -16,39 +16,26 @@ namespace Constants {
   "ttbar", // 2,
   "wjets_HT_70_100", "wjets_HT_100_200", "wjets_HT_200_400", "wjets_HT_400_600",
   // 3                  4                     5                    6
-  "wjets_HT_600_800", "wjets_HT_800_1200", "wjets_HT_1200_2500", "wjets_HT_2500_inf",
-  // 7                  8                     9                    10
+  "wjets_HT_600_800", "wjets_HT_800_1200", "wjets_HT_1200_2500", "wjets_HT_2500_inf", "wjets_inclusive"
+  // 7                  8                     9                    10                    11
   "single_antitop_tchan","single_antitop_tw","single_top_schan","single_top_tchan","single_top_tw",
-  // 11                        12                  13                 14                 15
+  // 12                        13                  14                 15                 16
   "FL300","FL400","FL500","FL600","FL700","FL800","FL900","FL1000","FL1100",
-  // 16     17      18       19      20       21     22      23       24
+  // 17     18      19       20      21       22     23      24       25
   "LL300","LL400","LL500","LL600","LL700","LL800","LL900","LL1000","LL1100"
-  // 25     26      27       28      29       30     31      32       33
+  // 26     27      28       29      30      31      32       33      34
   };
   const vector<double> CMSLumiYears{19.52, 16.81, 41.48, 59.83};
 }
 
 struct Dataset {
   string Name;
+  string GroupName;
   int Index;
   int Type; // 0: Data, 1: MC, 2: Signal
   int Color;
   double CrossSection; // Unit in fb
   vector<double> Size;
-  string GroupName;
-
-  int GetIndex() {
-    for (unsigned i = 0; i < Constants::SampleTypes.size(); ++i) {
-      if (Name == Constants::SampleTypes[i]) {
-        Index = i;
-        return Index;
-      }
-      if (i == Constants::SampleTypes.size() - 1) {
-        cout << "Cannot find Sample Index for " << Name << " in SampleTypes list." <<endl;
-      }
-    }
-    return -1;
-  }
 
   string GetName() {
     Name = Constants::SampleTypes[Index];
@@ -94,7 +81,7 @@ public:
     AddDataset_NGTCXS("wjets_HT_800_1200"      ,"wjets"         , 1, 3 , 6656,    {1, 2132228, 5088483, 7306187}); // 8
     AddDataset_NGTCXS("wjets_HT_1200_2500"     ,"wjets"         , 1, 3 , 1608,    {1, 2090561, 4752118, 6481518}); // 9
     AddDataset_NGTCXS("wjets_HT_2500_inf"      ,"wjets"         , 1, 3 , 39,      {1, 709514, 1185699, 2097648}); // 10
-    AddDataset_NGTCXS("wjets_inclusive"        ,"wjets",        , 1, 3 , 0,       {0,0,0,0});                     // 11
+    AddDataset_NGTCXS("wjets_inclusive"        ,"wjets"         , 1, 3 , 0,       {0,0,0,0});                     // 11
 
     AddDataset_NGTCXS("single_antitop_tchan"   ,"single_top"    , 1, 4 , 69090,  {1,30609000,69793000,395627000}); // 12 // 9562700 events
     AddDataset_NGTCXS("single_antitop_tw"      ,"single_top"    , 1, 4 , 34970,  {1,3654510,8433998,10949620}); // 13
@@ -129,13 +116,12 @@ public:
     AddDataset_NGTCXS("LL1100"                 ,"LL"            , 2, 5 , 6.546,  {535810, 461040, 990631, 1010305}); // 34
 
     // AddDataset_NGTCXS("Private_FL_M500"        ,""              , 2, 7 , 161.1,  {1,1,1,189291});
-
   }
   // Adding Dataset with parameters as Name, Group name, Type (0:Data,1:MC,2:Signal), Color, Xsection, SampleSize
   void AddDataset_NGTCXS(string name, string gname, int type, int color, double xsec, vector<double> size) {
     Dataset ds;
     ds.Name = name;
-    ds.GetIndex();
+    ds.Index = DatasetNames.size();
     ds.Type = type;
     ds.Color = color;
     ds.CrossSection = xsec;
@@ -165,6 +151,18 @@ public:
   Dataset& GetDataset(string ds) {
     CheckExist(ds,"GetDataset");
     return Datasets[ds];
+  }
+
+  string GetSampleType(int i) {
+    return DatasetNames[i];
+  }
+
+  string GetSampleYear(int i) {
+    return SampleYears[i];
+  }
+
+  double GetCMSLumi(int i) {
+    return CMSLumiYears[i];
   }
 
   int GetIndex(string ds) {
@@ -204,10 +202,13 @@ public:
 
 
   bool Debug;
-  int SampleYear;
+  const vector<string> SampleYears{"2016apv","2016","2017","2018"};
+  const vector<double> CMSLumiYears{19.52, 16.81, 41.48, 59.83};
   vector<string> DatasetNames;
   map<string,Dataset> Datasets;
 
 };
+
+DatasetsLib dlib;
 
 #endif

@@ -8,7 +8,7 @@
 
 #include "TString.h"
 
-#include "Constants.cc"
+// #include "Constants.cc"
 #include "Dataset.cc"
 
 struct Configs {
@@ -16,8 +16,8 @@ struct Configs {
     iSampleYear = isy_;
     iSampleType = ist_;
     iFile = ifile_;
-    SampleYear = Constants::SampleYears[isy_];
-    SampleType = Constants::SampleTypes[ist_];
+    SampleYear = dlib.SampleYears[isy_];
+    SampleType = dlib.DatasetNames[ist_];
     IsMC = iSampleType > 1;
     EntryMax = 0;
   };
