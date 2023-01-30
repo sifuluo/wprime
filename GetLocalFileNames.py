@@ -51,10 +51,12 @@ def GetDatasetNames():
     inname = "wprime_" + im + "_former_leptonic"
     outname = "FL" + im
     datasets.append([outname, inname])
-
+    
+  for im in ["300","400","500","600","700","800","900","1000","1100"]:
     inname = "wprime_" + im + "_latter_leptonic"
     outname = "LL" + im
     datasets.append([outname, inname])
+  
   return datasets
 
 def GetSampleTypes():
