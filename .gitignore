@@ -7,3 +7,4 @@ Utilities/UserSpecifics.cc
 *.err
 *.out
 *.log
+*.pdf

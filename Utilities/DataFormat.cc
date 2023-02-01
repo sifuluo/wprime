@@ -122,47 +122,4 @@ struct RegionID{
 };
 //region identifier key: 1xyz muon region, 2xyz electron region; x=1 primary, x=2 loose; y=jet multiplicity; z=b-tag multiplicity
 
-class RegionIDSelection {
-public:
-  RegionIDSelection(int b1_, int b2_) {
-    b1 = b1_;
-    b2 = b2_;
-  };
-  int b1 = 0;
-  int b2 = 0;
-
-  bool InRange(int x_, int digit) {
-    x_ = x_ / digit % 10;
-    int b1_ = b1 / digit % 10;
-    int b2_ = b2 / digit % 10;
-    return (x_ - b1_) * (x_ - b2_) <= 0;
-  }
-  bool PassTrigger(int id) {
-    return InRange(id, 1000);
-  }
-  bool PassLepton(int id) {
-    return InRange(id, 100);
-  }
-  bool PassnJet(int id) {
-    return InRange(id, 10);
-  }
-  bool PassbTag(int id) {
-    return InRange(id, 1);
-  }
-  bool Pass(int id) {
-    bool p = PassTrigger(id) && PassLepton(id) && PassnJet(id) && PassbTag(id);
-    return p;
-  }
-  vector<bool> Pass(RegionID id) {
-    vector<bool> p;
-    for (unsigned i = 0; i < id.RegionCount; ++i) p.push_back(Pass(id.Regions[i]));
-    return p;
-  }
-  bool PassAny(RegionID id) {
-    bool p = false;
-    for (unsigned i = 0; i < id.RegionCount; ++i) p = p || Pass(id.Regions[i]);
-    return p;
-  }
-};
-
 #endif
