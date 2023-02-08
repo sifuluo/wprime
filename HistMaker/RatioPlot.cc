@@ -55,19 +55,19 @@ public:
     return LPad;
   }
 
-  void AddData(TH1F* h_) {
-    DataHist = (TH1F*)h_->Clone();
-    DataHist->SetLineStyle(1);
-    DataHist->SetLineColor(1);
-    DataHist->SetMarkerStyle(20);
-  }
-
   void SetXTitle(TString xt) {
     XTitle = xt;
   }
 
   void SetYTitle(TString yt) {
     YTitle = yt;
+  }
+
+  void AddData(TH1F* h_) {
+    DataHist = (TH1F*)h_->Clone();
+    DataHist->SetLineStyle(1);
+    DataHist->SetLineColor(1);
+    DataHist->SetMarkerStyle(20);
   }
 
   void AddMC(TString n_, TH1F* h_) {
@@ -82,6 +82,13 @@ public:
     SigNames.push_back(n_);
   }
 
+  void AddHist(TString n_, TH1F* h_, int type_) {
+    if (h_ == nullptr) return;
+    if (type_ == 0) AddData(h_);
+    else if (type_ == 1) AddMC(n_, h_);
+    else if (type_ == 2) AddSig(n_, h_);
+  }
+
   void AutoLegend(double x = 0.3, double y = 0.2) {
     leg = new TLegend(x,y);
   }
@@ -93,7 +100,7 @@ public:
     leg->SetBorderSize(1);
   }
 
-  void DrawUPlot(int year, int ScaleSignal = 1) { // ScaleSignal < 0: auto scale; ScaleSignal > 0: Scale by that ; ScaleSignal = 0: do not scale
+  void DrawUPlot(int year, int ScaleSignal = 1) { // ScaleSignal < 0: auto scale; 1 >= ScaleSignal >= 0: Scale by that ; ScaleSignal = 0: do not scale
     TString utitle = ";;" + YTitle;
     TString stackname = Pad->GetName() + (TString)"_MCStack";
     MCStack = new THStack(stackname,utitle);
@@ -101,7 +108,7 @@ public:
       if (ih == 0) MCSummed = (TH1F*) MCHists[0]->Clone();
       else MCSummed->Add(MCHists[ih]);
       MCStack->Add(MCHists[ih]);
-      leg->AddEntry(MCHists[ih],MCNames[ih],"f");
+      // leg->AddEntry(MCHists[ih],MCNames[ih],"f");
     }
     double maximum = (DataHist->GetMaximum() > MCStack->GetMaximum()) ? DataHist->GetMaximum() : MCStack->GetMaximum();
 
@@ -113,10 +120,10 @@ public:
         SigHists[ih]->Scale(scale);
         signame = Form("%s*%i",signame.Data(),(int)scale);
       }
-      leg->AddEntry(SigHists[ih],signame,"l");
+      // leg->AddEntry(SigHists[ih],signame,"l");
     }
 
-    leg->AddEntry(DataHist,"Data","p");
+    // leg->AddEntry(DataHist,"Data","p");
 
     MCStack->SetMaximum(maximum * 1.2);
     MCStack->Draw("hist");

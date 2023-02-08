@@ -54,6 +54,13 @@ public:
     SigNames.push_back(n_);
   }
 
+  void AddHist(TString n_, TH1F* h_, int type_) {
+    if (h_ == nullptr) return;
+    if (type_ == 0) return;
+    else if (type_ == 1) AddMC(n_, h_);
+    else if (type_ == 2) AddSig(n_, h_);
+  }
+
   void Legend(double x1 = 0.65, double y1 = 0.65, double x2 = 0.9, double y2 = 0.9) {
     if (x2 == -1) x2 = 1. - Pad->GetRightMargin();
     if (y2 == -1) y2 = 1. - Pad->GetTopMargin();
@@ -68,11 +75,11 @@ public:
     MCStack = new THStack(stackname,utitle);
     for (unsigned ih = 0; ih < MCHists.size(); ++ih) {
       MCStack->Add(MCHists[ih]);
-      leg->AddEntry(MCHists[ih],MCNames[ih],"f");
+      // leg->AddEntry(MCHists[ih],MCNames[ih],"f");
     }
-    for (unsigned ih = 0; ih < SigHists.size(); ++ih) {
-      leg->AddEntry(SigHists[ih],SigNames[ih],"l");
-    }
+    // for (unsigned ih = 0; ih < SigHists.size(); ++ih) {
+    //   leg->AddEntry(SigHists[ih],SigNames[ih],"l");
+    // }
     MCStack->Draw("hist");
     for (unsigned ih = 0; ih < SigHists.size(); ++ih) {
       SigHists[ih]->Draw("samehist");
