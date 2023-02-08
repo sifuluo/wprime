@@ -55,9 +55,9 @@ void DrawPlot(int isampleyear = 3, int iPUWP = 0, int ibWP = 0) {
 
   TCanvas *c1 = new TCanvas("c1","c1",800,800);
   for (unsigned iv = 0; iv < Variables.size(); ++iv) {
-    if (iv != 0) continue; // Only save one variable
+    // if (iv != 0) continue; // Only save one variable
     for (unsigned ir = 0; ir < StringRanges.size(); ++ir) {
-      if (rm.Ranges[ir].b1 != 1152 || rm.Ranges[ir].b2 != 1155) continue; // Only save one region
+      // if (rm.Ranges[ir].b1 != 1151 || rm.Ranges[ir].b2 != 1151) continue; // Only save one region
       double ymax = 0;
       for (int iPUWP = 0; iPUWP < PUWPs.size(); ++iPUWP) {
         for (int ibWP = 0; ibWP < bWPs.size(); ++ibWP) {

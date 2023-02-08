@@ -50,6 +50,15 @@ public:
     }
   }
 
+  // Manual factor to scale too small signal up, such that it can be visible in comparison
+  double SignalScaleCalc(double sigmax, double targetmax) {
+    double sc = 1.;
+    while (sigmax * sc * 10. < targetmax) {
+      sc *= 10.;
+    }
+    return sc;
+  }
+
   float RebinCalc(double nbins, int target = 100) {
     float rb_ = 1;
     vector<float> inc{2.,2.5,2.}; // 2, 5, 10, 20, 50, 100 etc rebinning
