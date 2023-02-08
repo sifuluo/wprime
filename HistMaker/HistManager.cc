@@ -24,9 +24,14 @@
 class HistManager{
 public:
   HistManager(TVirtualPad* pad) {
-    Pad = pad;
-    ResetMembers();
     setTDRStyle();
+    // pad->cd();
+    // TString pname = Pad->GetName() + (TString)"Styled";
+    // Pad = new TPad(pname,pname,0,0,1,1);
+    Pad = pad;
+    Pad->UseCurrentStyle();
+    ResetMembers();
+    LegendPos = {0.65,0.65,0.9,0.9};
   };
 
   void SetDrawData(bool d = true) {
@@ -150,7 +155,7 @@ public:
     //   rp->AddSig(it->second, SignalHists[it->second]);
     // }
     rp->SetLogy();
-    rp->Legend(0.65,0.65,0.9,0.9);
+    rp->Legend(LegendPos);
     dlib.AddLegend(rp->leg);
     rp->DrawPlot(fn, year);
   }
@@ -173,7 +178,7 @@ public:
     //   srp->AddSig(it->second, SignalHists[it->second]);
     // }
     srp->SetLogy();
-    srp->Legend(0.65,0.65,0.9,0.9);
+    srp->Legend(LegendPos);
     dlib.AddLegend(srp->leg);
     srp->SetXTitle(tx);
     srp->SetYTitle(ty);
@@ -204,6 +209,7 @@ public:
 
   TVirtualPad* Pad;
   bool DrawData, DrawRatio, AutoScaleSignal;
+  vector<double> LegendPos;
   map<string, TH1F* > Hists;
   map<string, TH1F* > DataHists; // Pair may also do, for there will be only 1 data. But map stays consistent with other containers
   map<string, TH1F* > MCHists;
