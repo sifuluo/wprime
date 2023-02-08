@@ -29,11 +29,10 @@ void DrawPlot(int isampleyear = 3, int PUWP = 0, int bWP = 0) {
   // HistManager* hm = new HistManager(c1);
 
   for (unsigned iv = 0; iv < Variables.size(); ++iv) {
+    vector<HistManager*> HMs;
+    double ymax = 0;
     for (unsigned ir = 0; ir < StringRanges.size(); ++ir) {
-      HistManager* hm = new HistManager(c1);
-      hm->ResetMembers();
-      if (rm.Ranges[ir].IsSR) hm->SetDrawData(false);
-      else hm->SetDrawData(true);
+      HistManager* hm = new HistManager(rm.Ranges[ir].IsSR);
       for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
         if (tc.SampleValid[ist] == false) continue;
         // cout << SampleTypes[ist] <<endl;
@@ -46,9 +45,20 @@ void DrawPlot(int isampleyear = 3, int PUWP = 0, int bWP = 0) {
       TString ty = "Number of Entries";
       TString fn = SampleYear + PUWPs[PUWP] + bTWPs[bWP] + "_" + Variables[iv] + "_" + StringRanges[ir];
       // fn = "";
-      hm->DrawPlot(tx, ty, fn, isampleyear);
+      hm->PrepHists(tx,ty,fn);
+      if (hm->GetMaximum() > ymax) ymax = hm->GetMaximum();
+      HMs.push_back(hm);
+    }
+    ymax = ymax * 1.2;
+    for (unsigned ir = 0; ir < StringRanges.size(); ++ir) {
+      HMs[ir]->DrawPlot(c1,isampleyear);
+      // HMs[ir]->SetMaximum(ymax);
+      TString fn = SampleYear + PUWPs[PUWP] + bTWPs[bWP] + "_" + Variables[iv] + "_" + StringRanges[ir];
+      fn = "plots/" + fn + ".pdf";
+      c1->SaveAs(fn);
       c1->Clear();
     }
+
     // TString fnv = "plots/" + SampleYear + PUWPs[PUWP] + bTWPs[bWP] + "_" + Variables[iv] + ".pdf";
     // c1->SaveAs(fnv);
     c1->Clear();

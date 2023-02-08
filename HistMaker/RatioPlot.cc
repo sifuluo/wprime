@@ -12,7 +12,6 @@
 #include <iostream>
 
 #include "CMSStyle.cc"
-#include "Tools.cc"
 
 using namespace std;
 
@@ -27,35 +26,6 @@ public:
   void SetLogy(bool l = true) {
     Logy = l;
     // UPad->SetLogy(l);
-  }
-
-  void SetPad(TVirtualPad* p_) {
-    setTDRStyle();
-    Pad = p_;
-    Pad->cd();
-    Pad->UseCurrentStyle();
-    if (IsSR) {
-      UPad = Pad;
-      UPad->SetTopMargin(gStyle->GetPadTopMargin());
-      UPad->SetBottomMargin(gStyle->GetPadBottomMargin());
-      UPad->SetLogy(Logy);
-      UPad->Draw();
-    }
-    else {
-      TString upname = PlotName + (TString)"_upper";
-      TString lowname = PlotName + (TString)"_lower";
-      UPad = new TPad(upname,upname,0,0.3,1,1);
-      UPad->SetTopMargin(gStyle->GetPadTopMargin()/0.7);
-      UPad->SetBottomMargin(0.0);
-      UPad->SetLogy(Logy);
-      UPad->Draw();
-      LPad = new TPad(lowname,lowname,0,0,1,0.3);
-      LPad->Draw();
-      LPad->SetTopMargin(0.1);
-      LPad->SetTopMargin(gStyle->GetPadTopMargin()*0.3);
-      LPad->SetBottomMargin(gStyle->GetPadBottomMargin()/0.3);
-      LPad->SetGridy();
-    }
   }
 
   void SetXTitle(TString xt) {
@@ -97,16 +67,12 @@ public:
     double y1 = lpos[1];
     double x2 = lpos[2];
     double y2 = lpos[3];
-    // double h = (y2 - y1) / 0.7;
-    // y2 = 1.0 - (1.0 - y2) / 0.7;
-    // y1 = y2 - h;
     leg = new TLegend(x1,y1,x2,y2,reg,"NDC");
-    // leg = new TLegend(x2-x1,y2-y1,"","NDC");
     leg->SetBorderSize(1);
     leg->SetNColumns(2);
   }
 
-  void PrepHists(int ScaleSignal = 1) {
+  void PrepHists() {
     TString utitle = ";;" + YTitle;
     if (IsSR) utitle = ";" + XTitle + ";" + YTitle;
     TString stackname = PlotName + (TString)"_MCStack";
@@ -146,7 +112,36 @@ public:
   //   }
   // }
 
-  void DrawUPlot(int year) {
+  void SetPad(TVirtualPad* p_) {
+    setTDRStyle();
+    Pad = p_;
+    Pad->cd();
+    Pad->UseCurrentStyle();
+    if (IsSR) {
+      UPad = Pad;
+      UPad->SetTopMargin(gStyle->GetPadTopMargin());
+      UPad->SetBottomMargin(gStyle->GetPadBottomMargin());
+      UPad->SetLogy(Logy);
+      UPad->Draw();
+    }
+    else {
+      TString upname = PlotName + (TString)"_upper";
+      TString lowname = PlotName + (TString)"_lower";
+      UPad = new TPad(upname,upname,0,0.3,1,1);
+      UPad->SetTopMargin(gStyle->GetPadTopMargin()/0.7);
+      UPad->SetBottomMargin(0.0);
+      UPad->SetLogy(Logy);
+      UPad->Draw();
+      LPad = new TPad(lowname,lowname,0,0,1,0.3);
+      LPad->Draw();
+      LPad->SetTopMargin(0.1);
+      LPad->SetTopMargin(gStyle->GetPadTopMargin()*0.3);
+      LPad->SetBottomMargin(gStyle->GetPadBottomMargin()/0.3);
+      LPad->SetGridy();
+    }
+  }
+
+  void DrawPlot(int year) {
     UPad->cd();
     MCStack->Draw("hist");
     if (!IsSR) DataHist->Draw("E1same");
@@ -172,37 +167,54 @@ public:
       MCStack->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset());
       MCStack->GetYaxis()->SetLabelSize(gStyle->GetLabelSize());
       MCStack->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
+
+      LPad->cd();
+      RatioHist->GetXaxis()->CenterTitle();
+      RatioHist->GetXaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3 * 0.7);
+      RatioHist->GetXaxis()->SetTitleOffset(gStyle->GetTitleOffset());
+      RatioHist->GetXaxis()->SetLabelSize(gStyle->GetLabelSize() / 0.3 * 0.7);
+      RatioHist->GetXaxis()->SetLabelOffset(gStyle->GetLabelOffset());
+
+      RatioHist->GetYaxis()->CenterTitle();
+      RatioHist->GetYaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3*0.7);
+      RatioHist->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset() * 0.5 );
+      RatioHist->GetYaxis()->SetLabelSize(gStyle->GetLabelSize()/ 0.3 * 0.7);
+      RatioHist->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
+
+      RatioHist->Draw();
     }
     CMSFrame(UPad,year);
   }
 
-  void DrawLPlot() {
-    if (IsSR) return;
-    LPad->cd();
-    RatioHist->GetXaxis()->CenterTitle();
-    RatioHist->GetXaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3 * 0.7);
-    RatioHist->GetXaxis()->SetTitleOffset(gStyle->GetTitleOffset());
-    RatioHist->GetXaxis()->SetLabelSize(gStyle->GetLabelSize() / 0.3 * 0.7);
-    RatioHist->GetXaxis()->SetLabelOffset(gStyle->GetLabelOffset());
+  // void DrawLPlot() {
+  //   if (IsSR) return;
+  //   LPad->cd();
+  //   RatioHist->GetXaxis()->CenterTitle();
+  //   RatioHist->GetXaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3 * 0.7);
+  //   RatioHist->GetXaxis()->SetTitleOffset(gStyle->GetTitleOffset());
+  //   RatioHist->GetXaxis()->SetLabelSize(gStyle->GetLabelSize() / 0.3 * 0.7);
+  //   RatioHist->GetXaxis()->SetLabelOffset(gStyle->GetLabelOffset());
 
-    RatioHist->GetYaxis()->CenterTitle();
-    RatioHist->GetYaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3*0.7);
-    RatioHist->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset() * 0.5 );
-    RatioHist->GetYaxis()->SetLabelSize(gStyle->GetLabelSize()/ 0.3 * 0.7);
-    RatioHist->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
+  //   RatioHist->GetYaxis()->CenterTitle();
+  //   RatioHist->GetYaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3*0.7);
+  //   RatioHist->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset() * 0.5 );
+  //   RatioHist->GetYaxis()->SetLabelSize(gStyle->GetLabelSize()/ 0.3 * 0.7);
+  //   RatioHist->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
 
-    RatioHist->Draw();
-  }
+  //   RatioHist->Draw();
+  // }
 
-  void DrawPlot(int year) {
-    PrepHists();
-    DrawUPlot(year);
-    DrawLPlot();
-  }
+  // void DrawPlot(int year) {
+  //   DrawUPlot(year);
+  //   DrawLPlot();
+  // }
 
-  void SavePlot(TString fn) {
-    if (fn != "") Pad->SaveAs(fn);
-  }
+  // void SavePlot(TString fn) {
+  //   if (fn != "") {
+  //     fn = "plots/" + fn + ".pdf";
+  //     Pad->SaveAs(fn);
+  //   }
+  // }
 
   bool Logy, IsSR;
 
