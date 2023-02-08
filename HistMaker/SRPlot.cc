@@ -66,6 +66,15 @@ public:
     if (y2 == -1) y2 = 1. - Pad->GetTopMargin();
     leg = new TLegend(x1,y1,x2,y2,"","NDC");
     leg->SetBorderSize(1);
+    leg->SetNColumns(2);
+  }
+
+  void Legend(vector<double> lpos) { // In RatioPlot, calculations will be applied to make legend there of the same size as here
+    double x1 = lpos[0];
+    double y1 = lpos[1];
+    double x2 = lpos[2];
+    double y2 = lpos[3];
+    Legend(x1,y1,x2,y2);
   }
 
   void DrawPlot(TString fn, int year = 0) {
@@ -86,7 +95,7 @@ public:
     }
     leg->Draw();
     MCStack->GetYaxis()->SetTitleSize(gStyle->GetTitleSize() * 0.7);
-    MCStack->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset() * 1.2);
+    MCStack->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset() * 1.0);
     MCStack->GetYaxis()->SetLabelSize(gStyle->GetLabelSize() * 0.7);
     MCStack->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset() * 0.7);
     MCStack->GetXaxis()->CenterTitle();

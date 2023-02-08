@@ -98,6 +98,18 @@ public:
     if (y2 == -1) y2 = 1. - UPad->GetTopMargin();
     leg = new TLegend(x1,y1,x2,y2,"","NDC");
     leg->SetBorderSize(1);
+    leg->SetNColumns(2);
+  }
+
+  void Legend(vector<double> lpos) {
+    double x1 = lpos[0];
+    double y1 = lpos[1];
+    double x2 = lpos[2];
+    double y2 = lpos[3];
+    double h = (y2 - y1) / 0.7;
+    y2 = 1.0 - (1.0 - y2) / 0.7;
+    y1 = y2 - h;
+    Legend(x1,y1,x2,y2);
   }
 
   void DrawUPlot(int year, int ScaleSignal = 1) { // ScaleSignal < 0: auto scale; 1 >= ScaleSignal >= 0: Scale by that ; ScaleSignal = 0: do not scale
