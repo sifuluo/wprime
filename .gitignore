@@ -4,6 +4,7 @@ filenames/
 outputs/*.root
 ObsoleteCodes/
 Utilities/UserSpecifics.cc
+HistMaker/plots/
 *.err
 *.out
 *.log

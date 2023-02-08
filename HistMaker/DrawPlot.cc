@@ -9,59 +9,72 @@
 #include "DrawDataFormat.cc"
 #include "HistManager.cc"
 
-void DrawPlot(int isampleyear = 3, int PUWP = 0, int bWP = 0) {
+void DrawPlot(int isampleyear = 3, int iPUWP = 0, int ibWP = 0) {
   vector<string> PUWPs{"_PUloose","_PUmedium","_PUtight"};
-  vector<string> bTWPs{"_bTagLoose","_bTagMedium","_bTagTight"};
+  vector<string> bWPs{"_bTagLoose","_bTagMedium","_bTagTight"};
   TH1Collection tc = TH1Collection();
   vector<string> Variables{"SimpleWprime","LeadingJetPt"};
   vector<string> VariablesTitle{"m(W')[GeV/c^2]","Leading Jet p_{T}"};
   tc.Init(Variables);
   string SampleYear = dlib.SampleYears[isampleyear];
   vector<string> SampleTypes = dlib.DatasetNames;
-  TString filename = "outputs/" + SampleYear + PUWPs[PUWP] + bTWPs[bWP] + ".root";
-  TFile* f = new TFile(filename,"READ");
-  TString NameTemplate = "=SampleType=_=Variable=_=RegionRange=";
-  tc.ReadHistograms(NameTemplate, f);
-
   vector<string> StringRanges = rm.StringRanges;
 
-  TCanvas *c1 = new TCanvas("c1","c1",800,800);
-  // HistManager* hm = new HistManager(c1);
+  vector<vector<vector<vector<HistManager*> > > > AllPlots; // [iPUWP][ibWP][iv][ir]
+  AllPlots.resize(PUWPs.size());
+  for (int iPUWP = 0; iPUWP < PUWPs.size(); ++iPUWP) {
+    AllPlots[iPUWP].resize(bWPs.size());
+    for (int ibWP = 0; ibWP < bWPs.size(); ++ibWP) {
+      TString filename = "outputs/" + SampleYear + PUWPs[iPUWP] + bWPs[ibWP] + ".root";
+      TFile* f = new TFile(filename,"READ");
+      TString NameTemplate = "=SampleType=_=Variable=_=RegionRange=";
+      tc.ReadHistograms(NameTemplate, f);
 
-  for (unsigned iv = 0; iv < Variables.size(); ++iv) {
-    vector<HistManager*> HMs;
-    double ymax = 0;
-    for (unsigned ir = 0; ir < StringRanges.size(); ++ir) {
-      HistManager* hm = new HistManager(rm.Ranges[ir].IsSR);
-      for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
-        if (tc.SampleValid[ist] == false) continue;
-        // cout << SampleTypes[ist] <<endl;
-        hm->AddHist(SampleTypes[ist],tc.histos[ist][iv][ir]);  
+      AllPlots[iPUWP][ibWP].resize(Variables.size());
+      for (unsigned iv = 0; iv < Variables.size(); ++iv) {
+        AllPlots[iPUWP][ibWP][iv].resize(StringRanges.size());
+        for (unsigned ir = 0; ir < StringRanges.size(); ++ir) {
+          AllPlots[iPUWP][ibWP][iv][ir] = new HistManager(rm.Ranges[ir].IsSR);
+          HistManager* hm = AllPlots[iPUWP][ibWP][iv][ir];
+          for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
+            if (tc.SampleValid[ist] == false) continue;
+            // cout << SampleTypes[ist] <<endl;
+            hm->AddHist(SampleTypes[ist],tc.histos[ist][iv][ir]);  
+          }
+          hm->NormToLumi(isampleyear);
+          hm->RebinHists(-100);
+          hm->SetRegionLatex(rm.LatexRanges[ir]);
+          TString tx = VariablesTitle[iv];
+          TString ty = "Number of Entries";
+          TString fn = SampleYear + PUWPs[iPUWP] + bWPs[ibWP] + "_" + Variables[iv] + "_" + StringRanges[ir];
+          hm->PrepHists(tx,ty,fn);
+        }
       }
-      hm->NormToLumi(isampleyear);
-      hm->RebinHists(-100);
-      hm->SetRegionLatex(rm.LatexRanges[ir]);
-      TString tx = VariablesTitle[iv];
-      TString ty = "Number of Entries";
-      TString fn = SampleYear + PUWPs[PUWP] + bTWPs[bWP] + "_" + Variables[iv] + "_" + StringRanges[ir];
-      // fn = "";
-      hm->PrepHists(tx,ty,fn);
-      if (hm->GetMaximum() > ymax) ymax = hm->GetMaximum();
-      HMs.push_back(hm);
     }
-    ymax = ymax * 1.2;
-    for (unsigned ir = 0; ir < StringRanges.size(); ++ir) {
-      HMs[ir]->DrawPlot(c1,isampleyear);
-      // HMs[ir]->SetMaximum(ymax);
-      TString fn = SampleYear + PUWPs[PUWP] + bTWPs[bWP] + "_" + Variables[iv] + "_" + StringRanges[ir];
-      fn = "plots/" + fn + ".pdf";
-      c1->SaveAs(fn);
-      c1->Clear();
-    }
-
-    // TString fnv = "plots/" + SampleYear + PUWPs[PUWP] + bTWPs[bWP] + "_" + Variables[iv] + ".pdf";
-    // c1->SaveAs(fnv);
-    c1->Clear();
   }
 
+  TCanvas *c1 = new TCanvas("c1","c1",800,800);
+  for (unsigned iv = 0; iv < Variables.size(); ++iv) {
+    if (iv != 0) continue; // Only save one variable
+    for (unsigned ir = 0; ir < StringRanges.size(); ++ir) {
+      if (rm.Ranges[ir].b1 != 1152 || rm.Ranges[ir].b2 != 1155) continue; // Only save one region
+      double ymax = 0;
+      for (int iPUWP = 0; iPUWP < PUWPs.size(); ++iPUWP) {
+        for (int ibWP = 0; ibWP < bWPs.size(); ++ibWP) {
+          double m = AllPlots[iPUWP][ibWP][iv][ir]->GetMaximum();
+          if (m > ymax) ymax = m;
+        }
+      }
+      if (ymax == 0) continue;
+      for (int iPUWP = 0; iPUWP < PUWPs.size(); ++iPUWP) {
+        for (int ibWP = 0; ibWP < bWPs.size(); ++ibWP) {
+          AllPlots[iPUWP][ibWP][iv][ir]->DrawPlot(c1,isampleyear);
+          AllPlots[iPUWP][ibWP][iv][ir]->SetMaximum(ymax);
+          TString fn = "plots/" + AllPlots[iPUWP][ibWP][iv][ir]->PlotName + ".pdf";
+          c1->SaveAs(fn);
+          c1->Clear();
+        }
+      }
+    }
+  }
 }

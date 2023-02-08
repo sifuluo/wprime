@@ -62,12 +62,12 @@ public:
     else if (type_ == 2) AddSig(n_, h_);
   }
 
-  void Legend(vector<double> lpos, TString reg) {
+  void Legend(vector<double> lpos) {
     double x1 = lpos[0];
     double y1 = lpos[1];
     double x2 = lpos[2];
     double y2 = lpos[3];
-    leg = new TLegend(x1,y1,x2,y2,reg,"NDC");
+    leg = new TLegend(x1,y1,x2,y2,"","NDC");
     leg->SetBorderSize(1);
     leg->SetNColumns(2);
   }
@@ -153,7 +153,7 @@ public:
 
     if (IsSR) {
       MCStack->GetYaxis()->SetTitleSize(gStyle->GetTitleSize() * 0.7);
-      MCStack->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset() * 1.0);
+      MCStack->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset() / 0.7);
       MCStack->GetYaxis()->SetLabelSize(gStyle->GetLabelSize() * 0.7);
       MCStack->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset() * 0.7);
       MCStack->GetXaxis()->CenterTitle();
