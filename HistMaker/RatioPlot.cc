@@ -6,6 +6,7 @@
 #include "THStack.h"
 #include "TPad.h"
 #include "TLegend.h"
+#include "TGraphAsymmErrors.h"
 
 #include <vector>
 #include <string>
@@ -51,6 +52,7 @@ public:
 
   void AddSig(TString n_, TH1F* h_) {
     h_->SetLineStyle(2);
+    h_->SetLineWidth(2);
     SigHists.push_back(h_);
     SigNames.push_back(n_);
   }
@@ -82,6 +84,9 @@ public:
       else MCSummed->Add(MCHists[ih]);
       MCStack->Add(MCHists[ih]);
     }
+    MCErr = new TGraphAsymmErrors(MCSummed);
+    MCErr->SetFillColor(1);
+    MCErr->SetFillStyle(3004);
 
     if (IsSR) return;
     DataHist->SetTitle(utitle);
@@ -148,9 +153,11 @@ public:
     for (unsigned ih = 0; ih < SigHists.size(); ++ih) {
       SigHists[ih]->Draw("samehist");
     }
+    MCErr->Draw("samee3");
     Pad->cd();
     leg->Draw();
-
+    
+    // The coefficients are tried out and tested to be placed at same location on canvas
     if (IsSR) {
       MCStack->GetYaxis()->SetTitleSize(gStyle->GetTitleSize() * 0.7);
       MCStack->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset() / 0.7);
@@ -160,7 +167,7 @@ public:
       MCStack->GetXaxis()->SetTitleSize(gStyle->GetTitleSize() * 0.7);
       MCStack->GetXaxis()->SetTitleOffset(gStyle->GetTitleOffset());
       MCStack->GetXaxis()->SetLabelSize(gStyle->GetLabelSize() * 0.7);
-      MCStack->GetXaxis()->SetLabelOffset(gStyle->GetLabelOffset() * 0.7);
+      MCStack->GetXaxis()->SetLabelOffset(gStyle->GetLabelOffset() * 0.3);
     }
     else {
       MCStack->GetYaxis()->SetTitleSize(gStyle->GetTitleSize());
@@ -176,7 +183,7 @@ public:
       RatioHist->GetXaxis()->SetLabelOffset(gStyle->GetLabelOffset());
 
       RatioHist->GetYaxis()->CenterTitle();
-      RatioHist->GetYaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3*0.7);
+      RatioHist->GetYaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3 * 0.7);
       RatioHist->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset() * 0.5 );
       RatioHist->GetYaxis()->SetLabelSize(gStyle->GetLabelSize()/ 0.3 * 0.7);
       RatioHist->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
@@ -231,6 +238,7 @@ public:
   vector<TString> MCNames;
   THStack* MCStack;
   TH1F* MCSummed;
+  TGraphAsymmErrors* MCErr;
   TH1F* RatioHist;
 
   vector<TH1F*> SigHists;

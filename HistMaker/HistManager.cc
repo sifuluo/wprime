@@ -28,6 +28,10 @@ public:
     Hists.clear();
   };
 
+  void SetName(TString fn) {
+    PlotName = fn;
+  }
+  
   void SetRegionLatex(TString rl) {
     RegionLatex = rl;
   }
@@ -37,6 +41,7 @@ public:
   }
 
   void AddHist(string ds, TH1F* h_) {
+    if (h_ == nullptr) return;
     if (h_->GetEntries() == 0) return;
     TH1F* h = (TH1F*)h_->Clone();
     Hists[ds] = h;
@@ -100,10 +105,9 @@ public:
     }
   }
 
-  void PrepHists(TString tx, TString ty, TString fn) {
+  void PrepHists(TString tx, TString ty) {
     SortHists();
-    rp = new RatioPlot(fn, IsSR);
-    PlotName = fn;
+    rp = new RatioPlot(PlotName, IsSR);
     rp->SetXTitle(tx);
     rp->SetYTitle(ty);
     for (unsigned i = 0; i < dlib.GroupNames.size(); ++i) {
@@ -112,7 +116,7 @@ public:
     }
     rp->SetLogy(true);
     rp->Legend(LegendPos);
-    dlib.AddLegend(rp->leg);
+    dlib.AddLegend(rp->leg, IsSR);
     rp->PrepHists();
   }
 

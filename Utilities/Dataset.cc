@@ -80,6 +80,7 @@ struct DatasetGroup {
     }
     if (Type == 2) {
       dummy->SetLineStyle(2);
+      dummy->SetLineWidth(2);
       l->AddEntry(dummy, gname, "l");
     }
   }
@@ -187,8 +188,9 @@ public:
     GroupNames.push_back("Data");
   }
 
-  void AddLegend(TLegend *leg) {
+  void AddLegend(TLegend *leg, bool IsSR) {
     for (unsigned i = 0; i < GroupNames.size(); ++i) {
+      if (IsSR && GroupNames[i] == "Data") continue;
       Groups[GroupNames[i]].AddLegend(leg);
     }
   }

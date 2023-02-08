@@ -107,19 +107,39 @@ public:
     Reset();
     Add(1150);
     Add(1151);
+    // Add(1152,1152,true);
+    // Add(1153,1153,true);
+    // Add(1154,1154,true);
+    // Add(1155,1155,true);
     Add(1152,1155,true);
     Add(1250);
     Add(1251);
+    // Add(1252,1252,true);
+    // Add(1253,1253,true);
+    // Add(1254,1254,true);
+    // Add(1255,1255,true);
     Add(1252,1255,true);
     Add(1160);
     Add(1161,1162);
+    // Add(1163,1163,true);
+    // Add(1164,1164,true);
+    // Add(1165,1165,true);
+    // Add(1166,1166,true);
     Add(1163,1166,true);
     Add(1260);
     Add(1261,1262);
+    // Add(1263,1263,true);
+    // Add(1264,1264,true);
+    // Add(1265,1265,true);
+    // Add(1266,1266,true);
     Add(1263,1266,true);
   }
 
-  void Reset() {Ranges.clear();}
+  void Reset() {
+    Ranges.clear();
+    StringRanges.clear();
+    LatexRanges.clear();
+  }
 
   void Add(int b1, int b2 = -1, bool IsSR_ = false) {
     if (b2 == -1) b2 = b1;

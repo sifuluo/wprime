@@ -36,9 +36,10 @@ void DrawPlot(int isampleyear = 3, int iPUWP = 0, int ibWP = 0) {
         for (unsigned ir = 0; ir < StringRanges.size(); ++ir) {
           AllPlots[iPUWP][ibWP][iv][ir] = new HistManager(rm.Ranges[ir].IsSR);
           HistManager* hm = AllPlots[iPUWP][ibWP][iv][ir];
+          TString fn = SampleYear + PUWPs[iPUWP] + bWPs[ibWP] + "_" + Variables[iv] + "_" + StringRanges[ir];
+          hm->SetName(fn);
           for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
             if (tc.SampleValid[ist] == false) continue;
-            // cout << SampleTypes[ist] <<endl;
             hm->AddHist(SampleTypes[ist],tc.histos[ist][iv][ir]);  
           }
           hm->NormToLumi(isampleyear);
@@ -46,8 +47,7 @@ void DrawPlot(int isampleyear = 3, int iPUWP = 0, int ibWP = 0) {
           hm->SetRegionLatex(rm.LatexRanges[ir]);
           TString tx = VariablesTitle[iv];
           TString ty = "Number of Entries";
-          TString fn = SampleYear + PUWPs[iPUWP] + bWPs[ibWP] + "_" + Variables[iv] + "_" + StringRanges[ir];
-          hm->PrepHists(tx,ty,fn);
+          hm->PrepHists(tx,ty);
         }
       }
     }
@@ -57,7 +57,7 @@ void DrawPlot(int isampleyear = 3, int iPUWP = 0, int ibWP = 0) {
   for (unsigned iv = 0; iv < Variables.size(); ++iv) {
     // if (iv != 0) continue; // Only save one variable
     for (unsigned ir = 0; ir < StringRanges.size(); ++ir) {
-      // if (rm.Ranges[ir].b1 != 1151 || rm.Ranges[ir].b2 != 1151) continue; // Only save one region
+      // if (rm.Ranges[ir].b1 != 1152 || rm.Ranges[ir].b2 != 1155) continue; // Only save one region
       double ymax = 0;
       for (int iPUWP = 0; iPUWP < PUWPs.size(); ++iPUWP) {
         for (int ibWP = 0; ibWP < bWPs.size(); ++ibWP) {
