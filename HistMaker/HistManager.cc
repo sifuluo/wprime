@@ -18,26 +18,15 @@
 #include "../Utilities/Dataset.cc"
 #include "CMSStyle.cc"
 #include "RatioPlot.cc"
-#include "SRPlot.cc"
-#include "Tools.cc"
 
 class HistManager{
 public:
-  HistManager(TVirtualPad* pad) {
-    Pad = pad;
+  HistManager(bool IsSR_ = false) {
     ResetMembers();
+    IsSR = IsSR_;
     LegendPos = {0.65,0.65,0.9,0.9};
+    Hists.clear();
   };
-
-  void SetDrawData(bool d = true) {
-    DrawData = d;
-    DrawRatio = d;
-  }
-
-  void SetDrawRatio(bool d = true) {
-    DrawRatio = d;
-    if (DrawRatio && !DrawData) cout << "Ratio cannot be drawn without drawing data" <<endl;
-  }
 
   void SetRegionLatex(TString rl) {
     RegionLatex = rl;
@@ -59,6 +48,18 @@ public:
       if (dlib.GetType(sn) == 0) continue;
       it->second->Scale(dlib.GetNormFactor(sn,isy_));
     }
+  }
+
+  float RebinCalc(double nbins, int target = 100) {
+    float rb_ = 1;
+    vector<float> inc{2.,2.5,2.}; // 2, 5, 10, 20, 50, 100 etc rebinning
+    int ind = 0;
+    while (nbins  / rb_ > target) { // rebin untill less than target bins in histogram;
+      rb_ = inc[ind] * rb_;
+      if (ind == 2) ind = 0;
+      else ind++;
+    }
+    return rb_;
   }
 
   void RebinHists(int rb) {
@@ -90,58 +91,42 @@ public:
     }
   }
 
-  void DrawRatioPlot(TString tx, TString ty, TString fn, int year) {
-    rp = new RatioPlot(fn, !DrawRatio);
-    rp->SetPad(Pad);
+  void PrepHists(TString tx, TString ty, TString fn) {
+    SortHists();
+    rp = new RatioPlot(fn, IsSR);
     rp->SetXTitle(tx);
     rp->SetYTitle(ty);
-
     for (unsigned i = 0; i < dlib.GroupNames.size(); ++i) {
       string gn = dlib.GroupNames[i];
       rp->AddHist(gn,GroupHists[gn],dlib.Groups[gn].Type);
     }
-    rp->SetLogy();
+    rp->SetLogy(true);
     rp->Legend(LegendPos, RegionLatex);
     dlib.AddLegend(rp->leg);
-    rp->DrawPlot(year);
-    rp->SavePlot(fn);
+    rp->PrepHists();
   }
 
-  // void DrawSRPlot(TString tx, TString ty, TString fn, int year) {
-  //   srp = new SRPlot();
-  //   srp->SetPad(Pad);
-  //   srp->SetXTitle(tx);
-  //   srp->SetYTitle(ty);
-  //   for (unsigned i = 0; i < dlib.GroupNames.size(); ++i) {
-  //     string gn = dlib.GroupNames[i];
-  //     srp->AddHist(gn,GroupHists[gn],dlib.Groups[gn].Type);
-  //   }
-  //   srp->SetLogy();
-  //   srp->Legend(LegendPos,RegionLatex);
-  //   dlib.AddLegend(srp->leg);
-  //   srp->DrawPlot(fn,year);
-  //   srp->SavePlot(fn);
-  // }
+  double GetMaximum() {
+    return rp->GetMaximum();
+  }
 
-  void DrawPlot(TString tx, TString ty, TString fn, int year) {
-    SortHists();
-    if (fn != "") fn = "plots/" + fn + ".pdf";
-    DrawRatioPlot(tx,ty,fn,year);
-    // if (DrawRatio) {
-    //   DrawRatioPlot(tx,ty,fn,year);
-    // }
-    // else DrawSRPlot(tx,ty,fn,year);
+  void SetMaximum(double ymax) {
+    rp->MCStack->SetMaximum(ymax);
+  }
+
+  void DrawPlot(TVirtualPad* p_, int year) {
+    rp->SetPad(p_);
+    rp->DrawPlot(year);
   }
 
   void ResetMembers() {
-    DrawData = DrawRatio = true;
     Hists.clear();
   }
 
-  TVirtualPad* Pad;
-  SRPlot *srp;
+  // TVirtualPad* Pad;
   RatioPlot *rp;
-  bool DrawData, DrawRatio;
+  bool IsSR;
+  // TString XTitle, YTitle, PlotName;
   vector<double> LegendPos;
   TString RegionLatex;
   map<string, TH1F* > Hists;
