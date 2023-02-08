@@ -61,20 +61,15 @@ public:
     else if (type_ == 2) AddSig(n_, h_);
   }
 
-  void Legend(double x1 = 0.65, double y1 = 0.65, double x2 = 0.9, double y2 = 0.9) {
-    if (x2 == -1) x2 = 1. - Pad->GetRightMargin();
-    if (y2 == -1) y2 = 1. - Pad->GetTopMargin();
-    leg = new TLegend(x1,y1,x2,y2,"","NDC");
-    leg->SetBorderSize(1);
-    leg->SetNColumns(2);
-  }
-
-  void Legend(vector<double> lpos) { // In RatioPlot, calculations will be applied to make legend there of the same size as here
+  void Legend(vector<double> lpos, TString reg) { // In RatioPlot, calculations will be applied to make legend there of the same size as here
     double x1 = lpos[0];
     double y1 = lpos[1];
     double x2 = lpos[2];
     double y2 = lpos[3];
-    Legend(x1,y1,x2,y2);
+    leg = new TLegend(x1,y1,x2,y2,reg,"NDC");
+    // leg = new TLegend(x2-x1,y2-y1,"","NDC");
+    leg->SetBorderSize(1);
+    leg->SetNColumns(2);
   }
 
   void DrawPlot(TString fn, int year = 0) {
@@ -84,11 +79,7 @@ public:
     MCStack = new THStack(stackname,utitle);
     for (unsigned ih = 0; ih < MCHists.size(); ++ih) {
       MCStack->Add(MCHists[ih]);
-      // leg->AddEntry(MCHists[ih],MCNames[ih],"f");
     }
-    // for (unsigned ih = 0; ih < SigHists.size(); ++ih) {
-    //   leg->AddEntry(SigHists[ih],SigNames[ih],"l");
-    // }
     MCStack->Draw("hist");
     for (unsigned ih = 0; ih < SigHists.size(); ++ih) {
       SigHists[ih]->Draw("samehist");
@@ -104,7 +95,9 @@ public:
     MCStack->GetXaxis()->SetLabelSize(gStyle->GetLabelSize() * 0.7);
     MCStack->GetXaxis()->SetLabelOffset(gStyle->GetLabelOffset() * 0.7);
     CMSFrame(Pad,year);
-    
+  }
+
+  void SavePlot(TString fn) {
     if (fn != "") Pad->SaveAs(fn);
   }
 

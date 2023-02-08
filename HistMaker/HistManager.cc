@@ -44,12 +44,12 @@ public:
     if (DrawRatio && !DrawData) cout << "Ratio cannot be drawn without drawing data" <<endl;
   }
 
-  int GetType(string ds) {
-    return dlib.GetType(ds);
+  void SetRegionLatex(TString rl) {
+    RegionLatex = rl;
   }
 
-  void SetAutoScaleSignal(bool d = true) {
-    AutoScaleSignal = d;
+  int GetType(string ds) {
+    return dlib.GetType(ds);
   }
 
   void AddHist(string ds, TH1F* h_) {
@@ -91,7 +91,6 @@ public:
       // For rb > 0, it will simply rebin every histograms.
       if (rb < 0) { 
         rb_ = RebinCalc(it->second->GetNbinsX(),-1 * rb);
-        // cout << it->second->GetName() << " has " << it->second->GetNbinsX() << " bins, rebinning with " << rb_ <<endl;
       }
       it->second->Rebin(rb_);
     }
@@ -112,32 +111,10 @@ public:
         else GroupHists[gp]->Add(Hists[dss[id]]);
       }
     }
-
-
-    // //Group and order MC dataset groups by their dataset indices
-    // for (auto it = MCHists.begin(); it != MCHists.end(); ++it) {
-    //   string gp = dlib.GetGroup(it->first);
-    //   if (GroupMCHists.find(gp) == GroupMCHists.end()) {
-    //     GroupMCHists[gp] = (TH1F*)it->second->Clone();
-    //     // First dataset of a group determines the index of the group
-    //     // The dataset list should be ordered by group manually in the first place
-    //     GroupMCOrderedByIndices[dlib.GetIndex(it->first)] = gp;
-    //   }
-    //   else GroupMCHists[gp]->Add(it->second);
-    // }
-    // // Order MC dataset groups by their integrals
-    // for (auto it = GroupMCHists.begin(); it != GroupMCHists.end(); ++it) {
-    //   double integral = it->second->Integral();
-    //   GroupMCOrderedByIntegral[integral] = it->first;
-    // }
-    // // Order Signal dataset by their indices
-    // for (auto it = SignalHists.begin(); it != SignalHists.end(); ++it) {
-    //   SignalOrderedByIndices[dlib.GetIndex(it->first)] = it->first;
-    // }
   }
 
   void DrawRatioPlot(TString tx, TString ty, TString fn, int year) {
-    RatioPlot *rp = new RatioPlot(Pad);
+    rp = new RatioPlot(Pad);
     rp->SetXTitle(tx);
     rp->SetYTitle(ty);
 
@@ -145,44 +122,26 @@ public:
       string gn = dlib.GroupNames[i];
       rp->AddHist(gn,GroupHists[gn],dlib.Groups[gn].Type);
     }
-
-    // if (DataHists.size() == 0) throw runtime_error("No Data histogram provided for RatioPlot");
-    // rp->AddData(DataHists.begin()->second);
-    // for (auto it = GroupMCOrderedByIndices.begin(); it != GroupMCOrderedByIndices.end(); ++it) {
-    //   rp->AddMC(it->second, GroupMCHists[it->second]);
-    // }
-    // for (auto it = SignalOrderedByIndices.begin(); it != SignalOrderedByIndices.end(); ++it) {
-    //   rp->AddSig(it->second, SignalHists[it->second]);
-    // }
     rp->SetLogy();
-    rp->Legend(LegendPos);
+    rp->Legend(LegendPos, RegionLatex);
     dlib.AddLegend(rp->leg);
     rp->DrawPlot(fn, year);
+    rp->SavePlot(fn);
   }
 
   void DrawSRPlot(TString tx, TString ty, TString fn, int year) {
-    SRPlot *srp = new SRPlot(Pad);
-
-    // for (auto it = GroupHists.begin(); it != GroupHists.end(); ++it) {
-    //   srp->AddHist(it->first, it->second, dlib.Groups[it->first].Type);
-    // }
+    srp = new SRPlot(Pad);
+    srp->SetXTitle(tx);
+    srp->SetYTitle(ty);
     for (unsigned i = 0; i < dlib.GroupNames.size(); ++i) {
       string gn = dlib.GroupNames[i];
       srp->AddHist(gn,GroupHists[gn],dlib.Groups[gn].Type);
     }
-
-    // for (auto it = GroupMCOrderedByIndices.begin(); it != GroupMCOrderedByIndices.end(); ++it) {
-    //   srp->AddMC(it->second, GroupMCHists[it->second]);
-    // }
-    // for (auto it = SignalOrderedByIndices.begin(); it != SignalOrderedByIndices.end(); ++it) {
-    //   srp->AddSig(it->second, SignalHists[it->second]);
-    // }
     srp->SetLogy();
-    srp->Legend(LegendPos);
+    srp->Legend(LegendPos,RegionLatex);
     dlib.AddLegend(srp->leg);
-    srp->SetXTitle(tx);
-    srp->SetYTitle(ty);
     srp->DrawPlot(fn,year);
+    srp->SavePlot(fn);
   }
 
   void DrawPlot(TString tx, TString ty, TString fn, int year) {
@@ -196,29 +155,16 @@ public:
 
   void ResetMembers() {
     DrawData = DrawRatio = true;
-    AutoScaleSignal = true;
     Hists.clear();
-    DataHists.clear();
-    MCHists.clear();
-    SignalHists.clear();
-    SignalOrderedByIndices.clear();
-    GroupMCHists.clear();
-    GroupMCOrderedByIndices.clear();
-    GroupMCOrderedByIntegral.clear();
   }
 
   TVirtualPad* Pad;
-  bool DrawData, DrawRatio, AutoScaleSignal;
+  SRPlot *srp;
+  RatioPlot *rp;
+  bool DrawData, DrawRatio;
   vector<double> LegendPos;
+  TString RegionLatex;
   map<string, TH1F* > Hists;
-  map<string, TH1F* > DataHists; // Pair may also do, for there will be only 1 data. But map stays consistent with other containers
-  map<string, TH1F* > MCHists;
-  map<string, TH1F* > SignalHists;
-  map<int,string> SignalOrderedByIndices;
-
-  map<string, TH1F* > GroupMCHists;
-  map<int,string> GroupMCOrderedByIndices; // For legend ordering
-  map<double,string> GroupMCOrderedByIntegral; // For THStack ordering:
   map<string, TH1F*> GroupHists;
 };
 
