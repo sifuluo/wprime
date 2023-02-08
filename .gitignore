@@ -8,3 +8,4 @@ Utilities/UserSpecifics.cc
 *.out
 *.log
 *.pdf
+*.tar

@@ -50,24 +50,24 @@ public:
   void AddHist(string ds, TH1F* h_) {
     TH1F* h = (TH1F*)h_->Clone();
     if (h->GetEntries() == 0) return;
-    h->SetLineColor(dlib.GetColor(ds));
-    if (GetType(ds) == 0) {
-      h->SetLineStyle(1);
-      h->SetLineColor(1);
-      h->SetMarkerStyle(20); // 20:filled circle, 21:filled square
-      DataHists[ds] = h;
-    }
-    if (GetType(ds) == 1) {
-      h->SetLineStyle(1);
-      h->SetLineColor(dlib.GetColor(ds));
-      h->SetFillColor(dlib.GetColor(ds));
-      MCHists[ds] = h;
-    }
-    if (GetType(ds) == 2) {
-      h->SetLineStyle(2);
-      h->SetLineColor(1);
-      SignalHists[ds] = h;
-    }
+    // h->SetLineColor(dlib.GetColor(ds));
+    // if (GetType(ds) == 0) {
+    //   h->SetLineStyle(1);
+    //   h->SetLineColor(1);
+    //   h->SetMarkerStyle(20); // 20:filled circle, 21:filled square
+    //   DataHists[ds] = h;
+    // }
+    // if (GetType(ds) == 1) {
+    //   h->SetLineStyle(1);
+    //   h->SetLineColor(dlib.GetColor(ds));
+    //   h->SetFillColor(dlib.GetColor(ds));
+    //   MCHists[ds] = h;
+    // }
+    // if (GetType(ds) == 2) {
+    //   h->SetLineStyle(2);
+    //   h->SetLineColor(1);
+    //   SignalHists[ds] = h;
+    // }
     Hists[ds] = h;
   }
 
@@ -93,55 +93,88 @@ public:
   }
 
   void SortHists() {
-    //Group and order MC dataset groups by their dataset indices
-    for (auto it = MCHists.begin(); it != MCHists.end(); ++it) {
-      string gp = dlib.GetGroup(it->first);
-      if (GroupMCHists.find(gp) == GroupMCHists.end()) {
-        GroupMCHists[gp] = (TH1F*)it->second->Clone();
-        // First dataset of a group determines the index of the group
-        // The dataset list should be ordered by group manually in the first place
-        GroupMCOrderedByIndices[dlib.GetIndex(it->first)] = gp;
+    for (unsigned ig = 0; ig < dlib.GroupNames.size(); ++ig) {
+      string gp = dlib.GroupNames[ig];
+      vector<string> dss = dlib.Groups[gp].DatasetNames;
+      for (unsigned id = 0; id < dss.size(); ++id) {
+        if (Hists[dss[id]] == nullptr) continue;
+        if (GroupHists[gp] == nullptr) {
+          GroupHists[gp] = (TH1F*) Hists[dss[id]]->Clone();
+          int col = dlib.Groups[gp].Color;
+          if (dlib.Groups[gp].Type == 1)GroupHists[gp]->SetFillColor(col);
+          GroupHists[gp]->SetLineColor(col);
+        }
+        else GroupHists[gp]->Add(Hists[dss[id]]);
       }
-      else GroupMCHists[gp]->Add(it->second);
     }
-    // Order MC dataset groups by their integrals
-    for (auto it = GroupMCHists.begin(); it != GroupMCHists.end(); ++it) {
-      double integral = it->second->Integral();
-      GroupMCOrderedByIntegral[integral] = it->first;
-    }
-    // Order Signal dataset by their indices
-    for (auto it = SignalHists.begin(); it != SignalHists.end(); ++it) {
-      SignalOrderedByIndices[dlib.GetIndex(it->first)] = it->first;
-    }
+
+
+    // //Group and order MC dataset groups by their dataset indices
+    // for (auto it = MCHists.begin(); it != MCHists.end(); ++it) {
+    //   string gp = dlib.GetGroup(it->first);
+    //   if (GroupMCHists.find(gp) == GroupMCHists.end()) {
+    //     GroupMCHists[gp] = (TH1F*)it->second->Clone();
+    //     // First dataset of a group determines the index of the group
+    //     // The dataset list should be ordered by group manually in the first place
+    //     GroupMCOrderedByIndices[dlib.GetIndex(it->first)] = gp;
+    //   }
+    //   else GroupMCHists[gp]->Add(it->second);
+    // }
+    // // Order MC dataset groups by their integrals
+    // for (auto it = GroupMCHists.begin(); it != GroupMCHists.end(); ++it) {
+    //   double integral = it->second->Integral();
+    //   GroupMCOrderedByIntegral[integral] = it->first;
+    // }
+    // // Order Signal dataset by their indices
+    // for (auto it = SignalHists.begin(); it != SignalHists.end(); ++it) {
+    //   SignalOrderedByIndices[dlib.GetIndex(it->first)] = it->first;
+    // }
   }
 
   void DrawRatioPlot(TString tx, TString ty, TString fn, int year) {
     RatioPlot *rp = new RatioPlot(Pad);
     rp->SetXTitle(tx);
     rp->SetYTitle(ty);
-    if (DataHists.size() == 0) throw runtime_error("No Data histogram provided for RatioPlot");
-    rp->AddData(DataHists.begin()->second);
-    for (auto it = GroupMCOrderedByIndices.begin(); it != GroupMCOrderedByIndices.end(); ++it) {
-      rp->AddMC(it->second, GroupMCHists[it->second]);
+
+    for (unsigned i = 0; i < dlib.GroupNames.size(); ++i) {
+      string gn = dlib.GroupNames[i];
+      rp->AddHist(gn,GroupHists[gn],dlib.Groups[gn].Type);
     }
-    for (auto it = SignalOrderedByIndices.begin(); it != SignalOrderedByIndices.end(); ++it) {
-      rp->AddSig(it->second, SignalHists[it->second]);
-    }
+
+    // if (DataHists.size() == 0) throw runtime_error("No Data histogram provided for RatioPlot");
+    // rp->AddData(DataHists.begin()->second);
+    // for (auto it = GroupMCOrderedByIndices.begin(); it != GroupMCOrderedByIndices.end(); ++it) {
+    //   rp->AddMC(it->second, GroupMCHists[it->second]);
+    // }
+    // for (auto it = SignalOrderedByIndices.begin(); it != SignalOrderedByIndices.end(); ++it) {
+    //   rp->AddSig(it->second, SignalHists[it->second]);
+    // }
     rp->SetLogy();
     rp->Legend(0.65,0.65,0.9,0.9);
+    dlib.AddLegend(rp->leg);
     rp->DrawPlot(fn, year);
   }
 
   void DrawSRPlot(TString tx, TString ty, TString fn, int year) {
     SRPlot *srp = new SRPlot(Pad);
-    for (auto it = GroupMCOrderedByIndices.begin(); it != GroupMCOrderedByIndices.end(); ++it) {
-      srp->AddMC(it->second, GroupMCHists[it->second]);
+
+    // for (auto it = GroupHists.begin(); it != GroupHists.end(); ++it) {
+    //   srp->AddHist(it->first, it->second, dlib.Groups[it->first].Type);
+    // }
+    for (unsigned i = 0; i < dlib.GroupNames.size(); ++i) {
+      string gn = dlib.GroupNames[i];
+      srp->AddHist(gn,GroupHists[gn],dlib.Groups[gn].Type);
     }
-    for (auto it = SignalOrderedByIndices.begin(); it != SignalOrderedByIndices.end(); ++it) {
-      srp->AddSig(it->second, SignalHists[it->second]);
-    }
+
+    // for (auto it = GroupMCOrderedByIndices.begin(); it != GroupMCOrderedByIndices.end(); ++it) {
+    //   srp->AddMC(it->second, GroupMCHists[it->second]);
+    // }
+    // for (auto it = SignalOrderedByIndices.begin(); it != SignalOrderedByIndices.end(); ++it) {
+    //   srp->AddSig(it->second, SignalHists[it->second]);
+    // }
     srp->SetLogy();
     srp->Legend(0.65,0.65,0.9,0.9);
+    dlib.AddLegend(srp->leg);
     srp->SetXTitle(tx);
     srp->SetYTitle(ty);
     srp->DrawPlot(fn,year);
@@ -180,6 +213,7 @@ public:
   map<string, TH1F* > GroupMCHists;
   map<int,string> GroupMCOrderedByIndices; // For legend ordering
   map<double,string> GroupMCOrderedByIntegral; // For THStack ordering:
+  map<string, TH1F*> GroupHists;
 };
 
 #endif

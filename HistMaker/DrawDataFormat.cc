@@ -201,7 +201,7 @@ public:
           hn.ReplaceAll("=Variable=",Variables[iv]);
           hn.ReplaceAll("=RegionRange=",Ranges[ir]);
           histos[ist][iv][ir] = (TH1F*) f->Get(hn);
-          if (histos[ist][iv][ir]->GetEntries() == 0) ++missinghist;
+          if (histos[ist][iv][ir] == nullptr) ++missinghist;
         }
         if (missinghist == Ranges.size()) validsample = false; // If one variable can't find any regions plots, meaning the entire sample is missing.
       }
