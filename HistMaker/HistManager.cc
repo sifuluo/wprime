@@ -24,12 +24,7 @@
 class HistManager{
 public:
   HistManager(TVirtualPad* pad) {
-    setTDRStyle();
-    // pad->cd();
-    // TString pname = Pad->GetName() + (TString)"Styled";
-    // Pad = new TPad(pname,pname,0,0,1,1);
     Pad = pad;
-    Pad->UseCurrentStyle();
     ResetMembers();
     LegendPos = {0.65,0.65,0.9,0.9};
   };
@@ -55,24 +50,6 @@ public:
   void AddHist(string ds, TH1F* h_) {
     TH1F* h = (TH1F*)h_->Clone();
     if (h->GetEntries() == 0) return;
-    // h->SetLineColor(dlib.GetColor(ds));
-    // if (GetType(ds) == 0) {
-    //   h->SetLineStyle(1);
-    //   h->SetLineColor(1);
-    //   h->SetMarkerStyle(20); // 20:filled circle, 21:filled square
-    //   DataHists[ds] = h;
-    // }
-    // if (GetType(ds) == 1) {
-    //   h->SetLineStyle(1);
-    //   h->SetLineColor(dlib.GetColor(ds));
-    //   h->SetFillColor(dlib.GetColor(ds));
-    //   MCHists[ds] = h;
-    // }
-    // if (GetType(ds) == 2) {
-    //   h->SetLineStyle(2);
-    //   h->SetLineColor(1);
-    //   SignalHists[ds] = h;
-    // }
     Hists[ds] = h;
   }
 
@@ -114,7 +91,8 @@ public:
   }
 
   void DrawRatioPlot(TString tx, TString ty, TString fn, int year) {
-    rp = new RatioPlot(Pad);
+    rp = new RatioPlot(fn, !DrawRatio);
+    rp->SetPad(Pad);
     rp->SetXTitle(tx);
     rp->SetYTitle(ty);
 
@@ -125,32 +103,34 @@ public:
     rp->SetLogy();
     rp->Legend(LegendPos, RegionLatex);
     dlib.AddLegend(rp->leg);
-    rp->DrawPlot(fn, year);
+    rp->DrawPlot(year);
     rp->SavePlot(fn);
   }
 
-  void DrawSRPlot(TString tx, TString ty, TString fn, int year) {
-    srp = new SRPlot(Pad);
-    srp->SetXTitle(tx);
-    srp->SetYTitle(ty);
-    for (unsigned i = 0; i < dlib.GroupNames.size(); ++i) {
-      string gn = dlib.GroupNames[i];
-      srp->AddHist(gn,GroupHists[gn],dlib.Groups[gn].Type);
-    }
-    srp->SetLogy();
-    srp->Legend(LegendPos,RegionLatex);
-    dlib.AddLegend(srp->leg);
-    srp->DrawPlot(fn,year);
-    srp->SavePlot(fn);
-  }
+  // void DrawSRPlot(TString tx, TString ty, TString fn, int year) {
+  //   srp = new SRPlot();
+  //   srp->SetPad(Pad);
+  //   srp->SetXTitle(tx);
+  //   srp->SetYTitle(ty);
+  //   for (unsigned i = 0; i < dlib.GroupNames.size(); ++i) {
+  //     string gn = dlib.GroupNames[i];
+  //     srp->AddHist(gn,GroupHists[gn],dlib.Groups[gn].Type);
+  //   }
+  //   srp->SetLogy();
+  //   srp->Legend(LegendPos,RegionLatex);
+  //   dlib.AddLegend(srp->leg);
+  //   srp->DrawPlot(fn,year);
+  //   srp->SavePlot(fn);
+  // }
 
   void DrawPlot(TString tx, TString ty, TString fn, int year) {
     SortHists();
     if (fn != "") fn = "plots/" + fn + ".pdf";
-    if (DrawRatio) {
-      DrawRatioPlot(tx,ty,fn,year);
-    }
-    else DrawSRPlot(tx,ty,fn,year);
+    DrawRatioPlot(tx,ty,fn,year);
+    // if (DrawRatio) {
+    //   DrawRatioPlot(tx,ty,fn,year);
+    // }
+    // else DrawSRPlot(tx,ty,fn,year);
   }
 
   void ResetMembers() {

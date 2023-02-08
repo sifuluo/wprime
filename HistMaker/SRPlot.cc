@@ -15,19 +15,19 @@
 
 class SRPlot {
 public:
-  SRPlot(TVirtualPad* p_) {
-    Pad = p_;
+  SRPlot() {
     Logy = true;
-    Init();
   };
 
   void SetLogy(bool l = false) {
     Logy = l;
   }
 
-  void Init() {
+  void SetPad(TVirtualPad* p_) {
     setTDRStyle();
+    Pad = p_;
     Pad->cd();
+    Pad->UseCurrentStyle();
     Pad->Draw();
     Pad->SetTopMargin(gStyle->GetPadTopMargin());
     Pad->SetBottomMargin(gStyle->GetPadBottomMargin());
@@ -72,7 +72,7 @@ public:
     leg->SetNColumns(2);
   }
 
-  void DrawPlot(TString fn, int year = 0) {
+  void DrawPlot(int year = 0) {
     Pad->cd();
     TString utitle = ";" + XTitle + ";" + YTitle;
     TString stackname = Pad->GetName() + (TString)"_MCStack";

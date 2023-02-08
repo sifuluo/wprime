@@ -18,10 +18,10 @@ using namespace std;
 
 class RatioPlot {
 public:
-  RatioPlot(TVirtualPad* p_) {
-    Pad = p_;
+  RatioPlot(TString fn, bool IsSR_ = false) {
+    PlotName = fn;
     Logy = true;
-    Init();
+    IsSR = IsSR_;
   };
 
   void SetLogy(bool l = true) {
@@ -29,30 +29,33 @@ public:
     // UPad->SetLogy(l);
   }
 
-  void Init() {
+  void SetPad(TVirtualPad* p_) {
     setTDRStyle();
+    Pad = p_;
     Pad->cd();
-    TString upname = Pad->GetName() + (TString)"_upper";
-    TString lowname = Pad->GetName() + (TString)"_lower";
-    UPad = new TPad(upname,upname,0,0.3,1,1);
-    UPad->SetTopMargin(gStyle->GetPadTopMargin()/0.7);
-    UPad->SetBottomMargin(0.0);
-    UPad->SetLogy(Logy);
-    UPad->Draw();
-    LPad = new TPad(lowname,lowname,0,0,1,0.3);
-    LPad->Draw();
-    LPad->SetTopMargin(0.1);
-    LPad->SetTopMargin(gStyle->GetPadTopMargin()*0.3);
-    LPad->SetBottomMargin(gStyle->GetPadBottomMargin()/0.3);
-    LPad->SetGridy();
-  }
-
-  TPad* GetUpperPad() {
-    return UPad;
-  }
-
-  TPad* GetLowerPad() {
-    return LPad;
+    Pad->UseCurrentStyle();
+    if (IsSR) {
+      UPad = Pad;
+      UPad->SetTopMargin(gStyle->GetPadTopMargin());
+      UPad->SetBottomMargin(gStyle->GetPadBottomMargin());
+      UPad->SetLogy(Logy);
+      UPad->Draw();
+    }
+    else {
+      TString upname = PlotName + (TString)"_upper";
+      TString lowname = PlotName + (TString)"_lower";
+      UPad = new TPad(upname,upname,0,0.3,1,1);
+      UPad->SetTopMargin(gStyle->GetPadTopMargin()/0.7);
+      UPad->SetBottomMargin(0.0);
+      UPad->SetLogy(Logy);
+      UPad->Draw();
+      LPad = new TPad(lowname,lowname,0,0,1,0.3);
+      LPad->Draw();
+      LPad->SetTopMargin(0.1);
+      LPad->SetTopMargin(gStyle->GetPadTopMargin()*0.3);
+      LPad->SetBottomMargin(gStyle->GetPadBottomMargin()/0.3);
+      LPad->SetGridy();
+    }
   }
 
   void SetXTitle(TString xt) {
@@ -94,61 +97,88 @@ public:
     double y1 = lpos[1];
     double x2 = lpos[2];
     double y2 = lpos[3];
-    double h = (y2 - y1) / 0.7;
-    y2 = 1.0 - (1.0 - y2) / 0.7;
-    y1 = y2 - h;
+    // double h = (y2 - y1) / 0.7;
+    // y2 = 1.0 - (1.0 - y2) / 0.7;
+    // y1 = y2 - h;
     leg = new TLegend(x1,y1,x2,y2,reg,"NDC");
     // leg = new TLegend(x2-x1,y2-y1,"","NDC");
     leg->SetBorderSize(1);
     leg->SetNColumns(2);
   }
 
-  void DrawUPlot(int year, int ScaleSignal = 1) { // ScaleSignal < 0: auto scale; 1 >= ScaleSignal >= 0: Scale by that ; ScaleSignal = 0: do not scale
+  void PrepHists(int ScaleSignal = 1) {
     TString utitle = ";;" + YTitle;
-    TString stackname = Pad->GetName() + (TString)"_MCStack";
+    if (IsSR) utitle = ";" + XTitle + ";" + YTitle;
+    TString stackname = PlotName + (TString)"_MCStack";
     MCStack = new THStack(stackname,utitle);
     for (unsigned ih = 0; ih < MCHists.size(); ++ih) {
       if (ih == 0) MCSummed = (TH1F*) MCHists[0]->Clone();
       else MCSummed->Add(MCHists[ih]);
       MCStack->Add(MCHists[ih]);
     }
-    double maximum = (DataHist->GetMaximum() > MCStack->GetMaximum()) ? DataHist->GetMaximum() : MCStack->GetMaximum();
 
-    for (unsigned ih = 0; ih < SigHists.size(); ++ih) {
-      TString signame = SigNames[ih];
-      if ((SigHists[ih]->GetMaximum() * 10.< maximum && ScaleSignal < 0) || ScaleSignal > 1) {
-        double scale = ScaleSignal;
-        if (scale < 0) scale = SignalScaleCalc(SigHists[ih]->GetMaximum(), maximum);
-        SigHists[ih]->Scale(scale);
-        signame = Form("%s*%i",signame.Data(),(int)scale);
-      }
-    }
-    MCStack->SetMaximum(maximum * 1.2);
-    MCStack->Draw("hist");
+    if (IsSR) return;
     DataHist->SetTitle(utitle);
-    DataHist->Draw("E1same");
-    for (unsigned ih = 0; ih < SigHists.size(); ++ih) {
-      SigHists[ih]->Draw("samehist");
-    }
-    leg->Draw();
 
-    // DataHist->GetYaxis()->CenterTitle();
-    MCStack->GetYaxis()->SetTitleSize(gStyle->GetTitleSize());
-    MCStack->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset());
-    MCStack->GetYaxis()->SetLabelSize(gStyle->GetLabelSize());
-    MCStack->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
-
-    CMSFrame(UPad,year);
-  }
-
-  void DrawLPlot() {
     TString ltitle = ";" + XTitle + ";Data/MC";
     RatioHist = (TH1F*)DataHist->Clone();
     RatioHist->Divide(MCSummed);
     RatioHist->SetTitle(ltitle);
     RatioHist->GetYaxis()->SetRangeUser(0,2);
     RatioHist->GetYaxis()->SetNdivisions(505);
+  }
 
+  double GetMaximum() {
+    if (IsSR) return MCStack->GetMaximum();
+    if (DataHist->GetMaximum() > MCStack->GetMaximum()) return DataHist->GetMaximum();
+    else return MCStack->GetMaximum();
+  }
+
+  // void ScaleSignal(int ss = 1) { // ScaleSignal < 0: auto scale; 1 >= ScaleSignal >= 0: Scale by that ; ScaleSignal = 0: do not scale
+  //   for (unsigned ih = 0; ih < SigHists.size(); ++ih) {
+  //     TString signame = SigNames[ih];
+  //     if ((SigHists[ih]->GetMaximum() * 10.< maximum && ss < 0) || ss > 1) {
+  //       double scale = ss;
+  //       if (scale < 0) scale = SignalScaleCalc(SigHists[ih]->GetMaximum(), maximum);
+  //       SigHists[ih]->Scale(scale);
+  //       signame = Form("%s*%i",signame.Data(),(int)scale);
+  //     }
+  //   }
+  // }
+
+  void DrawUPlot(int year) {
+    UPad->cd();
+    MCStack->Draw("hist");
+    if (!IsSR) DataHist->Draw("E1same");
+    for (unsigned ih = 0; ih < SigHists.size(); ++ih) {
+      SigHists[ih]->Draw("samehist");
+    }
+    Pad->cd();
+    leg->Draw();
+
+    if (IsSR) {
+      MCStack->GetYaxis()->SetTitleSize(gStyle->GetTitleSize() * 0.7);
+      MCStack->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset() * 1.0);
+      MCStack->GetYaxis()->SetLabelSize(gStyle->GetLabelSize() * 0.7);
+      MCStack->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset() * 0.7);
+      MCStack->GetXaxis()->CenterTitle();
+      MCStack->GetXaxis()->SetTitleSize(gStyle->GetTitleSize() * 0.7);
+      MCStack->GetXaxis()->SetTitleOffset(gStyle->GetTitleOffset());
+      MCStack->GetXaxis()->SetLabelSize(gStyle->GetLabelSize() * 0.7);
+      MCStack->GetXaxis()->SetLabelOffset(gStyle->GetLabelOffset() * 0.7);
+    }
+    else {
+      MCStack->GetYaxis()->SetTitleSize(gStyle->GetTitleSize());
+      MCStack->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset());
+      MCStack->GetYaxis()->SetLabelSize(gStyle->GetLabelSize());
+      MCStack->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
+    }
+    CMSFrame(UPad,year);
+  }
+
+  void DrawLPlot() {
+    if (IsSR) return;
+    LPad->cd();
     RatioHist->GetXaxis()->CenterTitle();
     RatioHist->GetXaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3 * 0.7);
     RatioHist->GetXaxis()->SetTitleOffset(gStyle->GetTitleOffset());
@@ -164,10 +194,9 @@ public:
     RatioHist->Draw();
   }
 
-  void DrawPlot(TString fn,int year) {
-    UPad->cd();
+  void DrawPlot(int year) {
+    PrepHists();
     DrawUPlot(year);
-    LPad->cd();
     DrawLPlot();
   }
 
@@ -175,14 +204,14 @@ public:
     if (fn != "") Pad->SaveAs(fn);
   }
 
-  bool Logy;
+  bool Logy, IsSR;
 
   TVirtualPad* Pad;
-  TPad* UPad;
-  TPad* LPad;
+  TVirtualPad* UPad;
+  TVirtualPad* LPad;
   TLegend* leg;
 
-  TString XTitle, YTitle;
+  TString XTitle, YTitle, PlotName;
 
   TH1F* DataHist;
 
@@ -194,7 +223,6 @@ public:
 
   vector<TH1F*> SigHists;
   vector<TString> SigNames;
-
 };
 
 
