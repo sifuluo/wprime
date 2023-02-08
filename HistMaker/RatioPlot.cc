@@ -89,19 +89,7 @@ public:
     else if (type_ == 2) AddSig(n_, h_);
   }
 
-  void AutoLegend(double x = 0.3, double y = 0.2) {
-    leg = new TLegend(x,y);
-  }
-
-  void Legend(double x1 = 0.65, double y1 = 0.65, double x2 = 0.9, double y2 = 0.9) {
-    if (x2 == -1) x2 = 1. - UPad->GetRightMargin();
-    if (y2 == -1) y2 = 1. - UPad->GetTopMargin();
-    leg = new TLegend(x1,y1,x2,y2,"","NDC");
-    leg->SetBorderSize(1);
-    leg->SetNColumns(2);
-  }
-
-  void Legend(vector<double> lpos) {
+  void Legend(vector<double> lpos, TString reg) {
     double x1 = lpos[0];
     double y1 = lpos[1];
     double x2 = lpos[2];
@@ -109,7 +97,10 @@ public:
     double h = (y2 - y1) / 0.7;
     y2 = 1.0 - (1.0 - y2) / 0.7;
     y1 = y2 - h;
-    Legend(x1,y1,x2,y2);
+    leg = new TLegend(x1,y1,x2,y2,reg,"NDC");
+    // leg = new TLegend(x2-x1,y2-y1,"","NDC");
+    leg->SetBorderSize(1);
+    leg->SetNColumns(2);
   }
 
   void DrawUPlot(int year, int ScaleSignal = 1) { // ScaleSignal < 0: auto scale; 1 >= ScaleSignal >= 0: Scale by that ; ScaleSignal = 0: do not scale
@@ -120,7 +111,6 @@ public:
       if (ih == 0) MCSummed = (TH1F*) MCHists[0]->Clone();
       else MCSummed->Add(MCHists[ih]);
       MCStack->Add(MCHists[ih]);
-      // leg->AddEntry(MCHists[ih],MCNames[ih],"f");
     }
     double maximum = (DataHist->GetMaximum() > MCStack->GetMaximum()) ? DataHist->GetMaximum() : MCStack->GetMaximum();
 
@@ -132,11 +122,7 @@ public:
         SigHists[ih]->Scale(scale);
         signame = Form("%s*%i",signame.Data(),(int)scale);
       }
-      // leg->AddEntry(SigHists[ih],signame,"l");
     }
-
-    // leg->AddEntry(DataHist,"Data","p");
-
     MCStack->SetMaximum(maximum * 1.2);
     MCStack->Draw("hist");
     DataHist->SetTitle(utitle);
@@ -183,7 +169,9 @@ public:
     DrawUPlot(year);
     LPad->cd();
     DrawLPlot();
+  }
 
+  void SavePlot(TString fn) {
     if (fn != "") Pad->SaveAs(fn);
   }
 

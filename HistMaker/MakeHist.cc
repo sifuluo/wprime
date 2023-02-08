@@ -19,26 +19,7 @@ public:
   };
 
   void FillHistograms() {
-    // Long64_t nentries = fChain->GetEntriesFast();
 
-    // Long64_t nbytes = 0, nb = 0;
-    // fout->cd();
-    // TH1F* hLeadingJetPt = new TH1F("LeadingJetPt","LeadingJetPt", 1000,0,1000);
-    // TH1F* hSimpleWprime = new TH1F("SimpleWprime","SimpleWprime", 2000,0,2000); 
-
-    // for (Long64_t jentry=0; jentry<nentries;jentry++) {
-    //   Long64_t ientry = LoadTree(jentry);
-    //   if (ientry < 0) break;
-    //   rs->Pass(RegionIdentifier[0]);
-    //   nb = fChain->GetEntry(jentry);   nbytes += nb;
-    //   hLeadingJetPt->Fill(Jet_pt[0] * EventWeight[0]);
-    //   hSimpleWprime->Fill(SimpleWprime * EventWeight[0]);
-    //   // if (Cut(ientry) < 0) continue;
-    //   if (jentry == 10000) break;
-    // }
-    // fout->Write();
-    // fout->Save();
-    // fout->Close();
   }
 };
 

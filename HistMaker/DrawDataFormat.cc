@@ -21,38 +21,67 @@ public:
     b1 = b1_;
     b2 = b2_;
     IsSR = IsSR_;
+    Sort();
   };
   int b1 = 0;
   int b2 = 0;
+  vector<int> B1, B2;
   bool IsSR;
+
+  void Sort() {
+    B1 = {GetDigit(b1,0), GetDigit(b1,1), GetDigit(b1,2), GetDigit(b1,3)};
+    B2 = {GetDigit(b2,0), GetDigit(b2,1), GetDigit(b2,2), GetDigit(b2,3)};
+  }
+
+  int GetDigit(int x, int pos) {
+    return x / int(pow(10, pos)) % 10;
+  }
 
   string GetString() {
     string out = Form("%i-%i",b1,b2);
     return out;
   }
 
+  TString GetLatex() {
+    TString l0,l1,l2,l3;
+    if (B1[3] == 1 && B2[3] == 1) l3 = " #font[12]{#mu},";
+    else if (B1[3] == 2 && B2[3] == 2) l3 = " #font[12]{e},";
+    else l3 = "#font[12]{{#mu}/e},";
+
+    if (B1[2] == 1 && B2[2] == 1) l2 = "Primary";
+    else if (B1[2] == 2 && B2[2] == 2) l2 = "Loose";
+    else l2 = "Primary / Loose";
+
+    if (B1[1] == B2[1]) l1 = Form(" %d Jets,",B1[1]);
+    else l1 = Form(" %d-%d Jets,",B1[1],B2[1]);
+
+    if (B1[0] == B2[0]) l0 = Form(" %d bTags",B1[0]);
+    else l0 = Form(" %d-%d bTags",B1[0],B2[0]);
+
+    return l2 + l3 + l1 + l0;
+  }
+
   bool InRange(int x_, int digit) {
-    x_ = x_ / digit % 10;
-    int b1_ = b1 / digit % 10;
-    int b2_ = b2 / digit % 10;
-    return (x_ - b1_) * (x_ - b2_) <= 0;
+    x_ = GetDigit(x_,digit);
+    return (x_ - B1[digit]) * (x_ - B2[digit]) <= 0;
   }
   bool PassTrigger(int id) {
-    return InRange(id, 1000);
+    return InRange(id, 3);
   }
   bool PassLepton(int id) {
-    return InRange(id, 100);
+    return InRange(id, 2);
   }
   bool PassnJet(int id) {
-    return InRange(id, 10);
+    return InRange(id, 1);
   }
   bool PassbTag(int id) {
-    return InRange(id, 1);
+    return InRange(id, 0);
   }
   bool Pass(int id) {
     bool p = PassTrigger(id) && PassLepton(id) && PassnJet(id) && PassbTag(id);
     return p;
   }
+
   vector<bool> Pass(RegionID id) {
     vector<bool> p;
     for (unsigned i = 0; i < id.RegionCount; ++i) p.push_back(Pass(id.Regions[i]));
@@ -72,6 +101,7 @@ public:
   };
   vector<RegionIdRange> Ranges;
   vector<string> StringRanges;
+  vector<TString> LatexRanges;
 
   void DefaultInit() {
     Reset();
@@ -97,6 +127,7 @@ public:
     if (CheckOverlap(b2)) cout << b2 << " overlaps with previous ranges" << endl;
     Ranges.push_back(RegionIdRange(b1,b2, IsSR_));
     StringRanges.push_back(Ranges.back().GetString());
+    LatexRanges.push_back(Ranges.back().GetLatex());
   }
 
   bool CheckOverlap(int b){
@@ -174,7 +205,7 @@ struct RegionHistsByVariables{ // Collections of TH1 of same sample, different v
   TString TitleTemplate;
 };
 
-class TH1Collection{
+class TH1Collection{ // For Reading purpose. To be combined with the writing series above
 public:
   TH1Collection() {
   };
