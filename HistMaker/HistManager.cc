@@ -37,8 +37,8 @@ public:
   }
 
   void AddHist(string ds, TH1F* h_) {
+    if (h_->GetEntries() == 0) return;
     TH1F* h = (TH1F*)h_->Clone();
-    if (h->GetEntries() == 0) return;
     Hists[ds] = h;
   }
 
@@ -94,6 +94,7 @@ public:
   void PrepHists(TString tx, TString ty, TString fn) {
     SortHists();
     rp = new RatioPlot(fn, IsSR);
+    PlotName = fn;
     rp->SetXTitle(tx);
     rp->SetYTitle(ty);
     for (unsigned i = 0; i < dlib.GroupNames.size(); ++i) {
@@ -101,7 +102,7 @@ public:
       rp->AddHist(gn,GroupHists[gn],dlib.Groups[gn].Type);
     }
     rp->SetLogy(true);
-    rp->Legend(LegendPos, RegionLatex);
+    rp->Legend(LegendPos);
     dlib.AddLegend(rp->leg);
     rp->PrepHists();
   }
@@ -117,6 +118,12 @@ public:
   void DrawPlot(TVirtualPad* p_, int year) {
     rp->SetPad(p_);
     rp->DrawPlot(year);
+    p_->cd();
+    TLatex latex;
+    latex.SetNDC();
+    latex.SetTextSize(0.025);
+    latex.SetTextAlign(23);
+    latex.DrawLatex((LegendPos[0] + LegendPos[2])/2., LegendPos[1] - 0.025, RegionLatex);
   }
 
   void ResetMembers() {
@@ -126,7 +133,7 @@ public:
   // TVirtualPad* Pad;
   RatioPlot *rp;
   bool IsSR;
-  // TString XTitle, YTitle, PlotName;
+  TString PlotName;
   vector<double> LegendPos;
   TString RegionLatex;
   map<string, TH1F* > Hists;
