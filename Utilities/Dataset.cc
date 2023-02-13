@@ -231,6 +231,18 @@ public:
     CheckExist(ds,"GetGroup");
     return Datasets[ds].GroupName;
   }
+  
+  int GetGroupIndexFromDatasetName(string ds) {
+    CheckExist(ds,"GetGroupIndexFromDatasetName");
+    return GetGroupIndexFromGroupName(GetGroup(ds));
+  }
+
+  int GetGroupIndexFromGroupName(string gp) {
+    for (unsigned ig = 0; ig < GroupNames.size(); ++ig) {
+      if (gp == GroupNames[ig]) return ig;
+    }
+    return -1;
+  }
 
   int GetType(string ds) {
     CheckExist(ds, "GetType");

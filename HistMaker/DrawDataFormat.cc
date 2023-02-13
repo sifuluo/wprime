@@ -9,6 +9,7 @@
 #include "TH1.h"
 
 #include "../Utilities/DataFormat.cc"
+#include "../Utilities/Dataset.cc"
 
 TString Replacement(TString in, TString tr, TString n) {
   TString out = in.ReplaceAll(tr, n);
@@ -104,8 +105,13 @@ public:
   vector<TString> LatexRanges;
   // Variations is not very comfortable to be placed inside RegionManager.
   // But rest here at the momemt, as RegionManager is assured to be widely included.
+  // vector<string> Variations =
+  // {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown", 
+  // "EleSFup", "EleSFdown", "MuonSFup", "MuonSFdown", "BjetTagSFup", "BjetTagSFdown",
+  // "PUIDSFup", "PUIDSFdown", "L1PreFiringSFup", "L1PreFiringSFdown", "PUreweightSFup","PUreweightSFdown"};
+  // // Indices for each line: 0-8; 9-14; 15-20;
+  // Temperary working version below Take the version above next time. FIXME
   vector<string> Variations = {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown", "SFup", "SFdown"};
-                                  // 0         1             2              3            4           5         6         7         8        9         10
 
   void DefaultInit() {
     Reset();
@@ -192,7 +198,7 @@ public:
   };
 
   void Init() {
-    hists.clear();
+    Hists.clear();
     NameFormat = "=SampleType=_=Observable=_=RegionRange=_=Variation=";
     SampleTypes = dlib.DatasetNames;
     Variations = rm.Variations;
@@ -217,17 +223,17 @@ public:
   }
 
   void CreateHistograms() {
-    hists.clear();
-    hists.resize(SampleTypes.size());
+    Hists.clear();
+    Hists.resize(SampleTypes.size());
     for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
-      hists[ist].resize(Variations.size());
+      Hists[ist].resize(Variations.size());
       for (unsigned iv = 0; iv < Variations.size(); ++iv) {
-        hists[ist][iv].resize(Regions.size());
+        Hists[ist][iv].resize(Regions.size());
         for (unsigned ir = 0; ir < Regions.size(); ++ir) {
-          hists[ist][iv][ir].resize(Observables.size());
+          Hists[ist][iv][ir].resize(Observables.size());
           for (unsigned io = 0; io < Observables.size(); ++io) {
             TString histname = GetHistName(ist, iv, ir, io);
-            hists[ist][iv][ir][io] = new TH1F(histname, histname, nbins[io], xlow[io], xup[io]);
+            Hists[ist][iv][ir][io] = new TH1F(histname, histname, nbins[io], xlow[io], xup[io]);
           }
         }
       }
@@ -249,34 +255,14 @@ public:
     }
     int ir = rm.GetRangeIndex(rid);
     if (ir < 0) return;
-    hists[ist][iv][ir][io]->Fill(x,w);
+    Hists[ist][iv][ir][io]->Fill(x,w);
   }
 
-  // Reading Histograms
-  void ReadHistograms(vector<string> obss, TFile *f) {
-    Observables = obss;
-    hists.clear();
-    hists.resize(SampleTypes.size());
-    for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
-      hists[ist].resize(Variations.size());
-      for (unsigned iv = 0; iv < Variations.size(); ++iv) {
-        hists[ist][iv].resize(Regions.size());
-        for (unsigned ir = 0; ir < Regions.size(); ++ir) {
-          hists[ist][iv][ir].resize(Observables.size());
-          for (unsigned io = 0; io < Observables.size(); ++io) {
-            TString histname = GetHistName(ist, iv, ir, io);
-            hists[ist][iv][ir][io] = (TH1F*) f->Get(histname);
-          }
-        }
-      }
-    }
-  }
-
-  vector< vector< vector< vector<TH1F*> > > > hists; // hists[isampletype][ivariation][irange][iobservable]
-  // map<string, map<string, map<string, map< string, TH1F*> > > > hists; // hists[isampletype][ivariation][irange][iobservable]
+  vector< vector< vector< vector<TH1F*> > > > Hists; // Hists[isampletype][ivariation][irange][iobservable]
+  // map<string, map<string, map<string, map< string, TH1F*> > > > Hists; // Hists[isampletype][ivariation][irange][iobservable]
   vector<string> SampleTypes, Variations, Regions, Observables;
-  vector<int> nbins;
-  vector<double> xlow, xup;
+  vector<int> nbins; // [nObservables]
+  vector<double> xlow, xup; // [nObservables]
   TString NameFormat;
 };
 

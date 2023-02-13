@@ -130,14 +130,14 @@ public:
       UPad->Draw();
     }
     else {
-      TString upname = PlotName + (TString)"_upper";
-      TString lowname = PlotName + (TString)"_lower";
-      UPad = new TPad(upname,upname,0,0.3,1,1);
+      TString uppadname = PlotName + (TString)"_upper";
+      TString lowpadname = PlotName + (TString)"_lower";
+      UPad = new TPad(uppadname,uppadname,0,0.3,1,1);
       UPad->SetTopMargin(gStyle->GetPadTopMargin()/0.7);
       UPad->SetBottomMargin(0.0);
       UPad->SetLogy(Logy);
       UPad->Draw();
-      LPad = new TPad(lowname,lowname,0,0,1,0.3);
+      LPad = new TPad(lowpadname,lowpadname,0,0,1,0.3);
       LPad->Draw();
       LPad->SetTopMargin(0.1);
       LPad->SetTopMargin(gStyle->GetPadTopMargin()*0.3);
