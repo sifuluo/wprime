@@ -86,7 +86,7 @@ public:
     }
     MCErr = new TGraphAsymmErrors(MCSummed);
     MCErr->SetFillColor(1);
-    MCErr->SetFillStyle(3004);
+    MCErr->SetFillStyle(3002);
 
     if (IsSR) return;
     DataHist->SetTitle(utitle);
@@ -153,7 +153,7 @@ public:
     for (unsigned ih = 0; ih < SigHists.size(); ++ih) {
       SigHists[ih]->Draw("samehist");
     }
-    MCErr->Draw("samee3");
+    MCErr->Draw("same3");
     Pad->cd();
     leg->Draw();
     
