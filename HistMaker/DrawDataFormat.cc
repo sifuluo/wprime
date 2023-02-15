@@ -110,7 +110,10 @@ public:
   // "EleSFup", "EleSFdown", "MuonSFup", "MuonSFdown", "BjetTagSFup", "BjetTagSFdown",
   // "PUIDSFup", "PUIDSFdown", "L1PreFiringSFup", "L1PreFiringSFdown", "PUreweightSFup","PUreweightSFdown"};
   // // Indices for each line: 0-8; 9-14; 15-20;
+
   // Temperary working version below Take the version above next time. FIXME
+  // Variations have to be ordered as central followed by Up variations and Down variations.
+  // Histmanager will determine the variation type based on 
   vector<string> Variations = {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown", "SFup", "SFdown"};
 
   void DefaultInit() {
@@ -259,7 +262,6 @@ public:
   }
 
   vector< vector< vector< vector<TH1F*> > > > Hists; // Hists[isampletype][ivariation][irange][iobservable]
-  // map<string, map<string, map<string, map< string, TH1F*> > > > Hists; // Hists[isampletype][ivariation][irange][iobservable]
   vector<string> SampleTypes, Variations, Regions, Observables;
   vector<int> nbins; // [nObservables]
   vector<double> xlow, xup; // [nObservables]

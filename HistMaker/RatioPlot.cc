@@ -6,7 +6,7 @@
 #include "THStack.h"
 #include "TPad.h"
 #include "TLegend.h"
-#include "TGraphAsymmErrors.h"
+#include "TGraph.h"
 
 #include <vector>
 #include <string>
@@ -39,6 +39,7 @@ public:
 
   void AddData(TH1F* h_) {
     DataHist = (TH1F*)h_->Clone();
+    DataHist->SetBinErrorOption(TH1::kPoisson);
     DataHist->SetLineStyle(1);
     DataHist->SetLineColor(1);
     DataHist->SetMarkerStyle(20);
@@ -84,9 +85,6 @@ public:
       else MCSummed->Add(MCHists[ih]);
       MCStack->Add(MCHists[ih]);
     }
-    MCErr = new TGraphAsymmErrors(MCSummed);
-    MCErr->SetFillColor(1);
-    MCErr->SetFillStyle(3002);
 
     if (IsSR) return;
     DataHist->SetTitle(utitle);
@@ -97,6 +95,10 @@ public:
     RatioHist->SetTitle(ltitle);
     RatioHist->GetYaxis()->SetRangeUser(0,2);
     RatioHist->GetYaxis()->SetNdivisions(505);
+  }
+
+  void SetErrorGraph(TGraph* e) {
+    MCErr = e;
   }
 
   double GetMaximum() {
@@ -153,7 +155,7 @@ public:
     for (unsigned ih = 0; ih < SigHists.size(); ++ih) {
       SigHists[ih]->Draw("samehist");
     }
-    MCErr->Draw("same3");
+    MCErr->Draw("samef");
     Pad->cd();
     leg->Draw();
     
@@ -193,36 +195,6 @@ public:
     CMSFrame(UPad,year);
   }
 
-  // void DrawLPlot() {
-  //   if (IsSR) return;
-  //   LPad->cd();
-  //   RatioHist->GetXaxis()->CenterTitle();
-  //   RatioHist->GetXaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3 * 0.7);
-  //   RatioHist->GetXaxis()->SetTitleOffset(gStyle->GetTitleOffset());
-  //   RatioHist->GetXaxis()->SetLabelSize(gStyle->GetLabelSize() / 0.3 * 0.7);
-  //   RatioHist->GetXaxis()->SetLabelOffset(gStyle->GetLabelOffset());
-
-  //   RatioHist->GetYaxis()->CenterTitle();
-  //   RatioHist->GetYaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3*0.7);
-  //   RatioHist->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset() * 0.5 );
-  //   RatioHist->GetYaxis()->SetLabelSize(gStyle->GetLabelSize()/ 0.3 * 0.7);
-  //   RatioHist->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
-
-  //   RatioHist->Draw();
-  // }
-
-  // void DrawPlot(int year) {
-  //   DrawUPlot(year);
-  //   DrawLPlot();
-  // }
-
-  // void SavePlot(TString fn) {
-  //   if (fn != "") {
-  //     fn = "plots/" + fn + ".pdf";
-  //     Pad->SaveAs(fn);
-  //   }
-  // }
-
   bool Logy, IsSR;
 
   TVirtualPad* Pad;
@@ -238,7 +210,7 @@ public:
   vector<TString> MCNames;
   THStack* MCStack;
   TH1F* MCSummed;
-  TGraphAsymmErrors* MCErr;
+  TGraph* MCErr;
   TH1F* RatioHist;
 
   vector<TH1F*> SigHists;
