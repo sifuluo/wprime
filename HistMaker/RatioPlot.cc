@@ -198,18 +198,21 @@ public:
 
     if (IsSR) return;
     if (RatioHist == nullptr) CreateRatioHist();
-    RatioHist->SetMarkerStyle(5);
+    // RatioHist->SetMarkerStyle(6); // Make it small;
     for (unsigned i = 0; i < nbins; ++i) {
-      y[2*i] = y[2*i+1] = DataHist->GetBinContent(i+1) / (MCSummed[0]->GetBinContent(i+1) - MCErrLow[i]);
-      y[lp-2*i] = y[lp-2*i-1] = DataHist->GetBinContent(i+1) / (MCSummed[0]->GetBinContent(i+1) + MCErrUp[i]);
+      y[2*i] = y[2*i+1] = y[lp-2*i] = y[lp-2*i-1] = 0;
+      if (MCSummed[0]->GetBinContent(i+1) - MCErrLow[i] > 0) {
+        y[2*i] = y[2*i+1] = DataHist->GetBinContent(i+1) / (MCSummed[0]->GetBinContent(i+1) - MCErrLow[i]);
+      }
+      if (MCSummed[0]->GetBinContent(i+1) + MCErrUp[i] > 0) {
+        y[lp-2*i] = y[lp-2*i-1] = DataHist->GetBinContent(i+1) / (MCSummed[0]->GetBinContent(i+1) + MCErrUp[i]);
+      } 
     }
     RatioErrorGraph = new TGraph(nbins * 4, x, y);
-    RatioErrorGraph->SetLineWidth(10);
-    RatioErrorGraph->SetLineColor(1);
+    RatioErrorGraph->SetLineWidth(0);
     RatioErrorGraph->SetFillColor(1);
-    // RatioErrorGraph->SetFillStyle(ErrorBandFillStyle);
+    RatioErrorGraph->SetFillStyle(ErrorBandFillStyle);
     int i = 51;
-    cout << Form("Central %f, Errup %f, Errlow %f, xup %f, xlow %f", RatioHist->GetBinContent(i + 1), RatioErrorGraph->GetY()[2 * i], RatioErrorGraph->GetY()[lp - 2 * i], RatioErrorGraph->GetX()[2*i], RatioErrorGraph->GetX()[2*i+1]) <<endl;
   }
 
   void Legend(vector<double> lpos) { // Todo: Dynamic legend position and compress the yaxis if necessary
@@ -335,7 +338,7 @@ public:
       RatioHist->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
 
       RatioHist->Draw("");
-      // if (RatioErrorGraph != nullptr) RatioErrorGraph->Draw("samef");
+      if (RatioErrorGraph != nullptr) RatioErrorGraph->Draw("samef");
     }
     Pad->cd();
     leg->Draw();

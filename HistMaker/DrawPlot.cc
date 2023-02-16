@@ -21,7 +21,7 @@ void DrawPlot(int isampleyear = 3) {
   // vector<vector<vector<vector<HistManager*> > > > AllPlots; // [iPUWP][ibWP][io][ir]
   vector< vector <HistManager*> > AllPlots; // [iPUWP][ibWP]
   AllPlots.resize(PUWPs.size());
-  bool TestOnePlot = true;
+  bool TestOnePlot = false;
   int TestRegion = 1160;
   for (int iPUWP = 0; iPUWP < PUWPs.size(); ++iPUWP) {
     if (iPUWP != 2 && TestOnePlot) continue;
@@ -61,10 +61,10 @@ void DrawPlot(int isampleyear = 3) {
           AllPlots[iPUWP][ibWP]->CreateErrorGraphs(ir,io);
           AllPlots[iPUWP][ibWP]->DrawPlot(ir,io,c1,isampleyear);
           // AllPlots[iPUWP][ibWP]->SetMaximum(ir, io, ymax);
-          TString fn = "plots/" + AllPlots[iPUWP][ibWP]->Plots[ir][io]->PlotName + ".C";
-          TString fn2 = "plots/" + AllPlots[iPUWP][ibWP]->Plots[ir][io]->PlotName + ".pdf";
-          c1->SaveAs(fn2);
+          TString fn = "plots/" + AllPlots[iPUWP][ibWP]->Plots[ir][io]->PlotName + ".pdf";
           c1->SaveAs(fn);
+          // TString fnc = "plots/" + AllPlots[iPUWP][ibWP]->Plots[ir][io]->PlotName + ".C";
+          // c1->SaveAs(fnc);
           c1->Clear();
         }
       }
