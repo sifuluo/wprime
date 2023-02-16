@@ -113,7 +113,7 @@ public:
 
   void PrepHists() {
     SortHists();
-    PrepErrorGraphs();
+    // PrepErrorGraphs();
     Plots.clear();
     Plots.resize(Regions.size());
     for (unsigned ir = 0; ir < Regions.size(); ++ir) {
@@ -121,27 +121,23 @@ public:
       Plots[ir].resize(Observables.size());
       for (unsigned io = 0; io < Observables.size(); ++io) {
         TString PlotName = PlotNamePrefix + "_" + Observables[io] + "_" + rm.StringRanges[ir];
-        Plots[ir][io] = new RatioPlot(PlotName,IsSR);
-        Plots[ir][io]->SetXTitle(XTitles[io]);
-        Plots[ir][io]->SetYTitle(YTitles[io]);
+        Plots[ir][io] = new RatioPlot(PlotName,IsSR, XTitles[io], YTitles[io]);
+        Plots[ir][io]->SetVariationTypes(Variations);
         for (unsigned ig = 0; ig < GroupNames.size(); ++ig) {
-          string gn = dlib.GroupNames[ig];
-          Plots[ir][io]->AddHist(gn, GroupHists[ig][0][ir][io], dlib.Groups[gn].Type);
+          for (unsigned iv = 0; iv < Variations.size(); ++iv) {
+            string gn = GroupNames[ig];
+            Plots[ir][io]->AddHist(gn, GroupHists[ig][iv][ir][io], dlib.Groups[gn].Type,iv);
+          }
         }
         Plots[ir][io]->SetLogy(true);
         Plots[ir][io]->Legend(LegendPos);
         dlib.AddLegend(Plots[ir][io]->leg,IsSR);
-        Plots[ir][io]->PrepHists();
-        Plots[ir][io]->SetErrorGraph(ErrorGraphs[ir][io]);
       }
     }
   }
 
-  void PrepErrorGraphs() {
-    SumUpMCHists();
-    ErrorCalc();
-    CombineErrors();
-    CreateErrorGraphs();
+  void CreateErrorGraphs(int ir, int io) {
+    Plots[ir][io]->CreateErrorGraphs();
   }
 
   double GetMaximum(int ir, int io) {
@@ -149,7 +145,7 @@ public:
   }
 
   void SetMaximum(int ir, int io, double max) {
-    Plots[ir][io]->MCStack->SetMaximum(max);
+    Plots[ir][io]->SetMaximum(max);
   }
 
   void DrawPlot(int ir, int io, TVirtualPad* p_, int year) {
@@ -161,152 +157,11 @@ public:
     latex.SetTextSize(0.025);
     latex.SetTextAlign(23);
     latex.DrawLatex((LegendPos[0] + LegendPos[2])/2., LegendPos[1] - 0.025, rm.LatexRanges[ir]);
+    TString sens = Form("Sig/#sqrt{Sig + BG} = %f", Plots[ir][io]->GetSensitivity());
+    latex.DrawLatex((LegendPos[0] + LegendPos[2])/2., LegendPos[1] - 0.055, sens);
   }
   vector<double> LegendPos = {0.65,0.65,0.9,0.9};
 
-  void SumUpMCHists() {
-    SumMCHists.clear();
-    SumMCHists.resize(Variations.size());
-    for (unsigned iv = 0; iv < Variations.size(); ++iv)
-    {
-      SumMCHists[iv].resize(Regions.size());
-      for (unsigned ir = 0; ir < Regions.size(); ++ir) {
-        SumMCHists[iv][ir].resize(Observables.size());
-        for (unsigned io = 0; io < Observables.size(); ++io) {
-          for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
-            if (dlib.GetType(SampleTypes[ist]) != 1) continue;
-            if (Hists[ist][iv][ir][io] == nullptr) continue;
-            if (SumMCHists[iv][ir][io] == nullptr) {
-              SumMCHists[iv][ir][io] = (TH1F*) Hists[ist][iv][ir][io]->Clone();
-            }
-            else SumMCHists[iv][ir][io]->Add(Hists[ist][iv][ir][io]);
-          }
-        }
-      }
-    }
-  }
-
-  void ErrorCalc() {
-    // Resize the Error vectors
-    ErrorUp.clear();
-    ErrorUp.resize(Variations.size());
-    ErrorLow.clear();
-    ErrorLow.resize(Variations.size());
-    for (unsigned iv = 0; iv < Variations.size(); ++iv)
-    {
-      int vartype = iv % 2; //  1: Up, 0: Down
-      ErrorUp[iv].resize(Regions.size());
-      ErrorLow[iv].resize(Regions.size());
-      for (unsigned ir = 0; ir < Regions.size(); ++ir)
-      {
-        ErrorUp[iv][ir].resize(Observables.size());
-        ErrorLow[iv][ir].resize(Observables.size());
-        for (unsigned io = 0; io < Observables.size(); ++io) {
-          vector<double> errup, errlow;
-          errup.clear();
-          errlow.clear();
-          if (iv == 0) StatError(SumMCHists[iv][ir][io], errup, errlow,0);
-          else SystError(SumMCHists[0][ir][io], SumMCHists[iv][ir][io], errup, errlow, vartype);
-          ErrorUp[iv][ir][io] = errup;
-          ErrorLow[iv][ir][io] = errlow;
-        }
-      }
-    }
-  }
-
-  // void StatErrorSimPoisson(TH1F* hcentral, vector<double>& errup, vector<double>& errlow) {
-  //   const double alpha = 1 - 0.6827;
-  //   for (unsigned i = 0; i < hcentral->GetNbinsX(); ++i) {
-  //     double N = hcentral->GetBinContent(i+1);
-  //     double U =  ROOT::Math::gamma_quantile_c(alpha/2,N+1,1) ;
-  //     double L = (N==0) ? 0  : (ROOT::Math::gamma_quantile(alpha/2,N,1.));
-  //     errup.push_back(U-N);
-  //     errlow.push_back(N-L);
-  //   }
-  // }
-
-  void StatError(TH1F* hcentral, vector<double>& errup, vector<double>& errlow, int doPoisson = 0) {
-    if (doPoisson == 1) hcentral->SetBinErrorOption(TH1::kPoisson);
-    // else if (doPoisson == 2) {
-    //   StatErrorSimPoisson(hcentral, errup, errlow);
-    //   return;
-    // }
-    for (unsigned i = 0; i < hcentral->GetNbinsX(); ++i) {
-      errup.push_back(hcentral->GetBinErrorUp(i+1));
-      errlow.push_back(hcentral->GetBinErrorLow(i+1));
-    }
-  }
-
-  void SystError(TH1F* hcentral, TH1F* hvar, vector<double>& errup, vector<double>& errlow, int type) { // type: 1: Up, 0: Down
-    for (unsigned i = 0; i < hcentral->GetNbinsX(); ++i) {
-      double diff = hvar->GetBinContent(i+1) - hcentral->GetBinContent(i+1);
-      if (type == 1) {
-        if (diff > 0) errup.push_back(diff);
-        else errup.push_back(0);
-      }
-      else {
-        if (diff < 0) errlow.push_back(-1.0 * diff);
-        else errlow.push_back(0);
-      }
-    }
-  }
-
-  void CombineErrors() {
-    ErrorUpCombined.clear();
-    ErrorLowCombined.clear();
-    ErrorUpCombined.resize(Regions.size());
-    ErrorLowCombined.resize(Regions.size());
-    for (unsigned ir = 0; ir < Regions.size(); ++ir) {
-      ErrorUpCombined[ir].resize(Observables.size());
-      ErrorLowCombined[ir].resize(Observables.size());
-      for (unsigned io = 0; io < Observables.size(); ++io) {
-        // bool dbg = false;
-        // if (rm.Ranges[ir].b1 == 1251 && io == 0) dbg = true;
-        ErrorUpCombined[ir][io].resize(nbins[io]);
-        ErrorLowCombined[ir][io].resize(nbins[io]);
-        for (unsigned ib = 0; ib < nbins[io]; ++ib) {
-          double errupsq(0), errlowsq(0);
-          for (unsigned iv = 0; iv < Variations.size(); ++iv) {
-            if (iv == 0) {
-              errupsq += ErrorUp[iv][ir][io][ib] * ErrorUp[iv][ir][io][ib];
-              errlowsq += ErrorLow[iv][ir][io][ib] * ErrorLow[iv][ir][io][ib];
-            }
-            else {
-              int vartype = iv % 2; //  1: Up, 0: Down
-              if (vartype == 1) errupsq += ErrorUp[iv][ir][io][ib] * ErrorUp[iv][ir][io][ib];
-              if (vartype == 0) errlowsq += ErrorLow[iv][ir][io][ib] * ErrorLow[iv][ir][io][ib];
-            }
-          }
-          ErrorUpCombined[ir][io][ib] = sqrt(errupsq);
-          ErrorLowCombined[ir][io][ib] = sqrt(errlowsq); 
-        }
-      }
-    }
-  }
-
-  void CreateErrorGraphs() {
-    ErrorGraphs.resize(Regions.size());
-    for (unsigned ir = 0; ir < Regions.size(); ++ir) {
-      ErrorGraphs[ir].resize(Observables.size());
-      for (unsigned io = 0; io < Observables.size(); ++io) {
-        double x[1000];
-        double y[1000];
-        int lastpoint = nbins[io] * 4 - 1;
-        double binwidth = (xup[io] - xlow[io]) / nbins[io];
-        for (unsigned i = 0; i < nbins[io]; ++i) {
-          double lowedge = xlow[io] + (i + 0.0) * binwidth;
-          double upedge = xlow[io] + (i + 1.0) * binwidth;
-          x[2*i] = x[lastpoint-i*2] = lowedge;
-          x[2*i+1] = x[lastpoint-i*2-1] = upedge;
-          y[2*i] = y[2*i+1] = SumMCHists[0][ir][io]->GetBinContent(i + 1) + ErrorUpCombined[ir][io][i];
-          y[lastpoint-2*i] = y[lastpoint-2*i-1] = SumMCHists[0][ir][io]->GetBinContent(i + 1) - ErrorLowCombined[ir][io][i];
-        }
-        ErrorGraphs[ir][io] = new TGraph(4 * nbins[io], x, y);
-        ErrorGraphs[ir][io]->SetFillColor(1);
-        ErrorGraphs[ir][io]->SetFillStyle(3002);
-      }
-    }
-  }
   // Inherited members
   // vector< vector< vector< vector<TH1F*> > > > Hists; // Hists[isampletype][ivariation][irange][iobservable]
   // vector<string> SampleTypes, Variations, Regions, Observables;
@@ -319,9 +174,5 @@ public:
   vector<string> XTitles, YTitles;
   vector< vector< vector< vector<TH1F*> > > > GroupHists; // [Group][Variation][Region][Observable]
   vector< vector<RatioPlot*> > Plots; // [Region][Observable]
-  vector< vector< vector<TH1F*> > > SumMCHists; // [Variation][Region][Observable]
-  vector< vector< vector< vector<double> > > > ErrorUp, ErrorLow; // [Variation][Region][Observable][Bin]
-  vector< vector< vector<double> > > ErrorUpCombined, ErrorLowCombined; // [Region][Observable][Bin]
-  vector< vector<TGraph*> > ErrorGraphs; // [Region][Observable]
 };
 #endif
