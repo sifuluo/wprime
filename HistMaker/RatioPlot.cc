@@ -176,8 +176,11 @@ public:
     for (unsigned i = 0; i < nbins; ++i) {
       x[2*i] = x[lp-2*i] = xlow + (i + 0.0) * bw;
       x[2*i+1] = x[lp-2*i-1] = xlow + (i + 1.0) * bw;
-      y[2*i] = y[2*i+1] = MCSummed[0]->GetBinContent(i+1) + MCErrUp[i];
-      y[lp-2*i] = y[lp-2*i-1] = MCSummed[0]->GetBinContent(i+1) - MCErrLow[i];
+      y[2*i] = y[2*i+1] = y[lp-2*i] = y[lp-2*i-1] = MinY;
+      double cent = MCSummed[0]->GetBinContent(i+1);
+      if (cent <= MinY) continue;
+      y[2*i] = y[2*i+1] = cent + MCErrUp[i];
+      y[lp-2*i] = y[lp-2*i-1] = cent - MCErrLow[i];
     }
     MCErrorGraph = new TGraph(nbins * 4, x, y);
     MCErrorGraph->SetLineWidth(0);
@@ -187,8 +190,11 @@ public:
     SigErrorGraphs.resize(SigNames.size());
     for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
       for (unsigned i = 0; i < nbins; ++i) {
-        y[2*i] = y[2*i+1] = SigHists[isig][0]->GetBinContent(i+1) + SigErrUp[isig][i];
-        y[lp-2*i] = y[lp-2*i-1] = SigHists[isig][0]->GetBinContent(i+1) - SigErrLow[isig][i];
+        y[2*i] = y[2*i+1] = y[lp-2*i] = y[lp-2*i-1] = MinY;
+        double cent = SigHists[isig][0]->GetBinContent(i+1);
+        if (cent <= MinY) continue;
+        y[2*i] = y[2*i+1] = cent + SigErrUp[isig][i];
+        y[lp-2*i] = y[lp-2*i-1] = cent - SigErrLow[isig][i];
       }
       SigErrorGraphs[isig] = new TGraph(nbins * 4, x, y);
       SigErrorGraphs[isig]->SetLineWidth(0);
@@ -200,12 +206,14 @@ public:
     if (RatioHist == nullptr) CreateRatioHist();
     // RatioHist->SetMarkerStyle(6); // Make it small;
     for (unsigned i = 0; i < nbins; ++i) {
-      y[2*i] = y[2*i+1] = y[lp-2*i] = y[lp-2*i-1] = 0;
+      y[2*i] = y[2*i+1] = y[lp-2*i] = y[lp-2*i-1] = MinY;
+      double cent = DataHist->GetBinContent(i+1);
+      if (cent <= MinY) continue;
       if (MCSummed[0]->GetBinContent(i+1) - MCErrLow[i] > 0) {
-        y[2*i] = y[2*i+1] = DataHist->GetBinContent(i+1) / (MCSummed[0]->GetBinContent(i+1) - MCErrLow[i]);
+        y[2*i] = y[2*i+1] = cent / (MCSummed[0]->GetBinContent(i+1) - MCErrLow[i]);
       }
       if (MCSummed[0]->GetBinContent(i+1) + MCErrUp[i] > 0) {
-        y[lp-2*i] = y[lp-2*i-1] = DataHist->GetBinContent(i+1) / (MCSummed[0]->GetBinContent(i+1) + MCErrUp[i]);
+        y[lp-2*i] = y[lp-2*i-1] = cent / (MCSummed[0]->GetBinContent(i+1) + MCErrUp[i]);
       } 
     }
     RatioErrorGraph = new TGraph(nbins * 4, x, y);
@@ -254,7 +262,8 @@ public:
     return sens;
   }
 
-  // void ScaleSignal(int ss = 1) { // ScaleSignal < 0: auto scale; 1 >= ScaleSignal >= 0: Scale by that ; ScaleSignal = 0: do not scale
+  // void ScaleSignal(int ss = 1) {
+  //  // ScaleSignal < 0: auto scale; 1 >= ScaleSignal >= 0: Scale by that ; ScaleSignal = 0: do not scale
   //   for (unsigned ih = 0; ih < SigHists.size(); ++ih) {
   //     TString signame = SigNames[ih];
   //     if ((SigHists[ih]->GetMaximum() * 10.< maximum && ss < 0) || ss > 1) {
@@ -305,7 +314,8 @@ public:
       SigHists[isig][0]->Draw("samehist");
       if (SigErrorGraphs.size() == SigNames.size()) SigErrorGraphs[isig]->Draw("samef");
     }
-    
+    Pad->cd();
+    leg->Draw();
     // The coefficients are tried out and tested to be placed at same location on canvas
     if (IsSR) {
       MCStack->GetYaxis()->SetTitleSize(gStyle->GetTitleSize() * 0.7);
@@ -340,8 +350,6 @@ public:
       RatioHist->Draw("");
       if (RatioErrorGraph != nullptr) RatioErrorGraph->Draw("samef");
     }
-    Pad->cd();
-    leg->Draw();
     CMSFrame(UPad,year);
   }
 
@@ -358,6 +366,7 @@ public:
   int VarSize;
   int nbins;
   double xlow, xup;
+  double MinY = 0;
 
   TH1F* DataHist;
 
