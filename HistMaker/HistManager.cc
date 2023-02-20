@@ -151,14 +151,14 @@ public:
   void DrawPlot(int ir, int io, TVirtualPad* p_, int year) {
     Plots[ir][io]->SetPad(p_);
     Plots[ir][io]->DrawPlot(year);
-    p_->cd();
+    Plots[ir][io]->UPad->cd();
     TLatex latex;
     latex.SetNDC();
-    latex.SetTextSize(0.025);
+    latex.SetTextSize(0.035);
     latex.SetTextAlign(23);
     latex.DrawLatex((LegendPos[0] + LegendPos[2])/2., LegendPos[1] - 0.025, rm.LatexRanges[ir]);
     TString sens = Form("Sig/#sqrt{Sig + BG} = %f", Plots[ir][io]->GetSensitivity());
-    latex.DrawLatex((LegendPos[0] + LegendPos[2])/2., LegendPos[1] - 0.055, sens);
+    latex.DrawLatex((LegendPos[0] + LegendPos[2])/2., LegendPos[1] - 0.065, sens);
   }
   vector<double> LegendPos = {0.65,0.65,0.9,0.9};
 

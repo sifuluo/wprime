@@ -24,11 +24,8 @@ public:
     PlotName = pn;
     Logy = true;
     IsSR = IsSR_;
-    if (IsSR) UTitle = ";" + xt + ";" + yt;
-    else {
-      UTitle = ";;" + yt;
-      LTitle = ";" + xt + ";Data/MC";
-    }
+    UTitle = ";;" + yt;
+    LTitle = ";" + xt + ";Data/MC";
     TString stackname = PlotName + (TString)"_MCStack";
     MCStack = new THStack(stackname,UTitle);
     nbins = 0;
@@ -40,11 +37,8 @@ public:
   }
 
   void SetTitles(TString xt, TString yt = "Number of Entries") {
-    if (IsSR) UTitle = ";" + xt + ";" + yt;
-    else {
-      UTitle = ";;" + yt;
-      LTitle = ";" + xt + ";Data/MC";
-    }
+    UTitle = ";;" + yt;
+    LTitle = ";" + xt + ";Data/MC";
     MCStack->SetTitle(UTitle);
   }
 
@@ -64,6 +58,9 @@ public:
     DataHist->SetLineColor(1);
     DataHist->SetMarkerStyle(20);
     DataHist->SetTitle(UTitle); // Not necessary because Stack will be drawn first
+
+    DataOverMC = (TH1F*)DataHist->Clone();
+    DataOverMC->SetTitle(LTitle); // Not necessary because ErrorGraph will be drawn first
   }
 
   void AddMC(TH1F* h_, int iv) {
@@ -72,7 +69,10 @@ public:
       MCHists.push_back(h_);
       MCStack->Add(h_);
     }
-    if (MCSummed[iv] == nullptr) MCSummed[iv] = (TH1F*) h_->Clone();
+    if (MCSummed[iv] == nullptr) {
+      MCSummed[iv] = (TH1F*) h_->Clone();
+      MCSummed[iv]->SetLineColor(1);
+    }
     else MCSummed[iv]->Add(h_);
   }
 
@@ -201,26 +201,26 @@ public:
       SigErrorGraphs[isig]->SetFillColor(SigHists[isig][0]->GetLineColor());
       SigErrorGraphs[isig]->SetFillStyle(ErrorBandFillStyle);
     }
-
-    if (IsSR) return;
-    if (RatioHist == nullptr) CreateRatioHist();
-    // RatioHist->SetMarkerStyle(6); // Make it small;
+    
+    // DataOverMC->SetMarkerStyle(6); // Make it small;
     for (unsigned i = 0; i < nbins; ++i) {
-      y[2*i] = y[2*i+1] = y[lp-2*i] = y[lp-2*i-1] = MinY;
-      double cent = DataHist->GetBinContent(i+1);
-      if (cent <= MinY) continue;
-      if (MCSummed[0]->GetBinContent(i+1) - MCErrLow[i] > 0) {
-        y[2*i] = y[2*i+1] = cent / (MCSummed[0]->GetBinContent(i+1) - MCErrLow[i]);
-      }
-      if (MCSummed[0]->GetBinContent(i+1) + MCErrUp[i] > 0) {
-        y[lp-2*i] = y[lp-2*i-1] = cent / (MCSummed[0]->GetBinContent(i+1) + MCErrUp[i]);
-      } 
+      y[2*i] = y[2*i+1] = y[lp-2*i] = y[lp-2*i-1] = 1.0;
+      double cent = MCSummed[0]->GetBinContent(i+1);
+      if (cent <= MinY) continue;  // Prevent -nan value in graph
+      y[2*i] = y[2*i+1] = (MCSummed[0]->GetBinContent(i+1) + MCErrUp[i]) / cent;
+      y[lp-2*i] = y[lp-2*i-1] = (MCSummed[0]->GetBinContent(i+1) - MCErrLow[i]) / cent;
     }
-    RatioErrorGraph = new TGraph(nbins * 4, x, y);
-    RatioErrorGraph->SetLineWidth(0);
-    RatioErrorGraph->SetFillColor(1);
-    RatioErrorGraph->SetFillStyle(ErrorBandFillStyle);
-    int i = 51;
+    MCErrorRatioGraph = new TGraph(nbins * 4, x, y);
+    // MCErrorRatioGraph->SetLineWidth(0);
+    // MCErrorRatioGraph->SetLineColor(0);
+    MCErrorRatioGraph->SetFillColor(1);
+    MCErrorRatioGraph->SetFillStyle(ErrorBandFillStyle);
+    MCErrorRatioGraph->SetTitle(LTitle);
+    MCErrorRatioGraph->GetXaxis()->SetRangeUser(xlow, xup);
+    MCErrorRatioGraph->GetYaxis()->SetRangeUser(0, 2);
+    MCErrorRatioGraph->GetYaxis()->SetNdivisions(505);
+
+    if (!IsSR) DataOverMC->Divide(MCSummed[0]);
   }
 
   void Legend(vector<double> lpos) { // Todo: Dynamic legend position and compress the yaxis if necessary
@@ -231,15 +231,6 @@ public:
     leg = new TLegend(x1,y1,x2,y2,"","NDC");
     leg->SetBorderSize(1);
     leg->SetNColumns(2);
-  }
-
-  void CreateRatioHist() {
-    if (IsSR) return;
-    RatioHist = (TH1F*)DataHist->Clone();
-    RatioHist->Divide(MCSummed[0]);
-    RatioHist->SetTitle(LTitle);
-    RatioHist->GetYaxis()->SetRangeUser(0,2);
-    RatioHist->GetYaxis()->SetNdivisions(505);
   }
 
   double GetMaximum() {
@@ -280,28 +271,19 @@ public:
     Pad = p_;
     Pad->cd();
     Pad->UseCurrentStyle();
-    if (IsSR) {
-      UPad = Pad;
-      UPad->SetTopMargin(gStyle->GetPadTopMargin());
-      UPad->SetBottomMargin(gStyle->GetPadBottomMargin());
-      UPad->SetLogy(Logy);
-      UPad->Draw();
-    }
-    else {
-      TString uppadname = PlotName + (TString)"_upper";
-      TString lowpadname = PlotName + (TString)"_lower";
-      UPad = new TPad(uppadname,uppadname,0,0.3,1,1);
-      UPad->SetTopMargin(gStyle->GetPadTopMargin()/0.7);
-      UPad->SetBottomMargin(0.0);
-      UPad->SetLogy(Logy);
-      UPad->Draw();
-      LPad = new TPad(lowpadname,lowpadname,0,0,1,0.3);
-      LPad->Draw();
-      LPad->SetTopMargin(0.1);
-      LPad->SetTopMargin(gStyle->GetPadTopMargin()*0.3);
-      LPad->SetBottomMargin(gStyle->GetPadBottomMargin()/0.3);
-      LPad->SetGridy();
-    }
+    TString uppadname = PlotName + (TString)"_upper";
+    TString lowpadname = PlotName + (TString)"_lower";
+    UPad = new TPad(uppadname,uppadname,0,0.3,1,1);
+    UPad->SetTopMargin(gStyle->GetPadTopMargin()/0.7);
+    UPad->SetBottomMargin(0.0);
+    UPad->SetLogy(Logy);
+    UPad->Draw();
+    LPad = new TPad(lowpadname,lowpadname,0,0,1,0.3);
+    LPad->Draw();
+    LPad->SetTopMargin(0.1);
+    LPad->SetTopMargin(gStyle->GetPadTopMargin()*0.3);
+    LPad->SetBottomMargin(gStyle->GetPadBottomMargin()/0.3);
+    LPad->SetGridy();
   }
 
   void DrawPlot(int year) {
@@ -314,42 +296,31 @@ public:
       SigHists[isig][0]->Draw("samehist");
       if (SigErrorGraphs.size() == SigNames.size()) SigErrorGraphs[isig]->Draw("samef");
     }
-    Pad->cd();
+    // MCSummed[0]->Draw("same"); // For test purpose
+
+    // Pad->cd();
     leg->Draw();
     // The coefficients are tried out and tested to be placed at same location on canvas
-    if (IsSR) {
-      MCStack->GetYaxis()->SetTitleSize(gStyle->GetTitleSize() * 0.7);
-      MCStack->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset() / 0.7);
-      MCStack->GetYaxis()->SetLabelSize(gStyle->GetLabelSize() * 0.7);
-      MCStack->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset() * 0.7);
-      MCStack->GetXaxis()->CenterTitle();
-      MCStack->GetXaxis()->SetTitleSize(gStyle->GetTitleSize() * 0.7);
-      MCStack->GetXaxis()->SetTitleOffset(gStyle->GetTitleOffset());
-      MCStack->GetXaxis()->SetLabelSize(gStyle->GetLabelSize() * 0.7);
-      MCStack->GetXaxis()->SetLabelOffset(gStyle->GetLabelOffset() * 0.3);
-    }
-    else {
-      MCStack->GetYaxis()->SetTitleSize(gStyle->GetTitleSize());
-      MCStack->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset());
-      MCStack->GetYaxis()->SetLabelSize(gStyle->GetLabelSize());
-      MCStack->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
+    MCStack->GetYaxis()->SetTitleSize(gStyle->GetTitleSize());
+    MCStack->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset());
+    MCStack->GetYaxis()->SetLabelSize(gStyle->GetLabelSize());
+    MCStack->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
 
-      LPad->cd();
-      RatioHist->GetXaxis()->CenterTitle();
-      RatioHist->GetXaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3 * 0.7);
-      RatioHist->GetXaxis()->SetTitleOffset(gStyle->GetTitleOffset());
-      RatioHist->GetXaxis()->SetLabelSize(gStyle->GetLabelSize() / 0.3 * 0.7);
-      RatioHist->GetXaxis()->SetLabelOffset(gStyle->GetLabelOffset());
+    LPad->cd();
+    MCErrorRatioGraph->GetXaxis()->CenterTitle();
+    MCErrorRatioGraph->GetXaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3 * 0.7);
+    MCErrorRatioGraph->GetXaxis()->SetTitleOffset(gStyle->GetTitleOffset());
+    MCErrorRatioGraph->GetXaxis()->SetLabelSize(gStyle->GetLabelSize() / 0.3 * 0.7);
+    MCErrorRatioGraph->GetXaxis()->SetLabelOffset(gStyle->GetLabelOffset());
 
-      RatioHist->GetYaxis()->CenterTitle();
-      RatioHist->GetYaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3 * 0.7);
-      RatioHist->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset() * 0.5 );
-      RatioHist->GetYaxis()->SetLabelSize(gStyle->GetLabelSize()/ 0.3 * 0.7);
-      RatioHist->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
+    MCErrorRatioGraph->GetYaxis()->CenterTitle();
+    MCErrorRatioGraph->GetYaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3 * 0.7);
+    MCErrorRatioGraph->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset() * 0.5 );
+    MCErrorRatioGraph->GetYaxis()->SetLabelSize(gStyle->GetLabelSize()/ 0.3 * 0.7);
+    MCErrorRatioGraph->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
 
-      RatioHist->Draw("");
-      if (RatioErrorGraph != nullptr) RatioErrorGraph->Draw("samef");
-    }
+    MCErrorRatioGraph->Draw("af");
+    if (!IsSR) DataOverMC->Draw("same");
     CMSFrame(UPad,year);
   }
 
@@ -373,7 +344,7 @@ public:
   vector<TH1F*> MCHists;
   vector<TH1F*> MCSummed; // [iVariation]
   THStack* MCStack;
-  TH1F* RatioHist;
+  TH1F* DataOverMC;
 
   vector<vector<TH1F*> > SigHists; // [iSig][iVariation]
   vector<TString> SigNames;
@@ -384,7 +355,7 @@ public:
   int ErrorBandFillStyle = 3002;
   TGraph* MCErrorGraph;
   vector<TGraph*> SigErrorGraphs;
-  TGraph* RatioErrorGraph;
+  TGraph* MCErrorRatioGraph;
 };
 
 
