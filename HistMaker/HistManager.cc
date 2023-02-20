@@ -8,145 +8,171 @@
 #include "TPad.h"
 #include "TLatex.h"
 #include "TLine.h"
-#include "TBox.h"
+#include "TFile.h"
+#include "TGraph.h"
 
 #include <vector>
 #include <map>
 #include <iostream>
 #include <string>
+#include <cmath>
 
-#include "../Utilities/Dataset.cc"
+// include block for poisson calculation
+// #include "Math/QuantFuncMathCore.h"
+// #include "TMath.h"
+// #include "TGraphAsymmErrors.h"
+// end of the block
+
+#include "DrawDataFormat.cc"
 #include "CMSStyle.cc"
 #include "RatioPlot.cc"
 
-class HistManager{
+class HistManager : public Histograms {
 public:
-  HistManager(bool IsSR_ = false) {
-    ResetMembers();
-    IsSR = IsSR_;
-    LegendPos = {0.65,0.65,0.9,0.9};
-    Hists.clear();
+  HistManager() : Histograms() {
+    GroupNames = dlib.GroupNames;
   };
-
-  void SetRegionLatex(TString rl) {
-    RegionLatex = rl;
+  
+  void SetPrefix(string prefix) {
+    PlotNamePrefix = prefix;
   }
 
-  int GetType(string ds) {
-    return dlib.GetType(ds);
+  void SetTitles(vector<string> xt, vector<string> yt) {
+    XTitles = xt;
+    YTitles = yt;
   }
-
-  void AddHist(string ds, TH1F* h_) {
-    if (h_->GetEntries() == 0) return;
-    TH1F* h = (TH1F*)h_->Clone();
-    Hists[ds] = h;
-  }
-
-  void NormToLumi(int isy_) {
-    for (auto it = Hists.begin(); it != Hists.end(); ++it) {
-      auto sn = it->first;
-      if (dlib.GetType(sn) == 0) continue;
-      it->second->Scale(dlib.GetNormFactor(sn,isy_));
-    }
-  }
-
-  // Manual factor to scale too small signal up, such that it can be visible in comparison
-  double SignalScaleCalc(double sigmax, double targetmax) {
-    double sc = 1.;
-    while (sigmax * sc * 10. < targetmax) {
-      sc *= 10.;
-    }
-    return sc;
-  }
-
-  float RebinCalc(double nbins, int target = 100) {
-    float rb_ = 1;
-    vector<float> inc{2.,2.5,2.}; // 2, 5, 10, 20, 50, 100 etc rebinning
-    int ind = 0;
-    while (nbins  / rb_ > target) { // rebin untill less than target bins in histogram;
-      rb_ = inc[ind] * rb_;
-      if (ind == 2) ind = 0;
-      else ind++;
-    }
-    return rb_;
-  }
-
-  void RebinHists(int rb) {
-    for (auto it = Hists.begin(); it != Hists.end(); ++it) {
-      int rb_ = rb;
-      // For rb < 0, it will try to rebin with factor 2,5,10,20,50,100, etc until the bin number is just less than rb * -1
-      // For rb > 0, it will simply rebin every histograms.
-      if (rb < 0) { 
-        rb_ = RebinCalc(it->second->GetNbinsX(),-1 * rb);
+  
+  // Reading Histograms
+  void ReadHistograms(vector<string> obss, TFile *f) {
+    Observables = obss;
+    Hists.clear();
+    Hists.resize(SampleTypes.size());
+    nbins.clear();
+    xlow.clear();
+    xup.clear();
+    nbins.resize(Observables.size());
+    xlow.resize(Observables.size());
+    xup.resize(Observables.size());
+    for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
+      Hists[ist].resize(Variations.size());
+      for (unsigned iv = 0; iv < Variations.size(); ++iv) {
+        Hists[ist][iv].resize(Regions.size());
+        for (unsigned ir = 0; ir < Regions.size(); ++ir) {
+          Hists[ist][iv][ir].resize(Observables.size());
+          for (unsigned io = 0; io < Observables.size(); ++io) {
+            TString histname = GetHistName(ist, iv, ir, io);
+            Hists[ist][iv][ir][io] = (TH1F*) f->Get(histname);
+            if (Hists[ist][iv][ir][io] != nullptr && nbins[io] == 0) {
+              nbins[io] = Hists[ist][iv][ir][io]->GetNbinsX();
+              xlow[io] = Hists[ist][iv][ir][io]->GetXaxis()->GetXmin();
+              xup[io] = Hists[ist][iv][ir][io]->GetXaxis()->GetXmax();
+            }
+          }
+        }
       }
-      it->second->Rebin(rb_);
     }
   }
 
   void SortHists() {
-    for (unsigned ig = 0; ig < dlib.GroupNames.size(); ++ig) {
-      string gp = dlib.GroupNames[ig];
-      vector<string> dss = dlib.Groups[gp].DatasetNames;
-      for (unsigned id = 0; id < dss.size(); ++id) {
-        if (Hists[dss[id]] == nullptr) continue;
-        if (GroupHists[gp] == nullptr) {
-          GroupHists[gp] = (TH1F*) Hists[dss[id]]->Clone();
-          int col = dlib.Groups[gp].Color;
-          if (dlib.Groups[gp].Type == 1)GroupHists[gp]->SetFillColor(col);
-          GroupHists[gp]->SetLineColor(col);
+    GroupHists.clear();
+    GroupHists.resize(GroupNames.size());
+    for (unsigned ig = 0; ig < GroupNames.size(); ++ig)
+    {
+      GroupHists[ig].resize(Variations.size());
+      for (unsigned iv = 0; iv < Variations.size(); ++iv)
+      {
+        GroupHists[ig][iv].resize(Regions.size());
+        for (unsigned ir = 0; ir < Regions.size(); ++ir)
+        {
+          GroupHists[ig][iv][ir].resize(Observables.size());
         }
-        else GroupHists[gp]->Add(Hists[dss[id]]);
+      }
+    }
+
+    for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
+      string gp = dlib.GetGroup(SampleTypes[ist]);
+      int ig = dlib.GetGroupIndexFromGroupName(gp);
+      if (ig < 0) continue;
+      for (unsigned iv = 0; iv < Variations.size(); ++iv) {
+        for (unsigned ir = 0; ir < Regions.size(); ++ir) {
+          for (unsigned io = 0; io < Observables.size(); ++io) {
+            if (Hists[ist][iv][ir][io] == nullptr) continue;
+            if (GroupHists[ig][iv][ir][io] == nullptr) { // First hist for the group
+              GroupHists[ig][iv][ir][io] = (TH1F*) Hists[ist][iv][ir][io]->Clone();
+              int col = dlib.Groups[gp].Color;
+              if (dlib.Groups[gp].Type == 1) GroupHists[ig][iv][ir][io]->SetFillColor(col);
+              GroupHists[ig][iv][ir][io]->SetLineColor(col);
+            }
+            else
+              GroupHists[ig][iv][ir][io]->Add(Hists[ist][iv][ir][io]);
+          }
+        }
       }
     }
   }
 
-  void PrepHists(TString tx, TString ty, TString fn) {
+  void PrepHists() {
     SortHists();
-    rp = new RatioPlot(fn, IsSR);
-    PlotName = fn;
-    rp->SetXTitle(tx);
-    rp->SetYTitle(ty);
-    for (unsigned i = 0; i < dlib.GroupNames.size(); ++i) {
-      string gn = dlib.GroupNames[i];
-      rp->AddHist(gn,GroupHists[gn],dlib.Groups[gn].Type);
+    // PrepErrorGraphs();
+    Plots.clear();
+    Plots.resize(Regions.size());
+    for (unsigned ir = 0; ir < Regions.size(); ++ir) {
+      bool IsSR = rm.Ranges[ir].IsSR;
+      Plots[ir].resize(Observables.size());
+      for (unsigned io = 0; io < Observables.size(); ++io) {
+        TString PlotName = PlotNamePrefix + "_" + Observables[io] + "_" + rm.StringRanges[ir];
+        Plots[ir][io] = new RatioPlot(PlotName,IsSR, XTitles[io], YTitles[io]);
+        Plots[ir][io]->SetVariationTypes(Variations);
+        for (unsigned ig = 0; ig < GroupNames.size(); ++ig) {
+          for (unsigned iv = 0; iv < Variations.size(); ++iv) {
+            string gn = GroupNames[ig];
+            Plots[ir][io]->AddHist(gn, GroupHists[ig][iv][ir][io], dlib.Groups[gn].Type,iv);
+          }
+        }
+        Plots[ir][io]->SetLogy(true);
+        Plots[ir][io]->Legend(LegendPos);
+        dlib.AddLegend(Plots[ir][io]->leg,IsSR);
+      }
     }
-    rp->SetLogy(true);
-    rp->Legend(LegendPos);
-    dlib.AddLegend(rp->leg);
-    rp->PrepHists();
   }
 
-  double GetMaximum() {
-    return rp->GetMaximum();
+  void CreateErrorGraphs(int ir, int io) {
+    Plots[ir][io]->CreateErrorGraphs();
   }
 
-  void SetMaximum(double ymax) {
-    rp->MCStack->SetMaximum(ymax);
+  double GetMaximum(int ir, int io) {
+    return Plots[ir][io]->GetMaximum();
   }
 
-  void DrawPlot(TVirtualPad* p_, int year) {
-    rp->SetPad(p_);
-    rp->DrawPlot(year);
-    p_->cd();
+  void SetMaximum(int ir, int io, double max) {
+    Plots[ir][io]->SetMaximum(max);
+  }
+
+  void DrawPlot(int ir, int io, TVirtualPad* p_, int year) {
+    Plots[ir][io]->SetPad(p_);
+    Plots[ir][io]->DrawPlot(year);
+    Plots[ir][io]->UPad->cd();
     TLatex latex;
     latex.SetNDC();
-    latex.SetTextSize(0.025);
+    latex.SetTextSize(0.035);
     latex.SetTextAlign(23);
-    latex.DrawLatex((LegendPos[0] + LegendPos[2])/2., LegendPos[1] - 0.025, RegionLatex);
+    latex.DrawLatex((LegendPos[0] + LegendPos[2])/2., LegendPos[1] - 0.025, rm.LatexRanges[ir]);
+    TString sens = Form("Sig/#sqrt{Sig + BG} = %f", Plots[ir][io]->GetSensitivity());
+    latex.DrawLatex((LegendPos[0] + LegendPos[2])/2., LegendPos[1] - 0.065, sens);
   }
+  vector<double> LegendPos = {0.65,0.65,0.9,0.9};
 
-  void ResetMembers() {
-    Hists.clear();
-  }
+  // Inherited members
+  // vector< vector< vector< vector<TH1F*> > > > Hists; // Hists[isampletype][ivariation][irange][iobservable]
+  // vector<string> SampleTypes, Variations, Regions, Observables;
+  // vector<int> nbins; // [nObservables]
+  // vector<double> xlow, xup; // [nObservables]
+  // TString NameFormat;
 
-  // TVirtualPad* Pad;
-  RatioPlot *rp;
-  bool IsSR;
-  TString PlotName;
-  vector<double> LegendPos;
-  TString RegionLatex;
-  map<string, TH1F* > Hists;
-  map<string, TH1F*> GroupHists;
+  vector<string> GroupNames;
+  string PlotNamePrefix;
+  vector<string> XTitles, YTitles;
+  vector< vector< vector< vector<TH1F*> > > > GroupHists; // [Group][Variation][Region][Observable]
+  vector< vector<RatioPlot*> > Plots; // [Region][Observable]
 };
-
 #endif

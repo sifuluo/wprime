@@ -9,6 +9,7 @@
 #include "TH1.h"
 
 #include "../Utilities/DataFormat.cc"
+#include "../Utilities/Dataset.cc"
 
 TString Replacement(TString in, TString tr, TString n) {
   TString out = in.ReplaceAll(tr, n);
@@ -97,11 +98,23 @@ public:
 class RegionManager{
 public:
   RegionManager() {
-    DefaultInit();
+    SplitInit();
   };
   vector<RegionIdRange> Ranges;
   vector<string> StringRanges;
   vector<TString> LatexRanges;
+  // Variations is not very comfortable to be placed inside RegionManager.
+  // But rest here at the momemt, as RegionManager is assured to be widely included.
+  // vector<string> Variations =
+  // {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown", 
+  // "EleSFup", "EleSFdown", "MuonSFup", "MuonSFdown", "BjetTagSFup", "BjetTagSFdown",
+  // "PUIDSFup", "PUIDSFdown", "L1PreFiringSFup", "L1PreFiringSFdown", "PUreweightSFup","PUreweightSFdown"};
+  // // Indices for each line: 0-8; 9-14; 15-20;
+
+  // Temperary working version below Take the version above next time. FIXME
+  // Variations have to be ordered as central followed by Up variations and Down variations.
+  // Histmanager will determine the variation type based on 
+  vector<string> Variations = {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown", "SFup", "SFdown"};
 
   void DefaultInit() {
     Reset();
@@ -119,7 +132,39 @@ public:
     Add(1263,1266,true);
   }
 
-  void Reset() {Ranges.clear();}
+  void SplitInit() {
+    Reset();
+    Add(1150);
+    Add(1151);
+    Add(1152,1152,true);
+    Add(1153,1153,true);
+    Add(1154,1154,true);
+    Add(1155,1155,true);
+    Add(1250);
+    Add(1251);
+    Add(1252,1252,true);
+    Add(1253,1253,true);
+    Add(1254,1254,true);
+    Add(1255,1255,true);
+    Add(1160);
+    Add(1161,1162);
+    Add(1163,1163,true);
+    Add(1164,1164,true);
+    Add(1165,1165,true);
+    Add(1166,1166,true);
+    Add(1260);
+    Add(1261,1262);
+    Add(1263,1263,true);
+    Add(1264,1264,true);
+    Add(1265,1265,true);
+    Add(1266,1266,true);
+  }
+
+  void Reset() {
+    Ranges.clear();
+    StringRanges.clear();
+    LatexRanges.clear();
+  }
 
   void Add(int b1, int b2 = -1, bool IsSR_ = false) {
     if (b2 == -1) b2 = b1;
@@ -138,6 +183,7 @@ public:
   }
 
   int GetRangeIndex(int id) {
+    if (id < 0) return -1;
     for (unsigned i = 0; i < Ranges.size(); ++i) {
       if (Ranges[i].Pass(id)) return i;
     }
@@ -148,100 +194,78 @@ public:
 
 RegionManager rm;
 
-struct TH1ByRegions { // TH1 of same observable same sample but different region number
-  TH1ByRegions() {
-    
-  };
-
-  void CreateHistograms(TString hn, TString ht, int nbins, double xlow, double xup) {
-    histos.clear();
-    for (unsigned i = 0; i < rm.Ranges.size(); ++i) {
-      TString reg = rm.Ranges[i].GetString();
-      hname = Replacement(hn,"=RegionRange=", reg);
-      htitle = Replacement(ht,"=RegionRange=", reg);
-      histos.push_back(new TH1F(hname, htitle, nbins, xlow, xup));
-    }
-  }
-
-  void Fill(double x, double w, int id) {
-    int idx = rm.GetRangeIndex(id);
-    if (idx < 0 || idx >= rm.Ranges.size()) return;
-    histos[idx]->Fill(x,w);
-  }
-  
-  TH1F* GetHisto(int id) {
-    int idx = rm.GetRangeIndex(id);
-    if (idx == -1) return nullptr;
-    return histos[idx];
-  }
-
-  vector<TH1F*> histos;
-  TString hname, htitle;
-  int nbins;
-  double xlow, xup;
-};
-
-struct RegionHistsByVariables{ // Collections of TH1 of same sample, different variables
-  RegionHistsByVariables(TString n_template, TString t_template = ""){
-    NameTemplate = n_template;
-    if (t_template == "") TitleTemplate = NameTemplate;
-    else TitleTemplate = t_template;
-    histos.clear();
-  };
-
-  void AddVariable(TString var, int nbins_, double xlow_, double xup_) {
-    TString hn = Replacement(NameTemplate,"=Variable=",var);
-    TString ht = Replacement(TitleTemplate,"=Variable=",var);
-    histos[var] = TH1ByRegions();
-    histos[var].CreateHistograms(hn, ht, nbins_, xlow_, xup_);
-  }
-
-  void Fill(TString var, double x, double w, int id) {
-    histos[var].Fill(x, w, id);
-  }
-
-  map<TString, TH1ByRegions> histos;
-  TString NameTemplate;
-  TString TitleTemplate;
-};
-
-class TH1Collection{ // For Reading purpose. To be combined with the writing series above
+class Histograms{
 public:
-  TH1Collection() {
+  Histograms() {
+    Init();
   };
 
-  void Init(vector<string> vars) {
-    Variables = vars;
+  void Init() {
+    Hists.clear();
+    NameFormat = "=SampleType=_=Observable=_=RegionRange=_=Variation=";
     SampleTypes = dlib.DatasetNames;
-    SampleValid.resize(SampleTypes.size(), true);
-    Ranges = rm.StringRanges;
+    Variations = rm.Variations;
+    Regions = rm.StringRanges;
   }
 
-  void ReadHistograms(TString n_template, TFile *f) {
-    histos.clear();
-    histos.resize(SampleTypes.size());
+  TString GetHistName(int ist, int iv, int ir, int io) {
+    TString histname = NameFormat;
+    histname.ReplaceAll("=SampleType=", SampleTypes[ist]);
+    histname.ReplaceAll("=Variation=", Variations[iv]);
+    histname.ReplaceAll("=RegionRange=", Regions[ir]);
+    histname.ReplaceAll("=Observable=", Observables[io]);
+    return histname;
+  }
+
+  // Creating Histograms
+  void AddObservable(string ob, int nbins_, double xlow_, double xup_) {
+    Observables.push_back(ob);
+    nbins.push_back(nbins_);
+    xlow.push_back(xlow_);
+    xup.push_back(xup_);
+  }
+
+  void CreateHistograms() {
+    Hists.clear();
+    Hists.resize(SampleTypes.size());
     for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
-      histos[ist].resize(Variables.size());
-      bool validsample = true;
-      for (unsigned iv = 0; iv < Variables.size(); ++iv) {
-        if (!validsample) break;
-        int missinghist = 0;
-        histos[ist][iv].resize(Ranges.size());
-        for (unsigned ir = 0; ir < Ranges.size(); ++ir) {
-          TString hn = Replacement(n_template, "=SampleType=", SampleTypes[ist]);
-          hn.ReplaceAll("=Variable=",Variables[iv]);
-          hn.ReplaceAll("=RegionRange=",Ranges[ir]);
-          histos[ist][iv][ir] = (TH1F*) f->Get(hn);
-          if (histos[ist][iv][ir] == nullptr) ++missinghist;
+      Hists[ist].resize(Variations.size());
+      for (unsigned iv = 0; iv < Variations.size(); ++iv) {
+        Hists[ist][iv].resize(Regions.size());
+        for (unsigned ir = 0; ir < Regions.size(); ++ir) {
+          Hists[ist][iv][ir].resize(Observables.size());
+          for (unsigned io = 0; io < Observables.size(); ++io) {
+            TString histname = GetHistName(ist, iv, ir, io);
+            Hists[ist][iv][ir][io] = new TH1F(histname, histname, nbins[io], xlow[io], xup[io]);
+          }
         }
-        if (missinghist == Ranges.size()) validsample = false; // If one variable can't find any regions plots, meaning the entire sample is missing.
       }
-      if (!validsample) SampleValid[ist] = false;
     }
   }
-  vector< vector< vector<TH1F*> > > histos; // histos[isampletype][ivariable][irange]
-  vector<string> SampleTypes, Variables, Ranges;
-  vector<bool> SampleValid;
+
+  void Fill(int ist, int iv, int rid, string ob, double x, double w) {
+    int io = -1;
+    for (unsigned iob_ = 0; iob_ < Observables.size(); ++iob_) {
+      if (Observables[iob_] == ob) {
+        io = iob_;
+        break;
+      }
+    }
+    if (io < 0) {
+      string msg = "Observable not found to fill: " + ob;
+      cout << msg << endl;
+      throw runtime_error(msg);
+    }
+    int ir = rm.GetRangeIndex(rid);
+    if (ir < 0) return;
+    Hists[ist][iv][ir][io]->Fill(x,w);
+  }
+
+  vector< vector< vector< vector<TH1F*> > > > Hists; // Hists[isampletype][ivariation][irange][iobservable]
+  vector<string> SampleTypes, Variations, Regions, Observables;
+  vector<int> nbins; // [nObservables]
+  vector<double> xlow, xup; // [nObservables]
+  TString NameFormat;
 };
 
 #endif

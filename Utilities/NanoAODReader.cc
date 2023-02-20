@@ -566,9 +566,9 @@ public:
         else if(i==7) pT = Jets[j].JERup.Pt();
         else if(i==8) pT = Jets[j].JERdown.Pt();
         if(pT < 30.) continue;
-        if(!Jets[j].PUIDpasses[bTagWP]) continue;//select working point for PUID to none by commenting this line out, loose by PUIDpasses 0, medium by 1, tight by 2
+        if(!Jets[j].PUIDpasses[PUIDWP]) continue;//select working point for PUID to none by commenting this line out, loose by PUIDpasses 0, medium by 1, tight by 2
         nj++;
-        if(Jets[j].bTagPasses[PUIDWP]) nb++;//select working point for b-tagging by bTagPasses[0] = loose, 1 medium and 2 tight
+        if(Jets[j].bTagPasses[bTagWP]) nb++;//select working point for b-tagging by bTagPasses[0] = loose, 1 medium and 2 tight
       }
       if(nj<5 || nj>6) {
         Regions.Regions[i] = -4;
