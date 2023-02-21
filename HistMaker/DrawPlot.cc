@@ -22,7 +22,7 @@ void DrawPlot(int isampleyear = 3) {
   vector< vector <HistManager*> > AllPlots; // [iPUWP][ibWP]
   AllPlots.resize(PUWPs.size());
   bool TestOnePlot = false;
-  vector<int> TestRegions = {1155};
+  vector<int> TestRegions = {1153,1163};
   for (int iPUWP = 0; iPUWP < PUWPs.size(); ++iPUWP) {
     if (iPUWP != 2 && TestOnePlot) continue;
     AllPlots[iPUWP].resize(bWPs.size());
@@ -65,7 +65,7 @@ void DrawPlot(int isampleyear = 3) {
         for (int ibWP = 0; ibWP < bWPs.size(); ++ibWP) {
           if (ibWP != 2 && TestOnePlot) continue;
           TCanvas *c1 = new TCanvas("c1","c1",800,800);
-          AllPlots[iPUWP][ibWP]->CreateErrorGraphs(ir,io);
+          AllPlots[iPUWP][ibWP]->CreateAuxiliaryPlots(ir,io);
           AllPlots[iPUWP][ibWP]->DrawPlot(ir,io,c1,isampleyear);
           AllPlots[iPUWP][ibWP]->SetMaximum(ir, io, ymax);
           TString fn = "plots/" + AllPlots[iPUWP][ibWP]->Plots[ir][io]->PlotName + ".pdf";

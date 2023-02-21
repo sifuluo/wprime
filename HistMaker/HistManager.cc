@@ -136,7 +136,8 @@ public:
     }
   }
 
-  void CreateErrorGraphs(int ir, int io) {
+  void CreateAuxiliaryPlots(int ir, int io) {
+    Plots[ir][io]->CreateRatioPlots();
     Plots[ir][io]->CreateErrorGraphs();
   }
 

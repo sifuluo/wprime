@@ -25,7 +25,7 @@ public:
     Logy = true;
     IsSR = IsSR_;
     UTitle = ";;" + yt;
-    LTitle = ";" + xt + ";Data/MC";
+    LTitle = ";" + xt + ";Obs./Exp.";
     TString stackname = PlotName + (TString)"_MCStack";
     MCStack = new THStack(stackname,UTitle);
     nbins = 0;
@@ -58,9 +58,6 @@ public:
     DataHist->SetLineColor(1);
     DataHist->SetMarkerStyle(20);
     DataHist->SetTitle(UTitle); // Not necessary because Stack will be drawn first
-
-    DataOverMC = (TH1F*)DataHist->Clone();
-    DataOverMC->SetTitle(LTitle); // Not necessary because ErrorGraph will be drawn first
   }
 
   void AddMC(TH1F* h_, int iv) {
@@ -90,7 +87,9 @@ public:
       SigNames.push_back(n_);
       SigHists.push_back(vector<TH1F*>(VarSize)); // Potentially result in unfilled slot being nullptr
     }
-    SigHists[idx][iv] = h_;
+    // Signal index in RatioPlot is dynamically incremented,
+    // thus is not always the same as it is in Dataset.cc
+    SigHists[idx][iv] = h_; 
   }
 
   void AddHist(TString n_, TH1F* h_, int type_, int iv) {
@@ -184,6 +183,7 @@ public:
     }
     MCErrorGraph = new TGraph(nbins * 4, x, y);
     MCErrorGraph->SetLineWidth(0);
+    MCErrorGraph->SetLineColor(0);
     MCErrorGraph->SetFillColor(1);
     MCErrorGraph->SetFillStyle(ErrorBandFillStyle);
 
@@ -202,7 +202,6 @@ public:
       SigErrorGraphs[isig]->SetFillStyle(ErrorBandFillStyle);
     }
     
-    // DataOverMC->SetMarkerStyle(6); // Make it small;
     for (unsigned i = 0; i < nbins; ++i) {
       y[2*i] = y[2*i+1] = y[lp-2*i] = y[lp-2*i-1] = 1.0;
       double cent = MCSummed[0]->GetBinContent(i+1);
@@ -211,16 +210,30 @@ public:
       y[lp-2*i] = y[lp-2*i-1] = (MCSummed[0]->GetBinContent(i+1) - MCErrLow[i]) / cent;
     }
     MCErrorRatioGraph = new TGraph(nbins * 4, x, y);
-    // MCErrorRatioGraph->SetLineWidth(0);
-    // MCErrorRatioGraph->SetLineColor(0);
+    MCErrorRatioGraph->SetLineWidth(0);
+    MCErrorRatioGraph->SetLineColor(0);
     MCErrorRatioGraph->SetFillColor(1);
     MCErrorRatioGraph->SetFillStyle(ErrorBandFillStyle);
     MCErrorRatioGraph->SetTitle(LTitle);
     MCErrorRatioGraph->GetXaxis()->SetRangeUser(xlow, xup);
-    MCErrorRatioGraph->GetYaxis()->SetRangeUser(0, 2);
+    MCErrorRatioGraph->GetYaxis()->SetRangeUser(0, 2.4);
     MCErrorRatioGraph->GetYaxis()->SetNdivisions(505);
 
-    if (!IsSR) DataOverMC->Divide(MCSummed[0]);
+    
+  }
+
+  void CreateRatioPlots() {
+    ExpOverMC.resize(SigNames.size());
+    for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
+      ExpOverMC[isig] = (TH1F*)SigHists[isig][0]->Clone();
+      ExpOverMC[isig]->Add(MCSummed[0]);
+      ExpOverMC[isig]->Divide(MCSummed[0]);
+    }
+    if (!IsSR) {
+      DataOverMC = (TH1F*)DataHist->Clone();
+      DataOverMC->SetTitle(LTitle); // Not necessary because ErrorGraph will be drawn first
+      DataOverMC->Divide(MCSummed[0]);
+    }
   }
 
   void Legend(vector<double> lpos) { // Todo: Dynamic legend position and compress the yaxis if necessary
@@ -289,22 +302,25 @@ public:
   void DrawPlot(int year) {
     UPad->cd();
     MCStack->Draw("hist");
-    if (MCErrorGraph != nullptr) MCErrorGraph->Draw("samef");
+    if (MCErrorGraph != nullptr) {
+      MCErrorGraph->Draw("samef");
+      leg->AddEntry(MCErrorGraph,"Bkg. Unc.","f");
+    }
     if (!IsSR) DataHist->Draw("E1same");
     for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
       if (SigHists[isig][0]->GetEntries() == 0) continue;
       SigHists[isig][0]->Draw("samehist");
       if (SigErrorGraphs.size() == SigNames.size()) SigErrorGraphs[isig]->Draw("samef");
     }
-    // MCSummed[0]->Draw("same"); // For test purpose
-
-    // Pad->cd();
-    leg->Draw();
+    
     // The coefficients are tried out and tested to be placed at same location on canvas
     MCStack->GetYaxis()->SetTitleSize(gStyle->GetTitleSize());
     MCStack->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset());
     MCStack->GetYaxis()->SetLabelSize(gStyle->GetLabelSize());
     MCStack->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
+
+    // Pad->cd();
+    leg->Draw();
 
     LPad->cd();
     MCErrorRatioGraph->GetXaxis()->CenterTitle();
@@ -321,6 +337,9 @@ public:
 
     MCErrorRatioGraph->Draw("af");
     if (!IsSR) DataOverMC->Draw("same");
+    for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
+      ExpOverMC[isig]->Draw("same hist ][");
+    }
     CMSFrame(UPad,year);
   }
 
@@ -348,6 +367,7 @@ public:
 
   vector<vector<TH1F*> > SigHists; // [iSig][iVariation]
   vector<TString> SigNames;
+  vector<TH1F*> ExpOverMC; // [iSig];
 
   vector<double> MCErrUp, MCErrLow; // [nBins]
   vector< vector<double> > SigErrUp, SigErrLow; //[iSig][nBins]

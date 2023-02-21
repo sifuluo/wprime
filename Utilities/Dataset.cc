@@ -73,12 +73,12 @@ struct DatasetGroup {
       dummy->SetMarkerStyle(20);
       l->AddEntry(dummy, gname, "p");
     }
-    if (Type == 1) {
+    else if (Type == 1) {
       dummy->SetLineStyle(1);
       dummy->SetFillColor(Color);
       l->AddEntry(dummy, gname, "f");
     }
-    if (Type == 2) {
+    else if (Type == 2) {
       dummy->SetLineStyle(2);
       dummy->SetLineWidth(2);
       l->AddEntry(dummy, gname, "l");
