@@ -8,8 +8,8 @@
 
 #include "TString.h"
 
-// #include "Constants.cc"
 #include "Dataset.cc"
+#include "UserSpecifics.cc"
 
 struct Configs {
   Configs(int isy_ = 2, int ist_ = 2, int ifile_ = 0) {
@@ -56,8 +56,12 @@ struct Configs {
   bool PrintProgress = false;
   int ProgressInterval = 1000;
 
-  bool PUEvaluation = false;
   bool DASInput = false;
+
+  bool bTagEffCreation = false;
+  string bTagEffBasepath = "outputs/";
+  bool JetScaleCreation = false;
+  string JetScaleBasepath = "outputs/";
 
   void SetSwitch(string sw, bool b) {
     Switches[sw] = b;

@@ -12,24 +12,6 @@
 
 using namespace std;
 
-// namespace Constants {
-//   const vector<string> SampleYears{"2016apv","2016","2017","2018"};
-//   const vector<string> SampleTypes{"SingleElectron","SingleMuon", // 0,1
-//   "ttbar", // 2,
-//   "wjets_HT_70_100", "wjets_HT_100_200", "wjets_HT_200_400", "wjets_HT_400_600",
-//   // 3                  4                     5                    6
-//   "wjets_HT_600_800", "wjets_HT_800_1200", "wjets_HT_1200_2500", "wjets_HT_2500_inf", "wjets_inclusive"
-//   // 7                  8                     9                    10                    11
-//   "single_antitop_tchan","single_antitop_tw","single_top_schan","single_top_tchan","single_top_tw",
-//   // 12                        13                  14                 15                 16
-//   "FL300","FL400","FL500","FL600","FL700","FL800","FL900","FL1000","FL1100",
-//   // 17     18      19       20      21       22     23      24       25
-//   "LL300","LL400","LL500","LL600","LL700","LL800","LL900","LL1000","LL1100"
-//   // 26     27      28       29      30      31      32       33      34
-//   };
-//   const vector<double> CMSLumiYears{19.52, 16.81, 41.48, 59.83};
-// }
-
 struct Dataset {
   string Name;
   string GroupName;
@@ -49,7 +31,7 @@ struct Dataset {
     if (Size.size() != 4) cout << "Not well defined";
     cout << endl;
     cout << "         Plot group is " << GroupName << ", Colored " << Color;
-    if (Color < colors.size()) cout << " (" << colors[Color] << ") ";
+    if (Color < (int) colors.size()) cout << " (" << colors[Color] << ") ";
     cout << endl;
   }
 };

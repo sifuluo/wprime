@@ -8,6 +8,7 @@
 #include "TLorentzVector.h"
 #include "TString.h"
 #include "Configs.cc"
+
 using namespace std;
 
 struct PO : TLorentzVector {
@@ -48,12 +49,12 @@ struct Jet : PO {
   vector<bool> PUIDpasses = {false, false, false}; // {loose, medium, tight}
   vector<vector<float> > PUIDSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; // {nominal, up, down} x {loose, medium, tight}
 
-
   int genJetIdx;
   int hadronFlavour;
   int partonFlavour;
   vector<bool> bTagPasses = {false, false, false}; // {loose, medium, tight}
   vector<vector<float> > bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; // {nominal, up, down} x {loose, medium, tight}
+  vector<float> bTagEffs = {0.5, 0.7, 0.9};
 };
 
 struct Lepton : PO {

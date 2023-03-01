@@ -17,6 +17,8 @@
 
 #include "XYMETCorrection_withUL17andUL18andUL16.h"
 
+#include "ProgressBar.cc"
+
 using namespace std;
 
 class NanoAODReader {
@@ -28,9 +30,6 @@ public:
 
     IsMC = conf->IsMC;
 
-    JetPtThreshold = 30.;
-    JetIdThreshold = 6;
-    LepPtThreshold = 40.;
     if (conf->iFile >= 0 || conf->InputFile == "All") { // batch mode
 
       vector<string> rootfiles = GetFileNames();
@@ -87,6 +86,14 @@ public:
     return chain->GetEntries();
   }
 
+  Long64_t GetEntriesFast() {
+    return chain->GetEntriesFast();
+  }
+
+  void SetbTag(bTagEff* bt) {
+    bTE = bt;
+  }
+
   //function to determine lepton-jet overlaps, gives answer depending on PUID passing or not
   vector<bool> OverlapCheck(Lepton ell_){
     vector<bool> out = {true, true, true};
@@ -94,20 +101,18 @@ public:
     return out;
   }
 
-  void ReadEvent(Long64_t i) {
+  int ReadEvent(Long64_t i) {
     bTagWP = conf->bTagWP;
     PUIDWP = conf->PUIDWP;
 
+    Long64_t evtcode = evts->LoadTree(i);
+    if (evtcode < 0) return 0;
     evts->GetEntry(i);
-    if(ReadMETFilterStatus() == false) return; //skip events not passing MET filter flags
+    if(ReadMETFilterStatus() == false) return 1; //skip events not passing MET filter flags
     run = evts->run;
     luminosityBlock = evts->luminosityBlock;
     if (!IsMC && (run < 0 || luminosityBlock < 0)) cout << "Run/LuminosityBlock number is negative" <<endl;
-    if (conf->PUEvaluation) { // It will only run on MC
-      ReadPileup();
-      ReadVertices();
-      return;
-    }
+    
     if (IsMC) {
       ReadGenParts();
       ReadGenJets();
@@ -115,6 +120,7 @@ public:
       ReadPileup();
     }
     ReadJets();
+    if (conf->bTagEffCreation || conf->JetScaleCreation) return 1;
     ReadLeptons();
     ReadMET();
     ReadTriggers();
@@ -122,6 +128,7 @@ public:
     RegionAssociations = RegionReader();
     KeepEvent = RegionAssociations.KeepEvent();
     EventWeights = CalcEventSFweights();
+    return 1;
   }
 
   void ReadGenParts() {
@@ -215,42 +222,54 @@ public:
 
       //set btagging flags
       tmp.bTagPasses = bTag(evts->Jet_btagDeepFlavB[i], conf->SampleYear);
+      vector<float> bTagEff = bTE->GetEff(tmp);
 
       //set btagging SFs
       tmp.bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
       if (IsMC) {
         //FIXME: Need b-tagging efficiency per sample at some point, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/BTagSFMethods#b_tagging_efficiency_in_MC_sampl
-        float bTagEff[3] = {.5, .7, .9};
-        if(tmp.bTagPasses[0]){
-          tmp.bJetSFweights[0][0] = evts->Jet_bTagScaleFactorLoose[i];
-          tmp.bJetSFweights[1][0] = evts->Jet_bTagScaleFactorLooseUp[i];
-          tmp.bJetSFweights[2][0] = evts->Jet_bTagScaleFactorLooseDown[i];
+        vector<vector<double> > bTSFs = {{1,1,1},{1,1,1},{1,1,1}};
+        bTSFs[0] = {evts->Jet_bTagScaleFactorLoose[i], evts->Jet_bTagScaleFactorMedium[i], evts->Jet_bTagScaleFactorTight[i]};
+        bTSFs[1] = {evts->Jet_bTagScaleFactorLooseUp[i], evts->Jet_bTagScaleFactorMediumUp[i], evts->Jet_bTagScaleFactorTightUp[i]};
+        bTSFs[2] = {evts->Jet_bTagScaleFactorLooseDown[i], evts->Jet_bTagScaleFactorMediumDown[i], evts->Jet_bTagScaleFactorTightDown[i]};
+        for (unsigned iv = 0; iv < 3; ++iv) {
+          for (unsigned iwp = 0; iwp < 3; ++iwp) {
+            if (tmp.bTagPasses[iwp]) tmp.bJetSFweights[iv][iwp] = bTSFs[iv][iwp];
+            else tmp.bJetSFweights[iv][iwp] = (1. - bTagEff[iwp] * bTSFs[iv][iwp]) / (1. - bTagEff[iwp]);
+            if (tmp.bJetSFweights[iv][iwp] < 0) tmp.bJetSFweights[iv][iwp] = 0;
+          }
         }
-        else{
-          tmp.bJetSFweights[0][0] = (1. - bTagEff[0] * evts->Jet_bTagScaleFactorLoose[i]) / (1. - bTagEff[0]);
-          tmp.bJetSFweights[1][0] = (1. - bTagEff[0] * evts->Jet_bTagScaleFactorLooseUp[i]) / (1. - bTagEff[0]);
-          tmp.bJetSFweights[2][0] = (1. - bTagEff[0] * evts->Jet_bTagScaleFactorLooseDown[i]) / (1. - bTagEff[0]);
-        }
-        if(tmp.bTagPasses[1]){
-          tmp.bJetSFweights[0][1] = evts->Jet_bTagScaleFactorMedium[i];
-          tmp.bJetSFweights[1][1] = evts->Jet_bTagScaleFactorMediumUp[i];
-          tmp.bJetSFweights[2][1] = evts->Jet_bTagScaleFactorMediumDown[i];
-        }
-        else{
-          tmp.bJetSFweights[0][1] = (1. - bTagEff[1] * evts->Jet_bTagScaleFactorMedium[i]) / (1. - bTagEff[1]);
-          tmp.bJetSFweights[1][1] = (1. - bTagEff[1] * evts->Jet_bTagScaleFactorMediumUp[i]) / (1. - bTagEff[1]);
-          tmp.bJetSFweights[2][1] = (1. - bTagEff[1] * evts->Jet_bTagScaleFactorMediumDown[i]) / (1. - bTagEff[1]);
-        }
-        if(tmp.bTagPasses[2]){
-          tmp.bJetSFweights[0][2] = evts->Jet_bTagScaleFactorTight[i];
-          tmp.bJetSFweights[1][2] = evts->Jet_bTagScaleFactorTightUp[i];
-          tmp.bJetSFweights[2][2] = evts->Jet_bTagScaleFactorTightDown[i];
-        }
-        else{
-          tmp.bJetSFweights[0][2] = (1. - bTagEff[2] * evts->Jet_bTagScaleFactorTight[i]) / (1. - bTagEff[2]);
-          tmp.bJetSFweights[1][2] = (1. - bTagEff[2] * evts->Jet_bTagScaleFactorTightUp[i]) / (1. - bTagEff[2]);
-          tmp.bJetSFweights[2][2] = (1. - bTagEff[2] * evts->Jet_bTagScaleFactorTightDown[i]) / (1. - bTagEff[2]);
-        }
+
+        // if(tmp.bTagPasses[0]){
+        //   tmp.bJetSFweights[0][0] = evts->Jet_bTagScaleFactorLoose[i];
+        //   tmp.bJetSFweights[1][0] = evts->Jet_bTagScaleFactorLooseUp[i];
+        //   tmp.bJetSFweights[2][0] = evts->Jet_bTagScaleFactorLooseDown[i];
+        // }
+        // else{
+        //   tmp.bJetSFweights[0][0] = (1. - bTagEff[0] * evts->Jet_bTagScaleFactorLoose[i]) / (1. - bTagEff[0]);
+        //   tmp.bJetSFweights[1][0] = (1. - bTagEff[0] * evts->Jet_bTagScaleFactorLooseUp[i]) / (1. - bTagEff[0]);
+        //   tmp.bJetSFweights[2][0] = (1. - bTagEff[0] * evts->Jet_bTagScaleFactorLooseDown[i]) / (1. - bTagEff[0]);
+        // }
+        // if(tmp.bTagPasses[1]){
+        //   tmp.bJetSFweights[0][1] = evts->Jet_bTagScaleFactorMedium[i];
+        //   tmp.bJetSFweights[1][1] = evts->Jet_bTagScaleFactorMediumUp[i];
+        //   tmp.bJetSFweights[2][1] = evts->Jet_bTagScaleFactorMediumDown[i];
+        // }
+        // else{
+        //   tmp.bJetSFweights[0][1] = (1. - bTagEff[1] * evts->Jet_bTagScaleFactorMedium[i]) / (1. - bTagEff[1]);
+        //   tmp.bJetSFweights[1][1] = (1. - bTagEff[1] * evts->Jet_bTagScaleFactorMediumUp[i]) / (1. - bTagEff[1]);
+        //   tmp.bJetSFweights[2][1] = (1. - bTagEff[1] * evts->Jet_bTagScaleFactorMediumDown[i]) / (1. - bTagEff[1]);
+        // }
+        // if(tmp.bTagPasses[2]){
+        //   tmp.bJetSFweights[0][2] = evts->Jet_bTagScaleFactorTight[i];
+        //   tmp.bJetSFweights[1][2] = evts->Jet_bTagScaleFactorTightUp[i];
+        //   tmp.bJetSFweights[2][2] = evts->Jet_bTagScaleFactorTightDown[i];
+        // }
+        // else{
+        //   tmp.bJetSFweights[0][2] = (1. - bTagEff[2] * evts->Jet_bTagScaleFactorTight[i]) / (1. - bTagEff[2]);
+        //   tmp.bJetSFweights[1][2] = (1. - bTagEff[2] * evts->Jet_bTagScaleFactorTightUp[i]) / (1. - bTagEff[2]);
+        //   tmp.bJetSFweights[2][2] = (1. - bTagEff[2] * evts->Jet_bTagScaleFactorTightDown[i]) / (1. - bTagEff[2]);
+        // }
       }
 
       Jets.push_back(tmp);
@@ -656,14 +675,12 @@ public:
   int bTagWP, PUIDWP;
   TChain* chain;
   Events* evts;
+  bTagEff* bTE;
   int run, luminosityBlock;
   vector<GenPart> GenParts;
   vector<GenJet> GenJets;
-  float JetPtThreshold;
-  int JetIdThreshold;
   vector<Jet> Jets;
   // vector<int> nBJets, nNBJets;
-  float LepPtThreshold;
   vector<Lepton> Leptons;
   vector<Electron> Electrons;
   vector<Muon> Muons;
