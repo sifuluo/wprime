@@ -5,10 +5,13 @@
 #include <string>
 #include <algorithm>
 
+#include "TROOT.h"
 #include "TFile.h"
 #include "TH1.h"
 #include "TF1.h"
 #include "TString.h"
+#include "TMath.h"
+#include "TLorentzVector.h"
 
 #include "Configs.cc"
 #include "DataFormat.cc"
@@ -19,18 +22,27 @@ class JetScale{
 public:
   JetScale(Configs* conf_) {
     conf = conf_;
+    GetFileName();
     if (conf->JetScaleCreation) CreateScaleHists();
-    else ReadScaleHists();
+    else {
+      ReadScaleHists();
+      SetUpMassFunctions();
+    }
   };
 
   const vector<double> etabins{0., 1.3, 2.5, 3.0, 5.2}; // size 5, 4 bins, ieta top at 3;
 
   const vector<vector<double> > ptbins{
-    {30.,32.,34.,37.,40.,45.,50.,57.,65.,75.,90.,110.,130., 150.,180.,220., 260., 300.,350.,400.,500.,1000.,6000.}, // 22 bins, 23 numbers
-    {30.,32.,34.,37.,40.,45.,50.,57.,65.,75.,90.,110.,150., 180.,220.,260., 300.,6000.}, // 17 bins
-    {30.,32.,34.,37.,40.,45.,50.,57.,65.,75.,90.,110.,150., 180.,220.,260.,6000.}, // 16 bins
-    {30.,32.,34.,37.,40.,45.,50.,57.,65.,75.,90.,110.,150.,6000.} //13 bins
+    {0.,30.,32.,34.,37.,40.,45.,50.,57.,65.,75.,90.,110.,130., 150.,180.,220., 260., 300.,350.,400.,500.,1000.,10000.}, // 23 bins, 24 numbers
+    {0.,30.,32.,34.,37.,40.,45.,50.,57.,65.,75.,90.,110.,150., 180.,220.,260., 300.,10000.}, // 18 bins
+    {0.,30.,32.,34.,37.,40.,45.,50.,57.,65.,75.,90.,110.,150., 180.,220.,260.,10000.}, // 17 bins
+    {0.,30.,32.,34.,37.,40.,45.,50.,57.,65.,75.,90.,110.,150.,10000.} //14 bins
   };
+
+  void GetFileName() {
+    string filename = "Scale_" + conf->SampleYear + "_" + conf->SampleType + ".root";
+    FileName = conf->JetScaleBasepath + filename;
+  }
 
   pair<int,int> FindBin(double et,double pt) {
     int ieta = -1;
@@ -44,22 +56,24 @@ public:
       if (pt > ptbins[ieta][ip] && pt < ptbins[ieta][ip+1]) ipt = ip;
     }
     // if (ipt == -1) ipt = ptbins[ieta].size() - 2; // if not found in bins, use the last bin.
-    return {ieta, ipt};
+    return pair<int,int>(ieta, ipt);
   }
 
   void CreateScaleHists() {
-    string filename = "Scale_" + conf->SampleYear + "_" + conf->SampleType + ".root";
-    TString filepath = conf->JetScaleBasepath + filename;
-    ScaleFile = new TFile(filepath,"RECREATE");
-    ScaleHists.resize(etabins.size() - 1);
+    ScaleFile = new TFile(FileName,"RECREATE");
+    vector<vector<TH1F*> > jes;
+    jes.clear();
     for (unsigned ieta = 0; ieta < etabins.size() - 1; ++ieta) {
-      ScaleHists[ieta].resize(ptbins[ieta].size() - 1);
+      vector<TH1F*> jeseta;
+      jeseta.clear();
       for (unsigned ipt = 0; ipt < ptbins[ieta].size() - 1; ++ipt) {
         TString sn = Form("eta%d_pt%d", ieta, ipt);
         TString st = Form("eta%.1fto%.1f_pt%dto%d;Pt_{Gen}/Pt_{Reco}",etabins[ieta],etabins[ieta+1], int(ptbins[ieta][ipt]), int(ptbins[ieta][ipt+1]));
-        ScaleHists[ieta][ipt] = new TH1F(sn,st,600,0,6);
+        jeseta.push_back(new TH1F(sn,st,600,0,6));
       }
+      jes.push_back(jeseta);
     }
+    ScaleHists = jes;
   }
 
   void FillJet(double eta, double pt, double gpt) {
@@ -82,41 +96,49 @@ public:
   }
 
   void ReadScaleHists() {
-    string filename = "Scale_" + conf->SampleYear + "_" + conf->SampleType + ".root";
-    TString filepath = conf->JetScaleBasepath + filename;
-    ScaleFile = new TFile(filepath, "READ");
-    ScaleHists.resize(etabins.size() - 1);
-    ScaleFuncs.resize(etabins.size() - 1);
+    ScaleFile = new TFile(FileName, "READ");
+    vector< vector<TH1F*> > jes;
+    vector< vector<TF1*> > fjes;
+    jes.clear();
+    fjes.clear();
     for (unsigned ieta = 0; ieta < etabins.size() - 1; ++ieta) {
-      ScaleHists[ieta].resize(ptbins.size() - 1);
-      ScaleFuncs[ieta].resize(ptbins.size() - 1);
+      vector<TH1F*> jeseta;
+      vector<TF1*> fjeseta;
+      jeseta.clear();
+      fjeseta.clear();
       for (unsigned ipt = 0; ipt < ptbins[ieta].size() - 1; ++ipt) {
         TString sn = Form("eta%d_pt%d", ieta, ipt);
-        ScaleHists[ieta][ipt] = (TH1F*) ScaleFile->Get(sn);
-        double max = ScaleHists[ieta][ipt]->GetMaximum();
-        double mean = ScaleHists[ieta][ipt]->GetMean();
-        double stddev = ScaleHists[ieta][ipt]->GetStdDev();
-        double fitlow = mean - 3. * stddev;
+        TH1F* h1 = (TH1F*) ScaleFile->Get(sn);
+        jeseta.push_back(h1);
+        double max = h1->GetMaximum();
+        double mean = h1->GetMean();
+        double stddev = h1->GetStdDev();
+        double fitlow = mean - 2. * stddev;
         if (fitlow < 0) fitlow = 0.;
-        double fitup = mean + 3. * stddev;
+        double fitup = mean + 2. * stddev;
         if (fitup > 2) fitup = 2.;
         TString fsn = Form("f_eta%d_pt%d", ieta, ipt);
-        ScaleFuncs[ieta][ipt] = new TF1(fsn,"gaus",fitlow, fitup);
-        ScaleFuncs[ieta][ipt]->SetParameters(max / 4.0, mean, stddev);
-        ScaleHists[ieta][ipt]->Fit(fsn, "RMQ0", "", fitlow, fitup);
+        TF1* f1 = new TF1(fsn,"gaus",0., 2.);
+        f1->SetParameters(max / 4.0, mean, stddev);
+        h1->Fit(f1, "RMQ0", "", 0., 2.);
+        // h1->Fit(f1, "RM0", "", 0., 2.);
+        fjeseta.push_back(f1);
       }
+      jes.push_back(jeseta);
+      fjes.push_back(fjeseta);
     }
+    ScaleHists = jes;
+    ScaleFuncs = fjes;
+    cout << "Finished reading jet scale histograms and fitting." << endl;
+    cout << "Function of etalow = " << etabins[1] << ", ptlow = " << ptbins[1][2] << ", mean = " << ScaleFuncs[1][2]->GetParameter(1) <<endl;
   }
 
   pair<double, double> ScaleLimits(double eta, double pt) {
     pair<int,int> ibins = FindBin(eta, pt);
     double mean = ScaleFuncs[ibins.first][ibins.second]->GetParameter(1);
     double sigma = ScaleFuncs[ibins.first][ibins.second]->GetParameter(2);
-    // return pair<double,double>(mean - 2*sigma, mean + 2*sigma);
-    return {mean - 2*sigma, mean + 2*sigma};
+    return pair<double,double>(mean - 2*sigma, mean + 2*sigma);
   }
-
-  
 
   double JetScaleLikelihood(double eta, double pt, double scale) {
     pair<int,int> ibins = FindBin(eta,pt);
@@ -127,29 +149,11 @@ public:
     return p;
   }
 
-  double JetScaleLikelihood(vector<TLorentzVector>& js, TLorentzVector lep, TLorentzVector MET, const double* scales) {
-    vector<TLorentzVector> sjs;
-    double PScale = 1.0;
-    sjs.resize(4);
-    for (unsigned i = 0; i < 4; ++i) {
-      PScale *= JetScaleLikelihood(js[i].Eta(),js[i].Pt(),scales[i]);
-      sjs[i] = js[i] * scales[i];
-      MET = MET + js[i] - sjs[i];
-    }
-
-    vector<TLorentzVector> Neus;
-    double PNeutrino = SolveNeutrinos(lep,MET,Neus);
-    if (PNeutrino < 0) return (-1.0 * PNeutrino + 1.);
-
-    double PLep = TopMassDis->Eval((lep + Neus[0] + sjs[3]).M());
-    double PLep2 = TopMassDis->Eval((lep + Neus[1] + sjs[3]).M());
-    if (PLep < PLep2) PLep = PLep2;
-    double PHadW = WMassDis->Eval((sjs[0] + sjs[1]).M());
-    double PHadT = TopMassDis->Eval((sjs[0] + sjs[1] + sjs[2]).M());
-    
-    double p = PScale * PHadW * PHadT * PLep * -1.0 + 1;
-    
-    return p;
+  double EvalW(TLorentzVector w) {
+    return WMassDis->Eval(w.M());
+  }
+  double EvalTop(TLorentzVector t) {
+    return TopMassDis->Eval(t.M());
   }
 
   double SolveNeutrinos(TLorentzVector LVLep, TLorentzVector ScaledMET, vector<TLorentzVector>& LVNeu_, bool debug_ = false) {
@@ -212,11 +216,12 @@ public:
   }
 
   Configs* conf;
+  TString FileName;
   TFile* ScaleFile;
   vector< vector<TH1F*> > ScaleHists;
   vector< vector<TF1*> > ScaleFuncs;
-  TF1 *TopMassDis, *WMassDis;
-
+  TF1* TopMassDis = new TF1("TBW","[0]*TMath::BreitWigner(x,[1],[2])",0.0,300.0);
+  TF1* WMassDis = new TF1("WBW","[0]*TMath::BreitWigner(x,[1],[2])",0.0,200.0);
 
 };
 

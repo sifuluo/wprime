@@ -52,6 +52,8 @@ struct Configs {
 
   bool Debug = false;
 
+  bool LocalOutput = false;
+
   // In batch mode, it is suggested to turn off, or will result in a large log file.
   bool PrintProgress = false;
   int ProgressInterval = 1000;

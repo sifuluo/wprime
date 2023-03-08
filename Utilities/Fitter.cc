@@ -14,15 +14,19 @@
 
 #include "JetScale.cc"
 #include "bTag.cc"
+#include "Hypothesis.cc"
 
 using namespace std;
 
 class Fitter{
 public:
-  Fitter(JetScale *JS_) {
-    JS = JS_;
+  Fitter(Configs *conf_) {
+    conf = conf_;
   };
 
+  void SetJetScale(JetScale* JS_) {
+    JS = JS_;
+  }
   void SetbTag(bTagEff* bt_) {
     bTE = bt_;
   }
@@ -32,24 +36,60 @@ public:
   }
 
   void SetLep(TLorentzVector lep_) {
-    Lep = lep_;
+    BaseHypo.Lep = lep_;
   }
   
   void SetMET(TLorentzVector met_) {
-    MET = met_;
+    BaseHypo.MET = met_;
   }
 
   static double MinimizePFunc(const double *scales) {
-    double Prob = JS->JetScaleLikelihood(Jets, Lep, MET, scales);
-    return Prob;
+    ScaledHypo = BaseHypo;
+    ScaledHypo.ScaleJets(scales);
+    vector<TLorentzVector> Neus;
+    double PNeu = JS->SolveNeutrinos(ScaledHypo.Lep, ScaledHypo.MET, Neus);
+    if (PNeu < 0) return (-1.0 * PNeu + 1.);
+    ScaledHypo.PLep = JS->EvalTop(ScaledHypo.Lep + Neus[0] + ScaledHypo.Jets[3]);
+    ScaledHypo.Neu = Neus[0];
+    double PLep1 = JS->EvalTop(ScaledHypo.Lep + Neus[1] + ScaledHypo.Jets[3]);
+    if (ScaledHypo.PLep < PLep1) {
+      ScaledHypo.PLep = PLep1;
+      ScaledHypo.Neu = Neus[1];
+    }
+    ScaledHypo.PHadW = JS->EvalW(ScaledHypo.HadW());
+    ScaledHypo.PHadT = JS->EvalTop(ScaledHypo.HadT());
+
+    ScaledHypo.PScale = ScaleLikelihood(scales);
+
+    double p = ScaledHypo.GetPFitter();
+    if (p < 0 || p > 1.) cout << Form("PScale = %f, PHadW = %f, PHadT = %f, PLep = %f", ScaledHypo.PScale, ScaledHypo.PHadW, ScaledHypo.PHadT, ScaledHypo.PLep) << endl;
+    return (-1.0 * p + 1.);
   }
 
-  double MinimizeP(vector<Jet>& Jets_) {
+  // static vector<TLorentzVector> ScaleJets(const double *scales) {
+  //   vector<TLorentzVector> sjs;
+  //   sjs.clear();
+  //   ScaledMET = MET;
+  //   for (unsigned i = 0; i < 4; ++i) {
+  //     TLorentzVector sj = Jets[i] * scales[i];
+  //     ScaledMET = ScaledMET + Jets[i] - sj;
+  //     sjs.push_back(sj);
+  //   }
+  //   return sjs;
+  // }
+
+  static double ScaleLikelihood(const double *scales) {
+    double p = 1.0;
+    for (unsigned i = 0; i < 4; ++i) {
+      p = p * JS->JetScaleLikelihood(BaseHypo.Jets[i].Eta(), BaseHypo.Jets[i].Pt(), scales[i]);
+    }
+    return p;
+  }
+
+  double MinimizeP() {
     func = ROOT::Math::Functor(&MinimizePFunc,4);
     mini->SetPrintLevel(0);
-    if (debug) {
-      mini->SetPrintLevel(3);
-    }
+    // mini->SetPrintLevel(3);
     mini->SetStrategy(3);
     mini->SetMaxFunctionCalls(100000);
     mini->SetMaxIterations(10000);
@@ -58,11 +98,9 @@ public:
     mini->SetFunction(func);
     ROOT::Math::MinimizerOptions::SetDefaultMaxFunctionCalls(100000);
 
-    Jets.resize(4);
     for (unsigned i = 0; i < 4; ++i) {
-      Jets[i] = (TLorentzVector) Jets_[i];
-      pair<double,double> limits = JS->ScaleLimits(Jets[i].Eta(),Jets[i].Pt());
-      mini->SetLimitedVariable(i,Form("Scale_%i",i),1.0,0.01,ThisLimits.first,ThisLimits.second);
+      pair<double,double> limits = JS->ScaleLimits(BaseHypo.Jets[i].Eta(),BaseHypo.Jets[i].Pt());
+      mini->SetLimitedVariable(i,Form("Scale_%i",i),1.0,0.01,limits.first,limits.second);
     }
     mini->Minimize();
 
@@ -92,51 +130,107 @@ public:
     }
   }
 
-  double Optimize(vector<Jet>& BestJets) {
+  double Optimize() {
     MakePermutations();
     double BestP = -1;
-    vector<int> BestPerm = {0,0,0,0};
+    BestPerm = {0,0,0,0};
     for (unsigned ip = 0; ip < Perms.size(); ++ip) {
-      vector<Jet> jets;
-      for (unsigned ij = 0; ij < Perms[ip].size(); ++ij) {
-        jets.push_back(AllJets[Perms[ip][ij]]);
-      }
-      double PbTag = bTE->GetLikelihood(jets);
-      double PPerm = MinimizeP(jets);
+      BaseHypo.Reset();
+      BaseHypo.SetJetsFromPerm(AllJets, Perms[ip]);
+      double PbTag = bTE->GetLikelihood(AllJets, Perms[ip]);
+      double PPerm = MinimizeP();
       double ThisP = PbTag * PPerm;
       if (ThisP > BestP) {
         BestP = ThisP;
         BestPerm = Perms[ip];
+        for (unsigned isc = 0; isc < 4; ++isc) {
+          BestScales[isc] = mini->X()[isc];
+        }
       }
     }
-    BestJets.clear();
     if (BestP > 0) {
-      for (unsigned ij = 0; ij < BestPerm.size(); ++ij) {
-        BestJets.push_back(AllJets[BestPerm[ij]]);
-      }
+      BaseHypo.SetJetsFromPerm(AllJets, BestPerm);
+      MinimizePFunc(BestScales);
+      BestHypo = ScaledHypo;
+      BestHypo.PbTag = bTE->GetLikelihood(AllJets, BestPerm);
+      // if (BestP > 1.0) {
+      //   cout << "Event BestP = " << BestP << ", Recalculated P = " << BestHypo.PbTag * BestHypo.GetPFitter() <<endl;
+      //   cout << Form("PScale = %f, PLep = %f, PHadW = %f, PHadT = %f, PbTag = %f", BestHypo.PScale, BestHypo.PLep, BestHypo.PHadW, BestHypo.PHadT, BestHypo.PbTag) <<endl;
+      // }
     }
+    
     return BestP;
   }
 
+  TLorentzVector BestWPrime() {
+    if (BestP < 0) return TLorentzVector();
+    TLorentzVector hadt = BestHypo.HadT();
+    TLorentzVector lept = BestHypo.LepT();
+    vector<TLorentzVector> wpbcands;
+    for (unsigned i = 0; i < AllJets.size(); ++i) {
+      bool used = (i == BestPerm[0] || i == BestPerm[1] || i == BestPerm[2] || i == BestPerm[3]);
+      if (!used) {
+        wpbcands.push_back((TLorentzVector) AllJets[i]);
+      }
+    }
+    if (wpbcands.size() == 0) cout << "No W'b Candidate" <<endl;
+    double dphiwpbt = 0;
+    for (unsigned ib = 0; ib < wpbcands.size(); ++ib) {
+      float dphilep = fabs(wpbcands[ib].DeltaPhi(lept));
+      float dphihad = fabs(wpbcands[ib].DeltaPhi(hadt));
+      if (dphilep > dphihad && dphilep > dphiwpbt) {
+        BestHypo.SetWPb(wpbcands[ib]);
+        BestHypo.Type = 1;
+        dphiwpbt = dphilep;
+      }
+      else if (dphihad > dphilep && dphihad > dphiwpbt) {
+        BestHypo.SetWPb(wpbcands[ib]);
+        BestHypo.Type = 0;
+        dphiwpbt = dphihad;
+      }
+    }
+    return BestHypo.WP();
+  }
+
+  Configs* conf;
+
   bTagEff* bTE;
   vector<Jet> AllJets;
-  vector< vector<int> > Perms;
+  vector< vector<unsigned> > Perms;
+
+  double BestP;
+  double BestScales[4];
+  vector<unsigned> BestPerm;
+  Hypothesis BestHypo;
+
 
   //Minimizer components
   static ROOT::Math::Minimizer* mini;
   static ROOT::Math::Functor func;
 
   static JetScale* JS;
-  static vector<TLorentzVector> Jets;
-  static TLorentzVector Lep;
-  static TLorentzVector MET;
-}
+  // static vector<TLorentzVector> Jets;
+  // static TLorentzVector Lep;
+  // static TLorentzVector MET;
+  static Hypothesis BaseHypo;
+
+  // static vector<TLorentzVector> ScaledJets;
+  // static TLorentzVector ScaledMET;
+  // static TLorentzVector Neutrino;
+  static Hypothesis ScaledHypo;
+};
 
 JetScale* Fitter::JS;
 ROOT::Math::Minimizer* Fitter::mini = ROOT::Math::Factory::CreateMinimizer("TMinuit");
 ROOT::Math::Functor Fitter::func;
-vector<TLorentzVector> Fitter::Jets;
-vector<TLorentzVector> Fitter::Lep;
-vector<TLorentzVector> Fitter::MET;
+// vector<TLorentzVector> Fitter::Jets;
+// TLorentzVector Fitter::Lep;
+// TLorentzVector Fitter::MET;
+Hypothesis Fitter::BaseHypo;
+Hypothesis Fitter::ScaledHypo;
+
+// vector<TLorentzVector> Fitter::ScaledJets;
+// TLorentzVector Fitter::ScaledMET;
+// TLorentzVector Fitter::Neutrino;
 
 #endif

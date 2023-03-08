@@ -5,6 +5,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <array>
+
 #include "TChain.h"
 #include "TFile.h"
 

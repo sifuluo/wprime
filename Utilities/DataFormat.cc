@@ -54,7 +54,7 @@ struct Jet : PO {
   int partonFlavour;
   vector<bool> bTagPasses = {false, false, false}; // {loose, medium, tight}
   vector<vector<float> > bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; // {nominal, up, down} x {loose, medium, tight}
-  vector<float> bTagEffs = {0.5, 0.7, 0.9};
+  vector<float> bTagEffs = {0.9, 0.7, 0.5};
 };
 
 struct Lepton : PO {

@@ -22,15 +22,15 @@ void CreateAuxHists(int sampleyear = 3, int sampletype = 19, int ifile = -1) {
   JetScale *JS = new JetScale(conf);
   r->SetbTag(bTE);
   
-  Long64_t nentries = r->GetEntriesFast();
+  Long64_t nentries = r->GetEntries();
   Progress* progress = new Progress(nentries,conf->ProgressInterval);
   for (unsigned ievt = 0; ievt < nentries; ++ievt) {
-    // progress->Print(ievt);
+    progress->Print(ievt);
     if (!(r->ReadEvent(ievt))) break;
     // if (ievt == 100000) break;
     for (unsigned ij = 0; ij < r->Jets.size(); ++ij) {
       bTE->FillJet(r->Jets[ij]);
-      JS->FillJet(r->Jets[ij],r->GenJets[r->Jets[ij].genJetIdx]);
+      if (r->Jets[ij].genJetIdx != -1) JS->FillJet(r->Jets[ij],r->GenJets[r->Jets[ij].genJetIdx]);
     }
   }
   bTE->PostProcess();
