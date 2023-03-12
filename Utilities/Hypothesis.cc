@@ -11,15 +11,15 @@ public:
 
   };
 
-  void Reset() {
+  void ResetJets() {
     PbTag = PScale = PLep = PHadW = PHadT = 1.0;
     Jets.clear();
   }
 
-  void SetJetsFromPerm(vector<Jet> alljets, vector<unsigned> perm){
+  void SetJetsFromPerm(vector<TLorentzVector> alljets, vector<unsigned> perm){
     if (Jets.size() < perm.size()) Jets.resize(perm.size());
     for (unsigned i = 0; i < perm.size(); ++i) {
-      Jets[i] = (TLorentzVector) alljets[perm[i]];
+      Jets[i] = alljets[perm[i]];
     }
   }
   void SetWPb(TLorentzVector j) {

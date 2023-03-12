@@ -48,14 +48,26 @@ public:
     int ieta = -1;
     int ipt = -1;
     for (unsigned ie = 0; ie < etabins.size() - 1; ++ie) {
-      if (fabs(et) > etabins[ie] && fabs(et) < etabins[ie+1]) ieta = ie;
+      if (fabs(et) >= etabins[ie] && fabs(et) < etabins[ie+1]) ieta = ie;
+    }
+    if (ieta == -1) {
+      if (!conf->JetScaleCreation)cout << "Encountered eta = " << et << ", Using last eta bin 3.0 - 5.2 " << endl;
+      ieta = etabins.size() - 2; // Using last bin.
     }
     // if (ieta == -1) ieta = etabins.size() - 2; // if not found in bins, use the last bin.
 
     for (unsigned ip = 0; ip < ptbins[ieta].size() - 1; ++ip) {
-      if (pt > ptbins[ieta][ip] && pt < ptbins[ieta][ip+1]) ipt = ip;
+      if (pt >= ptbins[ieta][ip] && pt < ptbins[ieta][ip+1]) ipt = ip;
     }
     // if (ipt == -1) ipt = ptbins[ieta].size() - 2; // if not found in bins, use the last bin.
+    if (pt < 30 && !conf->JetScaleCreation) {
+      cout << "Encountered pt = " << pt << ", Should have been filtered out already" <<endl;
+    }
+    else if (pt > ptbins[ieta].back()) {
+      if (!conf->JetScaleCreation) cout << "Encountered pt = " << pt << ", Using last pt bin of pt up to 10000" <<endl;
+      ipt = ptbins[ieta].size() - 2;
+    }
+    else if (ipt == -1 && !conf->JetScaleCreation) cout << "Unknown pt break : pt = " << pt << endl;
     return pair<int,int>(ieta, ipt);
   }
 
@@ -97,19 +109,19 @@ public:
 
   void ReadScaleHists() {
     ScaleFile = new TFile(FileName, "READ");
-    vector< vector<TH1F*> > jes;
+    // vector< vector<TH1F*> > jes;
     vector< vector<TF1*> > fjes;
-    jes.clear();
+    // jes.clear();
     fjes.clear();
     for (unsigned ieta = 0; ieta < etabins.size() - 1; ++ieta) {
       vector<TH1F*> jeseta;
       vector<TF1*> fjeseta;
-      jeseta.clear();
+      // jeseta.clear();
       fjeseta.clear();
       for (unsigned ipt = 0; ipt < ptbins[ieta].size() - 1; ++ipt) {
         TString sn = Form("eta%d_pt%d", ieta, ipt);
         TH1F* h1 = (TH1F*) ScaleFile->Get(sn);
-        jeseta.push_back(h1);
+        // jeseta.push_back(h1);
         double max = h1->GetMaximum();
         double mean = h1->GetMean();
         double stddev = h1->GetStdDev();
@@ -124,11 +136,12 @@ public:
         // h1->Fit(f1, "RM0", "", 0., 2.);
         fjeseta.push_back(f1);
       }
-      jes.push_back(jeseta);
+      // jes.push_back(jeseta);
       fjes.push_back(fjeseta);
     }
-    ScaleHists = jes;
+    // ScaleHists = jes;
     ScaleFuncs = fjes;
+    ScaleFile->Close();
     cout << "Finished reading jet scale histograms and fitting." << endl;
     cout << "Function of etalow = " << etabins[1] << ", ptlow = " << ptbins[1][2] << ", mean = " << ScaleFuncs[1][2]->GetParameter(1) <<endl;
   }

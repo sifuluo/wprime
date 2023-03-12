@@ -182,16 +182,16 @@ public:
 
       TLorentzVector PtVars;
       PtVars.SetPtEtaPhiM(evts->Jet_pt_jesTotalUp[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jesTotalUp[i]);
-      tmp.JESup = PtVars;
+      tmp.JESup() = PtVars;
 
       PtVars.SetPtEtaPhiM(evts->Jet_pt_jesTotalDown[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jesTotalDown[i]);
-      tmp.JESdown = PtVars;
+      tmp.JESdown() = PtVars;
 
       PtVars.SetPtEtaPhiM(evts->Jet_pt_jerUp[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jerUp[i]);
-      tmp.JERup = PtVars;
+      tmp.JERup() = PtVars;
 
       PtVars.SetPtEtaPhiM(evts->Jet_pt_jerDown[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jerDown[i]);
-      tmp.JERdown = PtVars;
+      tmp.JERdown() = PtVars;
 
       //set PUID flags
       tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], conf->SampleYear);
@@ -238,6 +238,11 @@ public:
           for (unsigned iwp = 0; iwp < 3; ++iwp) {
             if (tmp.bTagPasses[iwp]) tmp.bJetSFweights[iv][iwp] = bTSFs[iv][iwp];
             else tmp.bJetSFweights[iv][iwp] = (1. - bTagEff[iwp] * bTSFs[iv][iwp]) / (1. - bTagEff[iwp]);
+            // Question: For non-bjets, the bTagEff should be the b-tagging efficiencies for non-b origin jets?
+            //     Or should it also use b-tagging eff for b origin jets.
+            //     If b-tagging efficiency of light jets is used, should it be the combination of all light jets including c?
+            //     Or individual flavour should be assessed separately?
+            //     (Which is not possible anyways, because dataset sort everything but charm together into flav = 0)
             if (tmp.bJetSFweights[iv][iwp] < 0) tmp.bJetSFweights[iv][iwp] = 0;
           }
         }
@@ -286,22 +291,22 @@ public:
       Electron tmp;
       tmp.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
       //set resolution variations (only matter in MC, will be ineffective in data)
-      tmp.ResUp.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
-      tmp.ResUp.SetE(tmp.E()-evts->Electron_dEsigmaUp[i]);
-      tmp.ResDown.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
-      tmp.ResDown.SetE(tmp.E()-evts->Electron_dEsigmaDown[i]);
+      tmp.ResUp().SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
+      tmp.ResUp().SetE(tmp.E()-evts->Electron_dEsigmaUp[i]);
+      tmp.ResDown().SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
+      tmp.ResDown().SetE(tmp.E()-evts->Electron_dEsigmaDown[i]);
       //set scale variations (only filled in data, should be applied to MC, for now FIXME inactive)
-      tmp.ScaleUp.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
-      tmp.ScaleDown.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
+      tmp.ScaleUp().SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
+      tmp.ScaleDown().SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
 
       tmp.index = i;
       tmp.charge = evts->Electron_charge[i];
 
       //find maxmimum pT of any variation
-      double maxPt = max(tmp.Pt(), tmp.ResUp.Pt());
-      maxPt = max(maxPt, tmp.ResDown.Pt());
-      maxPt = max(maxPt, tmp.ScaleUp.Pt());
-      maxPt = max(maxPt, tmp.ScaleDown.Pt());
+      double maxPt = max(tmp.Pt(), tmp.ResUp().Pt());
+      maxPt = max(maxPt, tmp.ResDown().Pt());
+      maxPt = max(maxPt, tmp.ScaleUp().Pt());
+      maxPt = max(maxPt, tmp.ScaleDown().Pt());
 
       //CommonSelectionBlock
       float absEta = fabs(tmp.Eta());
@@ -386,10 +391,10 @@ public:
       //Dummy for scale variations, not to be used without Rochester corrections (not compulsory)
       TLorentzVector dummy;
       dummy.SetPtEtaPhiM(evts->Muon_pt[i],evts->Muon_eta[i],evts->Muon_phi[i],evts->Muon_mass[i]);
-      tmp.ResUp = dummy;
-      tmp.ResDown = dummy;
-      tmp.ScaleUp = dummy;
-      tmp.ScaleDown = dummy;
+      tmp.ResUp() = dummy;
+      tmp.ResDown() = dummy;
+      tmp.ScaleUp() = dummy;
+      tmp.ScaleDown() = dummy;
 
       //CommonSelectionBlock
       float absEta = fabs(tmp.Eta());
@@ -428,7 +433,7 @@ public:
   }
 
   void ReadMET() {
-    Met = TLorentzVector();
+    Met.v() = TLorentzVector();
 
     //conversion of the constant SampleYear into the correction's year string where needed
     string convertedYear = "";
@@ -445,19 +450,19 @@ public:
 
       std::pair<double,double> METXYCorr_JESup = METXYCorr_Met_MetPhi(evts->MET_T1Smear_pt_jesTotalUp, evts->MET_T1Smear_phi_jesTotalUp, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       JESup.SetPtEtaPhiM(METXYCorr_JESup.first, 0, METXYCorr_JESup.second, 0);
-      Met.JESup = JESup;
+      Met.JESup() = JESup;
 
       std::pair<double,double> METXYCorr_JESdown = METXYCorr_Met_MetPhi(evts->MET_T1Smear_pt_jesTotalDown, evts->MET_T1Smear_phi_jesTotalDown, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       JESdown.SetPtEtaPhiM(METXYCorr_JESdown.first, 0, METXYCorr_JESdown.second, 0);
-      Met.JESdown = JESdown;
+      Met.JESdown() = JESdown;
 
       std::pair<double,double> METXYCorr_JERup = METXYCorr_Met_MetPhi(evts->MET_T1Smear_pt_jerUp, evts->MET_T1Smear_phi_jerUp, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       JERup.SetPtEtaPhiM(METXYCorr_JERup.first, 0, METXYCorr_JERup.second, 0);
-      Met.JERup = JERup;
+      Met.JERup() = JERup;
 
       std::pair<double,double> METXYCorr_JERdown = METXYCorr_Met_MetPhi(evts->MET_T1Smear_pt_jerDown, evts->MET_T1Smear_phi_jerDown, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       JERdown.SetPtEtaPhiM(METXYCorr_JERdown.first, 0, METXYCorr_JERdown.second, 0);
-      Met.JERdown = JERdown;
+      Met.JERdown() = JERdown;
     }
     else{
       TLorentzVector dummy;
@@ -466,10 +471,10 @@ public:
       Met.SetPtEtaPhiM(METXYCorr.first, 0, METXYCorr.second, 0);
 
       dummy.SetPtEtaPhiM(METXYCorr.first, 0, METXYCorr.second, 0);
-      Met.JESup = dummy;
-      Met.JESdown = dummy;
-      Met.JERup = dummy;
-      Met.JERdown = dummy;
+      Met.JESup() = dummy;
+      Met.JESdown() = dummy;
+      Met.JERup() = dummy;
+      Met.JERdown() = dummy;
     }
   }
 
@@ -521,31 +526,36 @@ public:
       int nel = 0;
       int nep = 0;
       for(unsigned j = 0; j<Electrons.size(); ++j){
-        if(i==1 && Electrons[j].ScaleUp.Pt() >= 40.){
+        if (Electrons[j].v(i).Pt() >= 40.) {
           nev += Leptons[j].IsVeto;
           nel += Leptons[j].IsLoose;
           nep += Leptons[j].IsPrimary;
         }
-        else if(i==2 && Electrons[j].ScaleDown.Pt() >= 40.){
-          nev += Leptons[j].IsVeto;
-          nel += Leptons[j].IsLoose;
-          nep += Leptons[j].IsPrimary;
-        }
-        else if(i==3 && Electrons[j].ResUp.Pt() >= 40.){
-          nev += Electrons[j].IsVeto;
-          nel += Electrons[j].IsLoose;
-          nep += Electrons[j].IsPrimary;
-        }
-        else if(i==4 && Electrons[j].ResDown.Pt() >= 40.){
-          nev += Electrons[j].IsVeto;
-          nel += Electrons[j].IsLoose;
-          nep += Electrons[j].IsPrimary;
-        }
-        else if(Electrons[j].Pt() >= 40.){
-          nev += Electrons[j].IsVeto;
-          nel += Electrons[j].IsLoose;
-          nep += Electrons[j].IsPrimary;
-        }
+        // if(i==1 && Electrons[j].ScaleUp.Pt() >= 40.){
+        //   nev += Leptons[j].IsVeto;
+        //   nel += Leptons[j].IsLoose;
+        //   nep += Leptons[j].IsPrimary;
+        // }
+        // else if(i==2 && Electrons[j].ScaleDown.Pt() >= 40.){
+        //   nev += Leptons[j].IsVeto;
+        //   nel += Leptons[j].IsLoose;
+        //   nep += Leptons[j].IsPrimary;
+        // }
+        // else if(i==3 && Electrons[j].ResUp.Pt() >= 40.){
+        //   nev += Electrons[j].IsVeto;
+        //   nel += Electrons[j].IsLoose;
+        //   nep += Electrons[j].IsPrimary;
+        // }
+        // else if(i==4 && Electrons[j].ResDown.Pt() >= 40.){
+        //   nev += Electrons[j].IsVeto;
+        //   nel += Electrons[j].IsLoose;
+        //   nep += Electrons[j].IsPrimary;
+        // }
+        // else if(Electrons[j].Pt() >= 40.){
+        //   nev += Electrons[j].IsVeto;
+        //   nel += Electrons[j].IsLoose;
+        //   nep += Electrons[j].IsPrimary;
+        // }
       }
 
       int nmuv = 0;
@@ -581,11 +591,12 @@ public:
       int nj = 0;
       int nb = 0;
       for(unsigned j = 0; j<Jets.size(); ++j){
-        float pT = Jets[j].Pt();
-        if(i==5) pT = Jets[j].JESup.Pt();
-        else if(i==6) pT = Jets[j].JESdown.Pt();
-        else if(i==7) pT = Jets[j].JERup.Pt();
-        else if(i==8) pT = Jets[j].JERdown.Pt();
+        float pT = Jets[j].v(i).Pt();
+        // float pT = Jets[j].Pt();
+        // if(i==5) pT = Jets[j].JESup.Pt();
+        // else if(i==6) pT = Jets[j].JESdown.Pt();
+        // else if(i==7) pT = Jets[j].JERup.Pt();
+        // else if(i==8) pT = Jets[j].JERdown.Pt();
         if(pT < 30.) continue;
         if(!Jets[j].PUIDpasses[PUIDWP]) continue;//select working point for PUID to none by commenting this line out, loose by PUIDpasses 0, medium by 1, tight by 2
         nj++;

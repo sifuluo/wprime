@@ -22,6 +22,8 @@ class Fitter{
 public:
   Fitter(Configs *conf_) {
     conf = conf_;
+    PUIDWP = conf->PUIDWP;
+    bTagWP = conf->bTagWP;
   };
 
   void SetJetScale(JetScale* JS_) {
@@ -31,16 +33,24 @@ public:
     bTE = bt_;
   }
 
-  void SetJets(vector<Jet> alljets_) {
-    AllJets = alljets_;
+  void SetJets(vector<Jet> ajs, int iregion = 0) {
+    AllJets.clear();
+    AllbTags.clear();
+    for (unsigned i = 0; i < ajs.size(); ++i) {
+      // Stay consistent with "check jet multiplicity" part at RegionReader() in NanoAODReader.cc
+      if (ajs[i].v(iregion).Pt() < 30.) continue;
+      if (!ajs[i].PUIDpasses[PUIDWP]) continue;
+      AllJets.push_back(ajs[i].v(iregion));
+      AllbTags.push_back(ajs[i].bTagPasses[bTagWP]);
+    }
   }
 
-  void SetLep(TLorentzVector lep_) {
-    BaseHypo.Lep = lep_;
+  void SetLep(Lepton lep_, int iregion = 0) {
+    BaseHypo.Lep = lep_.v(iregion);
   }
   
-  void SetMET(TLorentzVector met_) {
-    BaseHypo.MET = met_;
+  void SetMET(MET met_, int iregion = 0) {
+    BaseHypo.MET = met_.v(iregion);
   }
 
   static double MinimizePFunc(const double *scales) {
@@ -131,13 +141,15 @@ public:
   }
 
   double Optimize() {
+    if (AllJets.size() < 5) cout << "This event has only " << AllJets.size() << " jets, skipped" <<endl;
+    if (AllJets.size() < 5) return -2;
     MakePermutations();
     double BestP = -1;
     BestPerm = {0,0,0,0};
     for (unsigned ip = 0; ip < Perms.size(); ++ip) {
-      BaseHypo.Reset();
+      BaseHypo.ResetJets();
       BaseHypo.SetJetsFromPerm(AllJets, Perms[ip]);
-      double PbTag = bTE->GetLikelihood(AllJets, Perms[ip]);
+      double PbTag = bTE->GetLikelihood(AllJets, AllbTags, Perms[ip]);
       double PPerm = MinimizeP();
       double ThisP = PbTag * PPerm;
       if (ThisP > BestP) {
@@ -152,7 +164,7 @@ public:
       BaseHypo.SetJetsFromPerm(AllJets, BestPerm);
       MinimizePFunc(BestScales);
       BestHypo = ScaledHypo;
-      BestHypo.PbTag = bTE->GetLikelihood(AllJets, BestPerm);
+      BestHypo.PbTag = bTE->GetLikelihood(AllJets, AllbTags, BestPerm);
       // if (BestP > 1.0) {
       //   cout << "Event BestP = " << BestP << ", Recalculated P = " << BestHypo.PbTag * BestHypo.GetPFitter() <<endl;
       //   cout << Form("PScale = %f, PLep = %f, PHadW = %f, PHadT = %f, PbTag = %f", BestHypo.PScale, BestHypo.PLep, BestHypo.PHadW, BestHypo.PHadT, BestHypo.PbTag) <<endl;
@@ -170,7 +182,7 @@ public:
     for (unsigned i = 0; i < AllJets.size(); ++i) {
       bool used = (i == BestPerm[0] || i == BestPerm[1] || i == BestPerm[2] || i == BestPerm[3]);
       if (!used) {
-        wpbcands.push_back((TLorentzVector) AllJets[i]);
+        wpbcands.push_back(AllJets[i]);
       }
     }
     if (wpbcands.size() == 0) cout << "No W'b Candidate" <<endl;
@@ -193,9 +205,12 @@ public:
   }
 
   Configs* conf;
+  bool PUIDWP;
+  bool bTagWP;
 
   bTagEff* bTE;
-  vector<Jet> AllJets;
+  vector<TLorentzVector> AllJets;
+  vector<bool> AllbTags;
   vector< vector<unsigned> > Perms;
 
   double BestP;
