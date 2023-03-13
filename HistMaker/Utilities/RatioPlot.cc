@@ -28,6 +28,8 @@ public:
     LTitle = ";" + xt + ";Obs./Exp.";
     TString stackname = PlotName + (TString)"_MCStack";
     MCStack = new THStack(stackname,UTitle);
+    CanvasMaximum = 0;
+    TrueMaximum = 0;
     nbins = 0;
   };
 
@@ -58,6 +60,7 @@ public:
     DataHist->SetLineColor(1);
     DataHist->SetMarkerStyle(20);
     DataHist->SetTitle(UTitle); // Not necessary because Stack will be drawn first
+    if (DataHist->GetMaximum() > TrueMaximum) TrueMaximum = DataHist->GetMaximum();
   }
 
   void AddMC(TH1F* h_, int iv) {
@@ -71,6 +74,7 @@ public:
       MCSummed[iv]->SetLineColor(1);
     }
     else MCSummed[iv]->Add(h_);
+    if (MCSummed[iv]->GetMaximum() > TrueMaximum) TrueMaximum = MCSummed[iv]->GetMaximum();
   }
 
   void AddSig(TString n_, TH1F* h_, int iv) {
@@ -89,7 +93,8 @@ public:
     }
     // Signal index in RatioPlot is dynamically incremented,
     // thus is not always the same as it is in Dataset.cc
-    SigHists[idx][iv] = h_; 
+    SigHists[idx][iv] = h_;
+    if (h_->GetMaximum() > TrueMaximum) TrueMaximum = h_->GetMaximum();
   }
 
   void AddHist(TString n_, TH1F* h_, int type_, int iv) {
@@ -106,6 +111,7 @@ public:
     else if (h_->GetXaxis()->GetXmin() != xlow) cout << "Inconsistent histogram xlow for " << n_ <<endl;
     else if (h_->GetXaxis()->GetXmax() != xup) cout << "Inconsistent histogram xup for " << n_ <<endl;
   }
+
 
   void StatError(TH1F* hcentral, vector<double>& errup, vector<double>& errlow) {
     if (hcentral == nullptr) return;
@@ -172,22 +178,25 @@ public:
     int lp = nbins * 4 - 1;
     double x[1000]; // A large enough size larger than any nbins
     double y[1000];
-    for (unsigned i = 0; i < nbins; ++i) {
-      x[2*i] = x[lp-2*i] = xlow + (i + 0.0) * bw;
-      x[2*i+1] = x[lp-2*i-1] = xlow + (i + 1.0) * bw;
-      y[2*i] = y[2*i+1] = y[lp-2*i] = y[lp-2*i-1] = MinY;
-      double cent = MCSummed[0]->GetBinContent(i+1);
-      if (cent <= MinY) continue;
-      y[2*i] = y[2*i+1] = cent + MCErrUp[i];
-      y[lp-2*i] = y[lp-2*i-1] = cent - MCErrLow[i];
-    }
-    MCErrorGraph = new TGraph(nbins * 4, x, y);
-    MCErrorGraph->SetLineWidth(0);
-    MCErrorGraph->SetLineColor(0);
-    MCErrorGraph->SetFillColor(1);
-    MCErrorGraph->SetFillStyle(ErrorBandFillStyle);
 
-    SigErrorGraphs.resize(SigNames.size());
+    if (MCSummed[0] != nullptr) {
+      for (unsigned i = 0; i < nbins; ++i) {
+        x[2*i] = x[lp-2*i] = xlow + (i + 0.0) * bw;
+        x[2*i+1] = x[lp-2*i-1] = xlow + (i + 1.0) * bw;
+        y[2*i] = y[2*i+1] = y[lp-2*i] = y[lp-2*i-1] = MinY;
+        double cent = MCSummed[0]->GetBinContent(i+1);
+        if (cent <= MinY) continue;
+        y[2*i] = y[2*i+1] = cent + MCErrUp[i];
+        y[lp-2*i] = y[lp-2*i-1] = cent - MCErrLow[i];
+      }
+      MCErrorGraph = new TGraph(nbins * 4, x, y);
+      MCErrorGraph->SetLineWidth(0);
+      MCErrorGraph->SetLineColor(0);
+      MCErrorGraph->SetFillColor(1);
+      MCErrorGraph->SetFillStyle(ErrorBandFillStyle);
+    }
+    
+    SigErrorGraphs.resize(SigNames.size()); // SigNames size will prevent signal absent case crash the code
     for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
       for (unsigned i = 0; i < nbins; ++i) {
         y[2*i] = y[2*i+1] = y[lp-2*i] = y[lp-2*i-1] = MinY;
@@ -202,24 +211,24 @@ public:
       SigErrorGraphs[isig]->SetFillStyle(ErrorBandFillStyle);
     }
     
-    for (unsigned i = 0; i < nbins; ++i) {
-      y[2*i] = y[2*i+1] = y[lp-2*i] = y[lp-2*i-1] = 1.0;
-      double cent = MCSummed[0]->GetBinContent(i+1);
-      if (cent <= MinY) continue;  // Prevent -nan value in graph
-      y[2*i] = y[2*i+1] = (MCSummed[0]->GetBinContent(i+1) + MCErrUp[i]) / cent;
-      y[lp-2*i] = y[lp-2*i-1] = (MCSummed[0]->GetBinContent(i+1) - MCErrLow[i]) / cent;
+    if (MCSummed[0] != nullptr) {
+      for (unsigned i = 0; i < nbins; ++i) {
+        y[2*i] = y[2*i+1] = y[lp-2*i] = y[lp-2*i-1] = 1.0;
+        double cent = MCSummed[0]->GetBinContent(i+1);
+        if (cent <= MinY) continue;  // Prevent -nan value in graph
+        y[2*i] = y[2*i+1] = (MCSummed[0]->GetBinContent(i+1) + MCErrUp[i]) / cent;
+        y[lp-2*i] = y[lp-2*i-1] = (MCSummed[0]->GetBinContent(i+1) - MCErrLow[i]) / cent;
+      }
+      MCErrorRatioGraph = new TGraph(nbins * 4, x, y);
+      MCErrorRatioGraph->SetLineWidth(0);
+      MCErrorRatioGraph->SetLineColor(0);
+      MCErrorRatioGraph->SetFillColor(1);
+      MCErrorRatioGraph->SetFillStyle(ErrorBandFillStyle);
+      MCErrorRatioGraph->SetTitle(LTitle);
+      MCErrorRatioGraph->GetXaxis()->SetRangeUser(xlow, xup);
+      MCErrorRatioGraph->GetYaxis()->SetRangeUser(0, 2.4);
+      MCErrorRatioGraph->GetYaxis()->SetNdivisions(505);
     }
-    MCErrorRatioGraph = new TGraph(nbins * 4, x, y);
-    MCErrorRatioGraph->SetLineWidth(0);
-    MCErrorRatioGraph->SetLineColor(0);
-    MCErrorRatioGraph->SetFillColor(1);
-    MCErrorRatioGraph->SetFillStyle(ErrorBandFillStyle);
-    MCErrorRatioGraph->SetTitle(LTitle);
-    MCErrorRatioGraph->GetXaxis()->SetRangeUser(xlow, xup);
-    MCErrorRatioGraph->GetYaxis()->SetRangeUser(0, 2.4);
-    MCErrorRatioGraph->GetYaxis()->SetNdivisions(505);
-
-    
   }
 
   void CreateRatioPlots() {
@@ -265,19 +274,6 @@ public:
     double sens = SigIntegral / sqrt(SigIntegral + MCIntegral);
     return sens;
   }
-
-  // void ScaleSignal(int ss = 1) {
-  //  // ScaleSignal < 0: auto scale; 1 >= ScaleSignal >= 0: Scale by that ; ScaleSignal = 0: do not scale
-  //   for (unsigned ih = 0; ih < SigHists.size(); ++ih) {
-  //     TString signame = SigNames[ih];
-  //     if ((SigHists[ih]->GetMaximum() * 10.< maximum && ss < 0) || ss > 1) {
-  //       double scale = ss;
-  //       if (scale < 0) scale = SignalScaleCalc(SigHists[ih]->GetMaximum(), maximum);
-  //       SigHists[ih]->Scale(scale);
-  //       signame = Form("%s*%i",signame.Data(),(int)scale);
-  //     }
-  //   }
-  // }
 
   void SetPad(TVirtualPad* p_) {
     setTDRStyle();
@@ -357,6 +353,7 @@ public:
   int nbins;
   double xlow, xup;
   double MinY = 0;
+  double CanvasMaximum, TrueMaximum;
 
   TH1F* DataHist;
 
