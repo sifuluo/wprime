@@ -247,7 +247,15 @@ public:
     }
   }
 
-  void Fill(int ist, int iv, int rid, string ob, double x, double w) {
+  int Fill(int ist, int iv, int rid, string ob, double x, double w) {
+    if (x !=x ) {
+      cout << Form("Skipping filling nan value to ob %s, ist %i, iv %i, region %i",ob.c_str(), ist, iv, rid) <<endl;
+      return 1;
+    }
+    if (w != w) {
+      cout << Form("Skipping filling nan weight to ob %s, ist %i, iv %i, region %i",ob.c_str(), ist, iv, rid) <<endl;
+      return 2;
+    }
     int io = -1;
     for (unsigned iob_ = 0; iob_ < Observables.size(); ++iob_) {
       if (Observables[iob_] == ob) {
@@ -261,8 +269,9 @@ public:
       throw runtime_error(msg);
     }
     int ir = rm.GetRangeIndex(rid);
-    if (ir < 0) return;
+    if (ir < 0) return 3;
     Hists[ist][iv][ir][io]->Fill(x,w);
+    return 0;
   }
 
   vector< vector< vector< vector<TH1F*> > > > Hists; // Hists[isampletype][ivariation][irange][iobservable]

@@ -143,11 +143,12 @@ public:
 
   void StatError(TH1F* hcentral, vector<double>& errup, vector<double>& errlow) {
     if (hcentral == nullptr) return;
+    bool doreport = false;
     bool reported = false;
     hcentral->SetBinErrorOption(TH1::kPoisson);
     for (unsigned i = 0; i < nbins; ++i) {
-      if (isnan(hcentral->GetBinErrorUp(i + 1))) {
-        if (!reported) {
+      if (hcentral->GetBinErrorUp(i + 1) != hcentral->GetBinErrorUp(i + 1)) {
+        if (!reported && doreport) {
           cout << "Stat has val of nan for " << hcentral->GetName() << endl;
           reported = true;
         }
@@ -160,35 +161,36 @@ public:
 
   void SystError(TH1F* hcentral, TH1F* hvarup, TH1F* hvarlow, vector<double>& errup, vector<double>& errlow) {
     if (hcentral == nullptr) return;
+    bool doreport = false;
     bool reportedup = false;
     bool reportedlow = false;
-    cout << errup[5] <<"," << errlow[5] <<endl;
+    // cout << errup[5] <<"," << errlow[5] <<endl;
     for (unsigned i = 0; i < nbins; ++i) {
       double diffup(0), difflow(0);
       if (hvarup != nullptr) diffup = hvarup->GetBinContent(i + 1) - hcentral->GetBinContent(i + 1);
       if (hvarlow != nullptr) difflow = hvarlow->GetBinContent(i + 1) - hcentral->GetBinContent(i + 1);
-      if (isnan(diffup)) {
+      if (diffup != diffup) {
         diffup = 0;
-        if (!reportedup) {
+        if (!reportedup && doreport) {
           cout << "Diff up has  val of nan for " << hvarup->GetName() << " and " << hcentral->GetName() << endl;
           reportedup = true;
         }
       }
-      if (isnan(difflow)) {
+      if (difflow != difflow) {
         difflow = 0;
-        if (!reportedlow) {
+        if (!reportedlow && doreport) {
           cout << "Diff low has  val of nan for " << hvarlow->GetName() << " and " << hcentral->GetName() << endl;
           reportedlow = true;
         }
       }
-      if (i == 5) cout << "diffup = " << diffup << ", difflow = " << difflow <<endl;
       double eu = max(max(diffup,difflow),0.0);
       double el = min(min(diffup,difflow),0.0);
-      if (i == 5) cout << "eu = " << eu << ", el = " << el <<endl;
+      // if (i == 5) cout << "diffup = " << diffup << ", difflow = " << difflow <<endl;
+      // if (i == 5) cout << "eu = " << eu << ", el = " << el <<endl;
       errup[i] = errup[i] + eu * eu;
       errlow[i] = errlow[i] + el * el;
     }
-    cout << errup[5] <<"," << errlow[5] <<endl;
+    if (doreport) cout << errup[5] <<"," << errlow[5] <<endl;
   }
 
   void ErrorCalc() {
@@ -208,14 +210,14 @@ public:
       if (iv == 0) {
         if (HasMC) StatError(MCSummed[0],MCErrUp,MCErrLow);
         for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
-          cout << "Stat:" <<endl;
+          // cout << "Stat:" <<endl;
           StatError(SigHists[isig][0], SigErrUp[isig], SigErrLow[isig]);
         }
       }
       else {
         if (HasMC) SystError(MCSummed[0], MCSummed[iv*2-1],MCSummed[iv*2], MCErrUp, MCErrLow);
         for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
-          cout << "Syst " << iv << ": " << SigHists[isig][iv*2-1]->GetName()<< ", " << SigHists[isig][iv*2]->GetName() <<endl;
+          // cout << "Syst " << iv << ": " << SigHists[isig][iv*2-1]->GetName()<< ", " << SigHists[isig][iv*2]->GetName() <<endl;
           SystError(SigHists[isig][0], SigHists[isig][iv*2-1], SigHists[isig][iv*2], SigErrUp[isig], SigErrLow[isig]);
         }
       }
@@ -226,7 +228,6 @@ public:
         MCErrLow[ib] = sqrt(MCErrLow[ib]);
       }
       for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
-        // if (isnan(SigErrUp[0][ib])  ) cout << "Really";
         SigErrUp[isig][ib] = sqrt(SigErrUp[isig][ib]);
         SigErrLow[isig][ib] = sqrt(SigErrLow[isig][ib]);
       }
@@ -376,7 +377,7 @@ public:
     UPad->cd();
     
     if (CanvasMaximum > 0) MCStack->SetMaximum(CanvasMaximum);
-    else MCStack->SetMaximum(TrueMaximum);
+    else MCStack->SetMaximum(TrueMaximum * 1.2);
     MCStack->Draw("hist");
 
     if (MCErrorGraph != nullptr && HasMC) {
@@ -387,7 +388,6 @@ public:
     if (!IsSR && HasData) DataHist->Draw("E1same");
 
     for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
-      if (isig > 0) continue;
       if (SigHists[isig][0]->GetEntries() == 0) continue;
       SigHists[isig][0]->Draw("samehist");
       if (SigErrorGraphs.size() == SigNames.size()) SigErrorGraphs[isig]->Draw("f");
