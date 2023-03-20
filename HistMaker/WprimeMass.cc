@@ -65,7 +65,7 @@ void WprimeMass(int isampleyear = 3) {
 
         //Start of customize part
 
-        if (iv > 0 && iv < 9) continue; // No physical observable changes now.
+        // if (iv > 0 && iv < 9) {}; // No physical observable changes now.
         double SimpleWprimeFL = r->SimpleWprimeFL;
         double SimpleWprimeLL = r->SimpleWprimeLL;
         double WprimeFL = r->WprimeFL;
@@ -79,7 +79,8 @@ void WprimeMass(int isampleyear = 3) {
         HistCol.Fill(ist, iv, RegionIdentifier, "Likelihood", log(r->Likelihood), EventWeight);
         if (!WprimeType) HistCol.Fill(ist, iv, RegionIdentifier, "WprimeFLPicked", r->WprimeFL, EventWeight);
         else HistCol.Fill(ist, iv, RegionIdentifier, "WprimeLLPicked", r->WprimeLL, EventWeight);
-
+        if (isnan(r->SimpleWprimeFL)) cout << "iv = " << iv << ", " << HistCol.Variations[iv] << " has nan fill value" <<endl;
+        if (isnan(EventWeight)) cout << "iv = " << iv << ", " << HistCol.Variations[iv] << " has nan EventWeight" <<endl;
       }
     }
   }

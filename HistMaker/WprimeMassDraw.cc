@@ -27,6 +27,7 @@ void WprimeMassDraw(int isampleyear = 3) {
     rp->Legend(AllPlots->LegendPos);
     for (unsigned iv = 0; iv < AllPlots->Variations.size(); ++iv) {
       for (unsigned io = 0; io < 6; ++io) {
+        if (io > 0) continue;
         AllPlots->Hists[0][iv][ir][io]->SetLineColor(io + 1);
         AllPlots->Hists[0][iv][ir][io]->Rebin(5);
         rp->AddHist(obs[io], AllPlots->Hists[0][iv][ir][io], 2, iv);
@@ -41,7 +42,9 @@ void WprimeMassDraw(int isampleyear = 3) {
       int lbin = AllPlots->Hists[0][0][ir][4]->FindBin(1900) - 1;
       double rat = AllPlots->Hists[0][0][ir][4]->Integral(3,lbin) / (AllPlots->Hists[0][0][ir][5]->Integral(3,lbin) + AllPlots->Hists[0][0][ir][4]->Integral(3,lbin));
       rp->DrawLatex(Form("FL Flag rate = %.3f",rat),1);
-      TString pn = "plots/" + PlotName + ".pdf";
+      TString pn = "plots/" + PlotName + ".C";
+      c1->SaveAs(pn);
+      pn = "plots/" + PlotName + ".pdf";
       c1->SaveAs(pn);
     }
     

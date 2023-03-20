@@ -10,3 +10,4 @@ HistMaker/plots/
 *.log
 *.pdf
 *.tar
+*.root
