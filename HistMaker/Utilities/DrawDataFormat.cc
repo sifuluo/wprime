@@ -8,8 +8,8 @@
 #include "TString.h"
 #include "TH1.h"
 
-#include "../Utilities/DataFormat.cc"
-#include "../Utilities/Dataset.cc"
+#include "../../Utilities/DataFormat.cc"
+#include "../../Utilities/Dataset.cc"
 
 TString Replacement(TString in, TString tr, TString n) {
   TString out = in.ReplaceAll(tr, n);
@@ -105,16 +105,17 @@ public:
   vector<TString> LatexRanges;
   // Variations is not very comfortable to be placed inside RegionManager.
   // But rest here at the momemt, as RegionManager is assured to be widely included.
-  // vector<string> Variations =
-  // {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown", 
-  // "EleSFup", "EleSFdown", "MuonSFup", "MuonSFdown", "BjetTagSFup", "BjetTagSFdown",
-  // "PUIDSFup", "PUIDSFdown", "L1PreFiringSFup", "L1PreFiringSFdown", "PUreweightSFup","PUreweightSFdown"};
+  vector<string> Variations = {"central"
+  , "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown"
+  , "EleSFup", "EleSFdown", "MuonSFup", "MuonSFdown", "BjetTagSFup", "BjetTagSFdown"
+  , "PUIDSFup", "PUIDSFdown", "L1PreFiringSFup", "L1PreFiringSFdown", "PUreweightSFup","PUreweightSFdown"
+  };
   // // Indices for each line: 0-8; 9-14; 15-20;
 
   // Temperary working version below Take the version above next time. FIXME
   // Variations have to be ordered as central followed by Up variations and Down variations.
   // Histmanager will determine the variation type based on 
-  vector<string> Variations = {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown", "SFup", "SFdown"};
+  // vector<string> Variations = {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown", "SFup", "SFdown"};
 
   void DefaultInit() {
     Reset();
@@ -207,6 +208,9 @@ public:
     Variations = rm.Variations;
     Regions = rm.StringRanges;
   }
+
+  void SetSampleTypes(vector<string> sts) {SampleTypes = sts;}
+  void SetVariations(vector<string> vars) {Variations = vars;}
 
   TString GetHistName(int ist, int iv, int ir, int io) {
     TString histname = NameFormat;

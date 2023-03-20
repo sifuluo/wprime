@@ -41,6 +41,11 @@ public:
     XTitles = xt;
     YTitles = yt;
   }
+
+  void SetTitles(vector<string> xt, string yt = "Number of Entries") {
+    XTitles = xt;
+    YTitles = vector<string>(XTitles.size(), yt);
+  }
   
   // Reading Histograms
   void ReadHistograms(vector<string> obss, TFile *f) {
@@ -172,7 +177,7 @@ public:
 
   vector<string> GroupNames;
   string PlotNamePrefix;
-  vector<string> XTitles, YTitles;
+  vector<string> XTitles, YTitles;// [Observable]
   vector< vector< vector< vector<TH1F*> > > > GroupHists; // [Group][Variation][Region][Observable]
   vector< vector<RatioPlot*> > Plots; // [Region][Observable]
 };

@@ -21,6 +21,7 @@ class RatioPlot {
 public:
   RatioPlot(TString pn, bool IsSR_ = false, TString xt = "", TString yt = "Number of Entries")
   {
+    Init();
     PlotName = pn;
     Logy = true;
     IsSR = IsSR_;
@@ -28,10 +29,16 @@ public:
     LTitle = ";" + xt + ";Obs./Exp.";
     TString stackname = PlotName + (TString)"_MCStack";
     MCStack = new THStack(stackname,UTitle);
-    CanvasMaximum = 0;
-    TrueMaximum = 0;
-    nbins = 0;
   };
+
+  void Init() {
+    MCHists.clear();
+    MCNames.clear();
+    MCSummed.clear();
+    latex.SetNDC();
+    latex.SetTextSize(0.035);
+    latex.SetTextAlign(23);
+  }
 
   void SetLogy(bool l = true) {
     Logy = l;
@@ -61,13 +68,16 @@ public:
     DataHist->SetMarkerStyle(20);
     DataHist->SetTitle(UTitle); // Not necessary because Stack will be drawn first
     if (DataHist->GetMaximum() > TrueMaximum) TrueMaximum = DataHist->GetMaximum();
+    HasData = true;
   }
 
-  void AddMC(TH1F* h_, int iv) {
+  void AddMC(TString n_, TH1F* h_, int iv) {
     if (iv == 0) {
       h_->SetLineStyle(1);
-      MCHists.push_back(h_);
+      MCHists.push_back(h_); // Saved into vector, since THStack class doesn't own the histograms.
+      MCNames.push_back(n_);
       MCStack->Add(h_);
+      HasMC = true;
     }
     if (MCSummed[iv] == nullptr) {
       MCSummed[iv] = (TH1F*) h_->Clone();
@@ -81,6 +91,7 @@ public:
     if (iv == 0) {
       h_->SetLineStyle(2);
       h_->SetLineWidth(2);
+      HasSig = true;
     }
     int idx = -1;
     for (unsigned i = 0; i < SigNames.size(); ++i) {
@@ -100,7 +111,7 @@ public:
   void AddHist(TString n_, TH1F* h_, int type_, int iv) {
     if (h_ == nullptr) return;
     if (type_ == 0) AddData(h_);
-    else if (type_ == 1) AddMC(h_, iv);
+    else if (type_ == 1) AddMC(n_, h_, iv);
     else if (type_ == 2) AddSig(n_, h_, iv);
     if (nbins == 0) {
       nbins = h_->GetNbinsX();
@@ -110,6 +121,23 @@ public:
     else if (h_->GetNbinsX() != nbins) cout << "Inconsistent histogram nbins for " << n_ <<endl;
     else if (h_->GetXaxis()->GetXmin() != xlow) cout << "Inconsistent histogram xlow for " << n_ <<endl;
     else if (h_->GetXaxis()->GetXmax() != xup) cout << "Inconsistent histogram xup for " << n_ <<endl;
+    // cout << "Adding Histogram " << n_  << " of variation " << iv <<endl;
+  }
+
+  void PrepHists() {
+    if (!HasMC) {
+      StackDummy = new TH1F("","",nbins,xlow, xup);
+      // StackDummy->SetLineWidth(0);
+      MCStack->Add(StackDummy);
+      double x[2] = {xlow, xup};
+      double y[2] = {1.,1.};
+      MCErrorRatioGraph = new TGraph(2,x,y);
+    }
+    if (!HasMC && !HasData && HasSig) {
+      for (unsigned i = 0; i < SigNames.size(); ++i) {
+        SigHists[i][0]->SetLineStyle(1);
+      }
+    }
   }
 
 
@@ -150,21 +178,23 @@ public:
     }
     for (unsigned iv = 0; iv < (VarSize+1)/2; ++iv) {
       if (iv == 0) {
-        StatError(MCSummed[0],MCErrUp,MCErrLow);
+        if (HasMC) StatError(MCSummed[0],MCErrUp,MCErrLow);
         for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
           StatError(SigHists[isig][0], SigErrUp[isig], SigErrLow[isig]);
         }
       }
       else {
-        SystError(MCSummed[0], MCSummed[iv*2-1],MCSummed[iv*2], MCErrUp, MCErrLow);
+        if (HasMC) SystError(MCSummed[0], MCSummed[iv*2-1],MCSummed[iv*2], MCErrUp, MCErrLow);
         for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
           SystError(SigHists[isig][0], SigHists[isig][iv*2-1], SigHists[isig][iv*2], SigErrUp[isig], SigErrLow[isig]);
         }
       }
     }
     for (unsigned ib = 0; ib < nbins; ++ib) {
-      MCErrUp[ib] = sqrt(MCErrUp[ib]);
-      MCErrLow[ib] = sqrt(MCErrLow[ib]);
+      if (HasMC) {
+        MCErrUp[ib] = sqrt(MCErrUp[ib]);
+        MCErrLow[ib] = sqrt(MCErrLow[ib]);
+      }
       for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
         SigErrUp[isig][ib] = sqrt(SigErrUp[isig][ib]);
         SigErrLow[isig][ib] = sqrt(SigErrLow[isig][ib]);
@@ -178,11 +208,13 @@ public:
     int lp = nbins * 4 - 1;
     double x[1000]; // A large enough size larger than any nbins
     double y[1000];
+    for (unsigned i = 0; i < nbins; ++i) {
+      x[2*i] = x[lp-2*i] = xlow + (i + 0.0) * bw;
+      x[2*i+1] = x[lp-2*i-1] = xlow + (i + 1.0) * bw;
+    }
 
-    if (MCSummed[0] != nullptr) {
+    if (HasMC) {
       for (unsigned i = 0; i < nbins; ++i) {
-        x[2*i] = x[lp-2*i] = xlow + (i + 0.0) * bw;
-        x[2*i+1] = x[lp-2*i-1] = xlow + (i + 1.0) * bw;
         y[2*i] = y[2*i+1] = y[lp-2*i] = y[lp-2*i-1] = MinY;
         double cent = MCSummed[0]->GetBinContent(i+1);
         if (cent <= MinY) continue;
@@ -210,35 +242,32 @@ public:
       SigErrorGraphs[isig]->SetFillColor(SigHists[isig][0]->GetLineColor());
       SigErrorGraphs[isig]->SetFillStyle(ErrorBandFillStyle);
     }
-    
-    if (MCSummed[0] != nullptr) {
+
+    if (HasMC) {
       for (unsigned i = 0; i < nbins; ++i) {
         y[2*i] = y[2*i+1] = y[lp-2*i] = y[lp-2*i-1] = 1.0;
         double cent = MCSummed[0]->GetBinContent(i+1);
         if (cent <= MinY) continue;  // Prevent -nan value in graph
-        y[2*i] = y[2*i+1] = (MCSummed[0]->GetBinContent(i+1) + MCErrUp[i]) / cent;
-        y[lp-2*i] = y[lp-2*i-1] = (MCSummed[0]->GetBinContent(i+1) - MCErrLow[i]) / cent;
+        y[2*i] = y[2*i+1] = (cent + MCErrUp[i]) / cent;
+        y[lp-2*i] = y[lp-2*i-1] = (cent - MCErrLow[i]) / cent;
       }
       MCErrorRatioGraph = new TGraph(nbins * 4, x, y);
-      MCErrorRatioGraph->SetLineWidth(0);
-      MCErrorRatioGraph->SetLineColor(0);
-      MCErrorRatioGraph->SetFillColor(1);
-      MCErrorRatioGraph->SetFillStyle(ErrorBandFillStyle);
-      MCErrorRatioGraph->SetTitle(LTitle);
-      MCErrorRatioGraph->GetXaxis()->SetRangeUser(xlow, xup);
-      MCErrorRatioGraph->GetYaxis()->SetRangeUser(0, 2.4);
-      MCErrorRatioGraph->GetYaxis()->SetNdivisions(505);
     }
+    MCErrorRatioGraph->SetLineWidth(0);
+    MCErrorRatioGraph->SetLineColor(0);
+    MCErrorRatioGraph->SetFillColor(1);
+    MCErrorRatioGraph->SetFillStyle(ErrorBandFillStyle);
   }
 
   void CreateRatioPlots() {
+    if (!HasMC) return;
     ExpOverMC.resize(SigNames.size());
     for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
       ExpOverMC[isig] = (TH1F*)SigHists[isig][0]->Clone();
       ExpOverMC[isig]->Add(MCSummed[0]);
       ExpOverMC[isig]->Divide(MCSummed[0]);
     }
-    if (!IsSR) {
+    if (!IsSR && HasData) {
       DataOverMC = (TH1F*)DataHist->Clone();
       DataOverMC->SetTitle(LTitle); // Not necessary because ErrorGraph will be drawn first
       DataOverMC->Divide(MCSummed[0]);
@@ -255,14 +284,29 @@ public:
     leg->SetNColumns(2);
   }
 
+  void CreateLegendEntries() {
+    if (HasMC) {
+      for (unsigned i = 0; i < MCNames.size(); ++i) {
+        leg->AddEntry(MCHists[i],MCNames[i],"f");
+      }
+    }
+    if (HasSig) {
+      for (unsigned i = 0; i < SigNames.size(); ++i) {
+        leg->AddEntry(SigHists[i][0],SigNames[i],"l");
+      }
+    }
+    if (HasData) {
+      leg->AddEntry(DataHist, "Data", "p");
+    }
+    
+  }
+
   double GetMaximum() {
-    if (IsSR) return MCStack->GetMaximum();
-    if (DataHist->GetMaximum() > MCStack->GetMaximum()) return DataHist->GetMaximum();
-    else return MCStack->GetMaximum();
+    return TrueMaximum;
   }
 
   void SetMaximum(double max) {
-    MCStack->SetMaximum(max);
+    CanvasMaximum = max;
   }
 
   double GetSensitivity(TString SensSig = "M500") {
@@ -295,18 +339,25 @@ public:
     LPad->SetGridy();
   }
 
-  void DrawPlot(int year) {
+  bool DrawPlot(int year) { // return false if nothing to draw
+    if (!HasData && !HasMC && !SigNames.size()) return false;
     UPad->cd();
+    
+    if (CanvasMaximum > 0) MCStack->SetMaximum(CanvasMaximum);
+    else MCStack->SetMaximum(TrueMaximum);
     MCStack->Draw("hist");
-    if (MCErrorGraph != nullptr) {
+
+    if (MCErrorGraph != nullptr && HasMC) {
       MCErrorGraph->Draw("samef");
       leg->AddEntry(MCErrorGraph,"Bkg. Unc.","f");
     }
-    if (!IsSR) DataHist->Draw("E1same");
+
+    if (!IsSR && HasData) DataHist->Draw("E1same");
+
     for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
       if (SigHists[isig][0]->GetEntries() == 0) continue;
       SigHists[isig][0]->Draw("samehist");
-      if (SigErrorGraphs.size() == SigNames.size()) SigErrorGraphs[isig]->Draw("samef");
+      if (SigErrorGraphs.size() == SigNames.size()) SigErrorGraphs[isig]->Draw("f");
     }
     
     // The coefficients are tried out and tested to be placed at same location on canvas
@@ -319,6 +370,11 @@ public:
     leg->Draw();
 
     LPad->cd();
+    MCErrorRatioGraph->SetTitle(LTitle);
+    MCErrorRatioGraph->GetXaxis()->SetRangeUser(xlow, xup);
+    MCErrorRatioGraph->GetYaxis()->SetRangeUser(0, 2.4);
+    MCErrorRatioGraph->GetYaxis()->SetNdivisions(505);
+
     MCErrorRatioGraph->GetXaxis()->CenterTitle();
     MCErrorRatioGraph->GetXaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3 * 0.7);
     MCErrorRatioGraph->GetXaxis()->SetTitleOffset(gStyle->GetTitleOffset());
@@ -330,13 +386,26 @@ public:
     MCErrorRatioGraph->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset() * 0.5 );
     MCErrorRatioGraph->GetYaxis()->SetLabelSize(gStyle->GetLabelSize()/ 0.3 * 0.7);
     MCErrorRatioGraph->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
-
     MCErrorRatioGraph->Draw("af");
-    if (!IsSR) DataOverMC->Draw("same");
-    for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
-      ExpOverMC[isig]->Draw("same hist ][");
+
+    if (HasMC) {  
+      if (!IsSR && HasData) DataOverMC->Draw("same");
+      for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
+        ExpOverMC[isig]->Draw("same hist ][");
+      }
     }
+    
     CMSFrame(UPad,year);
+    return true;
+  }
+
+  void DrawLatex(TString st, int iline = 0, double x = -1., double y = -1., int al = 23) {
+    UPad->cd(); // Remember to reverse to previous pad after drawing latex!
+    latex.SetTextAlign(al);
+    if (x == -1) x = (leg->GetX1() + leg->GetX2()) / 2.;
+    if (y == -1) y = leg->GetY1() - 0.025;
+    y -= 1.15 * latex.GetTextSize() * iline;
+    latex.DrawLatex(x,y,st);
   }
 
   bool Logy, IsSR;
@@ -344,23 +413,31 @@ public:
   TVirtualPad* Pad;
   TVirtualPad* UPad;
   TVirtualPad* LPad;
-  TLegend* leg;
+  TLegend* leg = nullptr;
+  TLatex latex;
 
   TString PlotName, UTitle, LTitle;
 
   vector<string> Variations;
-  int VarSize;
-  int nbins;
+  int VarSize = 0;
+  int nbins = 0;
   double xlow, xup;
   double MinY = 0;
-  double CanvasMaximum, TrueMaximum;
+  double CanvasMaximum = 0;
+  double TrueMaximum = 0;
 
-  TH1F* DataHist;
+  bool HasData = false;
+  bool HasMC = false;
+  bool HasSig = false;
+
+  TH1F* DataHist = nullptr;
 
   vector<TH1F*> MCHists;
+  vector<TString> MCNames;
   vector<TH1F*> MCSummed; // [iVariation]
   THStack* MCStack;
-  TH1F* DataOverMC;
+  TH1F* StackDummy = nullptr;
+  TH1F* DataOverMC = nullptr;
 
   vector<vector<TH1F*> > SigHists; // [iSig][iVariation]
   vector<TString> SigNames;
@@ -370,9 +447,10 @@ public:
   vector< vector<double> > SigErrUp, SigErrLow; //[iSig][nBins]
 
   int ErrorBandFillStyle = 3002;
-  TGraph* MCErrorGraph;
+  TGraph* MCErrorGraph = nullptr;
   vector<TGraph*> SigErrorGraphs;
-  TGraph* MCErrorRatioGraph;
+  TGraph* MCErrorRatioGraph = nullptr;
+
 };
 
 

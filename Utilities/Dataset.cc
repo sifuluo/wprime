@@ -226,6 +226,13 @@ public:
     return -1;
   }
 
+  bool DatasetInList(int ist, vector<string> list) {
+    for (unsigned i = 0; i < list.size(); ++i) {
+      if (DatasetNames[ist] == list[i]) return true;
+    }
+    return false;
+  }
+
   int GetType(string ds) {
     CheckExist(ds, "GetType");
     return Datasets[ds].Type;

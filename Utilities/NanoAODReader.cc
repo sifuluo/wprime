@@ -665,21 +665,21 @@ public:
     //FIXME: Needs PDF weight variations and ISR/FSR
 
     //determine nominal event weight
-    vector<pair<double, string> > EventWeight;
+    vector<pair<double, string> > EventWeight_out;
     float CentralWeight = 1.;
     for(unsigned i = 0; i < SFweights.size(); ++i){
       CentralWeight *= SFweights[i].variations[0];
     }
-    EventWeight.push_back(make_pair(CentralWeight, "Nominal"));
+    EventWeight_out.push_back(make_pair(CentralWeight, "Nominal"));
 
     //select source for up and down variations
     for(unsigned i = 0; i < SFweights.size(); ++i){
 
       //create variations with strings for later combine histograms
-      EventWeight.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[1], SFweights[i].source + "_up"));
-      EventWeight.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[2], SFweights[i].source + "_down"));
+      EventWeight_out.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[1], SFweights[i].source + "_up"));
+      EventWeight_out.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[2], SFweights[i].source + "_down"));
     }
-    return EventWeight;
+    return EventWeight_out;
   }
 
   Configs *conf;
