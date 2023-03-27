@@ -213,6 +213,10 @@ public:
           tmp.PUIDSFweights[1][2] = evts->Jet_puIdScaleFactorTightUp[i];
           tmp.PUIDSFweights[2][2] = evts->Jet_puIdScaleFactorTightDown[i];
         }
+        // for (unsigned ivar = 0 ; ivar < 3; ++ivar) for (unsigned iwp = 0; iwp < 3; ++iwp) {
+        //   if (tmp.PUIDSFweights[ivar][iwp] == 0 || tmp.PUIDSFweights[ivar][iwp] != tmp.PUIDSFweights[ivar][iwp]) 
+        //   cout << "In PU WP " << iwp << " , " << ivar << " variation, the SF is " << tmp.PUIDSFweights[ivar][iwp] <<endl;
+        // }
       }
 
       //set generator information
@@ -243,7 +247,12 @@ public:
             //     If b-tagging efficiency of light jets is used, should it be the combination of all light jets including c?
             //     Or individual flavour should be assessed separately?
             //     (Which is not possible anyways, because dataset sort everything but charm together into flav = 0)
-            if (tmp.bJetSFweights[iv][iwp] < 0) tmp.bJetSFweights[iv][iwp] = 0;
+            if (tmp.bJetSFweights[iv][iwp] <= 0 || tmp.bJetSFweights[iv][iwp] != tmp.bJetSFweights[iv][iwp]) {
+              cout << "In bTag WP " << iwp << " , " << iv << " variation, ";
+              if (tmp.bTagPasses[iwp]) cout << " bTagged ";
+              else cout << " Non-bTagged ";
+              cout << Form("Jet %i has unexpected bJetSFweight. Eff = %f, SF = %f", i, bTagEff[iwp], bTSFs[iv][iwp]) << endl;
+            }
           }
         }
 
@@ -636,6 +645,7 @@ public:
           PUIDW.variations[i] *= Jets[j].PUIDSFweights[i][PUIDWP];
         }
       }
+      if (BjetW.variations[0] != BjetW.variations[0]) cout << "Caught BjetW nan" <<endl;
       // return;
       string sampleyear;
       string sy = conf->SampleYear;

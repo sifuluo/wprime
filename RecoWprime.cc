@@ -76,13 +76,13 @@ public:
 
     SimpleWprimeLL = vWprimeLL.M();
     SimpleWprimeFL = vWprimeFL.M();
-    FitEvent();
+    // FitEvent();
 
   }
 
 };
 
-void RecoWprime(int sampleyear = 3, int sampletype = 19, int ifile = 1) {
+void RecoWprime(int sampleyear = 3, int sampletype = 19, int ifile = 0) {
   Configs* conf = new Configs(sampleyear, sampletype, ifile);
   conf->Debug = false;
   conf->LocalOutput = true;
@@ -99,7 +99,7 @@ void RecoWprime(int sampleyear = 3, int sampletype = 19, int ifile = 1) {
     if (a->r->RegionAssociations.GetNJets(0) < 5) {
       cout << "Prefiltering at main code" <<endl;
       for (unsigned i = 1; i < 9; ++i) {
-        if (a->r->RegionAssociations.GetNJets(i) > 5) cout << "In region " << i << ", 5 Jets is achieved" <<endl;
+        if (a->r->RegionAssociations.GetNJets(i) >= 5) cout << "In region " << i << ", 5 Jets is achieved" <<endl;
       }
       continue;
     }
