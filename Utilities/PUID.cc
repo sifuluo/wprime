@@ -182,6 +182,18 @@ class PUIDSFReader {
     return GetScaleFactors(j.Eta(), j.Pt(), j.PUIDpasses);
   }
 
+  void CompareScaleFactors(Jet& j, vector<vector<float> > PUIDSFs) {
+    vector<vector<float> > calc = GetScaleFactors(j);
+    vector<bool> rep = {false, false, false};
+    rep[0] = j.PUIDpasses[0] && !(PUIDSFs[0][0] == calc[0][0] && PUIDSFs[1][0] == calc[1][0] && PUIDSFs[2][0] == calc[2][0]);
+    rep[1] = j.PUIDpasses[1] && !(PUIDSFs[0][1] == calc[0][1] && PUIDSFs[1][1] == calc[1][1] && PUIDSFs[2][1] == calc[2][1]);
+    rep[2] = j.PUIDpasses[2] && !(PUIDSFs[0][2] == calc[0][2] && PUIDSFs[1][2] == calc[1][2] && PUIDSFs[2][2] == calc[2][2]);
+    if (rep[0] || rep[1] || rep[2]) cout << "PUIDSFs diff. Jet pT = " << j.Pt() << ", eta = " << j.Eta() << endl;
+    for (unsigned iwp = 0; iwp < 3; ++iwp) {
+      if (rep[iwp]) cout << Form("WP %i: %f(%f), Up %f(%f), Down %f(%f)",iwp, PUIDSFs[0][iwp], calc[0][iwp],PUIDSFs[1][iwp], calc[1][iwp],PUIDSFs[2][iwp], calc[2][iwp]) <<endl;
+    }
+  }
+
   TFile* puidfile;
   vector<TH2F*> puidsfs;
   vector<TH2F*> puidsferrs;

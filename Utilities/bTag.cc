@@ -267,6 +267,18 @@ public:
     return out;
   }
 
+  void CompareScaleFactors(Jet& j, vector<vector<float> > bTSFs) {
+    vector<vector<float> > calc = GetScaleFactors(j);
+    vector<bool> rep = {false, false, false};
+    rep[0] = !(bTSFs[0][0] == calc[0][0] && bTSFs[1][0] == calc[1][0] && bTSFs[2][0] == calc[2][0]);
+    rep[1] = !(bTSFs[0][1] == calc[0][1] && bTSFs[1][1] == calc[1][1] && bTSFs[2][1] == calc[2][1]);
+    rep[2] = !(bTSFs[0][2] == calc[0][2] && bTSFs[1][2] == calc[1][2] && bTSFs[2][2] == calc[2][2]);
+    if (rep[0] || rep[1] || rep[2]) cout << "bTSFs diff. Jet pT = " << j.Pt() << ", eta = " << j.Eta() << endl;
+    for (unsigned iwp = 0; iwp < 3; ++iwp) {
+      if (rep[iwp]) cout << Form("WP %i: %f(%f), Up %f(%f), Down %f(%f)",iwp, bTSFs[0][iwp], calc[0][iwp],bTSFs[1][iwp], calc[1][iwp],bTSFs[2][iwp], calc[2][iwp]) <<endl;
+    }
+  }
+
   Configs *conf;
   // map<string, map<string, map<int, bTagSFEntry> > > SFs; // [measurementType][sysType][iWP]
   vector< vector<vector<bTagSFEntry> > > SFs; // [nominal/ up/ down] [loose/ medium/ tight][index]

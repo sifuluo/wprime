@@ -204,36 +204,29 @@ public:
 
       //set PUID SFs
       if(IsMC && evts->Jet_pt_nom[i] < 50. && evts->Jet_genJetIdx[i] >= 0){ //unlike other SFs, PU Jets and jets failing ID are not supposed to contribute to event weights
-        if (conf->UseSkims_PUIDSF) {
+        vector<vector<float> > PUIDSFs = {{1,1,1},{1,1,1},{1,1,1}};
+        if (conf->UseSkims_PUIDSF || conf->Compare_PUIDSF) {
           if(tmp.PUIDpasses[0]){
-            tmp.PUIDSFweights[0][0] = evts->Jet_puIdScaleFactorLoose[i];
-            tmp.PUIDSFweights[1][0] = evts->Jet_puIdScaleFactorLooseUp[i];
-            tmp.PUIDSFweights[2][0] = evts->Jet_puIdScaleFactorLooseDown[i];
+            PUIDSFs[0][0] = evts->Jet_puIdScaleFactorLoose[i];
+            PUIDSFs[1][0] = evts->Jet_puIdScaleFactorLooseUp[i];
+            PUIDSFs[2][0] = evts->Jet_puIdScaleFactorLooseDown[i];
           }
           if(tmp.PUIDpasses[1]){
-            tmp.PUIDSFweights[0][1] = evts->Jet_puIdScaleFactorMedium[i];
-            tmp.PUIDSFweights[1][1] = evts->Jet_puIdScaleFactorMediumUp[i];
-            tmp.PUIDSFweights[2][1] = evts->Jet_puIdScaleFactorMediumDown[i];
+            PUIDSFs[0][1] = evts->Jet_puIdScaleFactorMedium[i];
+            PUIDSFs[1][1] = evts->Jet_puIdScaleFactorMediumUp[i];
+            PUIDSFs[2][1] = evts->Jet_puIdScaleFactorMediumDown[i];
           }
           if(tmp.PUIDpasses[2]){
-            tmp.PUIDSFweights[0][2] = evts->Jet_puIdScaleFactorTight[i];
-            tmp.PUIDSFweights[1][2] = evts->Jet_puIdScaleFactorTightUp[i];
-            tmp.PUIDSFweights[2][2] = evts->Jet_puIdScaleFactorTightDown[i];
+            PUIDSFs[0][2] = evts->Jet_puIdScaleFactorTight[i];
+            PUIDSFs[1][2] = evts->Jet_puIdScaleFactorTightUp[i];
+            PUIDSFs[2][2] = evts->Jet_puIdScaleFactorTightDown[i];
           }
         }
-        else {
-          tmp.PUIDSFweights = R_PUIDSF->GetScaleFactors(tmp);
+        if (conf->Compare_PUIDSF) R_PUIDSF->CompareScaleFactors(tmp, PUIDSFs);
+        if (!conf->UseSkims_PUIDSF) {
+          PUIDSFs = R_PUIDSF->GetScaleFactors(tmp);
         }
-
-        // vector<vector<float> > calc = R_PUIDSF->GetScaleFactors(tmp.Eta(), tmp.Pt());
-        // vector<bool> rep = {false, false, false};
-        // rep[0] = tmp.PUIDpasses[0] && !(tmp.PUIDSFweights[0][0] == calc[0][0] && tmp.PUIDSFweights[1][0] == calc[1][0] && tmp.PUIDSFweights[2][0] == calc[2][0]);
-        // rep[1] = tmp.PUIDpasses[1] && !(tmp.PUIDSFweights[0][1] == calc[0][1] && tmp.PUIDSFweights[1][1] == calc[1][1] && tmp.PUIDSFweights[2][1] == calc[2][1]);
-        // rep[2] = tmp.PUIDpasses[2] && !(tmp.PUIDSFweights[0][2] == calc[0][2] && tmp.PUIDSFweights[1][2] == calc[1][2] && tmp.PUIDSFweights[2][2] == calc[2][2]);
-        // if (rep[0] || rep[1] || rep[2]) cout << "PUIDSF diff. Jet pT = " << tmp.Pt() << ", eta = " << tmp.Eta() << endl;
-        // for (unsigned iwp = 0; iwp < 3; ++iwp) {
-        //   if (rep[iwp]) cout << Form("WP %i: %f(%f), Up %f(%f), Down %f(%f)",iwp, tmp.PUIDSFweights[0][iwp], calc[0][iwp],tmp.PUIDSFweights[1][iwp], calc[1][iwp],tmp.PUIDSFweights[2][iwp], calc[2][iwp]) <<endl;
-        // }
+        tmp.PUIDSFweights = PUIDSFs;
       }
 
       //set generator information
@@ -253,14 +246,16 @@ public:
       if (IsMC) {
         //FIXME: Need b-tagging efficiency per sample at some point, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/BTagSFMethods#b_tagging_efficiency_in_MC_sampl
         vector<vector<float> > bTSFs = {{1,1,1},{1,1,1},{1,1,1}};
-        if (conf->UseSkims_bTagSF) {
+        if (conf->UseSkims_bTagSF || conf->Compare_bTagSF) {
           bTSFs[0] = {evts->Jet_bTagScaleFactorLoose[i], evts->Jet_bTagScaleFactorMedium[i], evts->Jet_bTagScaleFactorTight[i]};
           bTSFs[1] = {evts->Jet_bTagScaleFactorLooseUp[i], evts->Jet_bTagScaleFactorMediumUp[i], evts->Jet_bTagScaleFactorTightUp[i]};
           bTSFs[2] = {evts->Jet_bTagScaleFactorLooseDown[i], evts->Jet_bTagScaleFactorMediumDown[i], evts->Jet_bTagScaleFactorTightDown[i]};
         }
-        else {
+        if (conf->Compare_bTagSF) R_BTSF->CompareScaleFactors(tmp, bTSFs);
+        if (!conf->UseSkims_bTagSF) {
           bTSFs = R_BTSF->GetScaleFactors(tmp);
         }
+        
         for (unsigned iv = 0; iv < 3; ++iv) {
           for (unsigned iwp = 0; iwp < 3; ++iwp) {
             if (tmp.bTagPasses[iwp]) tmp.bJetSFweights[iv][iwp] = bTSFs[iv][iwp];
@@ -274,15 +269,6 @@ public:
             }
           }
         }
-        // vector<vector<float> > calc = R_BTSF->GetScaleFactors(tmp);
-        // vector<bool> rep = {false, false, false};
-        // rep[0] = !(bTSFs[0][0] == calc[0][0] && bTSFs[1][0] == calc[1][0] && bTSFs[2][0] == calc[2][0]);
-        // rep[1] = !(bTSFs[0][1] == calc[0][1] && bTSFs[1][1] == calc[1][1] && bTSFs[2][1] == calc[2][1]);
-        // rep[2] = !(bTSFs[0][2] == calc[0][2] && bTSFs[1][2] == calc[1][2] && bTSFs[2][2] == calc[2][2]);
-        // if (rep[0] || rep[1] || rep[2]) cout << "bTSFs diff. Jet pT = " << tmp.Pt() << ", eta = " << tmp.Eta() << endl;
-        // for (unsigned iwp = 0; iwp < 3; ++iwp) {
-        //   if (rep[iwp]) cout << Form("WP %i: %f(%f), Up %f(%f), Down %f(%f)",iwp, bTSFs[0][iwp], calc[0][iwp],bTSFs[1][iwp], calc[1][iwp],bTSFs[2][iwp], calc[2][iwp]) <<endl;
-        // }
       }
 
       Jets.push_back(tmp);
