@@ -48,8 +48,8 @@ struct Configs {
   int PUIDWP = 2; //0 loose, 1 medium, 2 tight
   bool UseSkims_bTagSF = true;
   bool UseSkims_PUIDSF = true;
-  bool Compare_bTagSF = false;
-  bool Compare_PUIDSF = false;
+  int Compare_bTagSF = 0; // Lines to print out, -1 for infinite, 0 for not print out
+  int Compare_PUIDSF = 0;
 
   // Idealy the container for all bool configs, practically only the ones not used extensively should rest in here.
   map<string,bool> Switches;

@@ -114,6 +114,7 @@ public:
 
     Long64_t evtcode = evts->LoadTree(i);
     if (evtcode < 0) return 0;
+    iEvent = i;
     evts->GetEntry(i);
     if(ReadMETFilterStatus() == false) return 1; //skip events not passing MET filter flags
     run = evts->run;
@@ -165,8 +166,6 @@ public:
 
   void ReadJets() {
     Jets.clear();
-    // bool IsMC_back = IsMC; // force IsMC operations and get back after wards.
-    // IsMC = true;
     for (unsigned i = 0; i < evts->nJet; ++i) {
 
       //determine maximum pT of all jet variations
@@ -203,7 +202,7 @@ public:
       tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], conf->SampleYear);
 
       //set PUID SFs
-      if(IsMC && evts->Jet_pt_nom[i] < 50. && evts->Jet_genJetIdx[i] >= 0){ //unlike other SFs, PU Jets and jets failing ID are not supposed to contribute to event weights
+      if((IsMC || conf->Compare_PUIDSF) && evts->Jet_pt_nom[i] < 50. && evts->Jet_genJetIdx[i] >= 0){ //unlike other SFs, PU Jets and jets failing ID are not supposed to contribute to event weights
         vector<vector<float> > PUIDSFs = {{1,1,1},{1,1,1},{1,1,1}};
         if (conf->UseSkims_PUIDSF || conf->Compare_PUIDSF) {
           if(tmp.PUIDpasses[0]){
@@ -222,7 +221,10 @@ public:
             PUIDSFs[2][2] = evts->Jet_puIdScaleFactorTightDown[i];
           }
         }
-        if (conf->Compare_PUIDSF) R_PUIDSF->CompareScaleFactors(tmp, PUIDSFs);
+        if (conf->Compare_PUIDSF) {
+          R_PUIDSF->CompareScaleFactors(tmp, PUIDSFs);
+          conf->Compare_PUIDSF--;
+        }
         if (!conf->UseSkims_PUIDSF) {
           PUIDSFs = R_PUIDSF->GetScaleFactors(tmp);
         }
@@ -238,12 +240,11 @@ public:
 
       //set btagging flags
       tmp.bTagPasses = bTag(evts->Jet_btagDeepFlavB[i], conf->SampleYear);
-      vector<float> bTag_Eff = bTE->GetEff(tmp);
-      // vector<float> bTag_Eff = {0.9,0.7,0.5};
+      
 
       //set btagging SFs
       tmp.bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
-      if (IsMC) {
+      if (IsMC || conf->Compare_bTagSF) {
         //FIXME: Need b-tagging efficiency per sample at some point, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/BTagSFMethods#b_tagging_efficiency_in_MC_sampl
         vector<vector<float> > bTSFs = {{1,1,1},{1,1,1},{1,1,1}};
         if (conf->UseSkims_bTagSF || conf->Compare_bTagSF) {
@@ -251,37 +252,46 @@ public:
           bTSFs[1] = {evts->Jet_bTagScaleFactorLooseUp[i], evts->Jet_bTagScaleFactorMediumUp[i], evts->Jet_bTagScaleFactorTightUp[i]};
           bTSFs[2] = {evts->Jet_bTagScaleFactorLooseDown[i], evts->Jet_bTagScaleFactorMediumDown[i], evts->Jet_bTagScaleFactorTightDown[i]};
         }
-        if (conf->Compare_bTagSF) R_BTSF->CompareScaleFactors(tmp, bTSFs);
+        if (conf->Compare_bTagSF) {
+          R_BTSF->CompareScaleFactors(tmp, bTSFs);
+          conf->Compare_bTagSF--;
+        }
         if (!conf->UseSkims_bTagSF) {
           bTSFs = R_BTSF->GetScaleFactors(tmp);
         }
         
-        for (unsigned iv = 0; iv < 3; ++iv) {
-          for (unsigned iwp = 0; iwp < 3; ++iwp) {
-            if (tmp.bTagPasses[iwp]) tmp.bJetSFweights[iv][iwp] = bTSFs[iv][iwp];
-            else tmp.bJetSFweights[iv][iwp] = (1. - bTag_Eff[iwp] * bTSFs[iv][iwp]) / (1. - bTag_Eff[iwp]);
-            if (conf->bTagEffCreation) continue;
-            if (tmp.bJetSFweights[iv][iwp] <= 0 || tmp.bJetSFweights[iv][iwp] != tmp.bJetSFweights[iv][iwp]) {
-              cout << "In bTag WP " << iwp << " , " << iv << " variation, ";
-              if (tmp.bTagPasses[iwp]) cout << " bTagged ";
-              else cout << " Non-bTagged ";
-              cout << Form("Jet %i (pT = %f, eta = %f) has unexpected bJetSFweight. Eff = %f, SF = %f", i, tmp.Pt(), tmp.Eta(), bTag_Eff[iwp], bTSFs[iv][iwp]) << endl;
+        if (IsMC) {
+          vector<float> bTag_Eff = bTE->GetEff(tmp);
+          // vector<float> bTag_Eff = {0.9,0.7,0.5};
+          for (unsigned iv = 0; iv < 3; ++iv) {
+            for (unsigned iwp = 0; iwp < 3; ++iwp) {
+              if (tmp.bTagPasses[iwp]) tmp.bJetSFweights[iv][iwp] = bTSFs[iv][iwp];
+              else tmp.bJetSFweights[iv][iwp] = (1. - bTag_Eff[iwp] * bTSFs[iv][iwp]) / (1. - bTag_Eff[iwp]);
+              if (conf->bTagEffCreation) continue;
+              if (tmp.bJetSFweights[iv][iwp] <= 0 || tmp.bJetSFweights[iv][iwp] != tmp.bJetSFweights[iv][iwp]) {
+                cout << "In bTag WP " << iwp << " , " << iv << " variation, ";
+                if (tmp.bTagPasses[iwp]) cout << " bTagged ";
+                else cout << " Non-bTagged ";
+                cout << Form("Jet %i (pT = %f, eta = %f) has unexpected bJetSFweight. Eff = %f, SF = %f", i, tmp.Pt(), tmp.Eta(), bTag_Eff[iwp], bTSFs[iv][iwp]) << endl;
+              }
             }
           }
         }
       }
-
       Jets.push_back(tmp);
     }
-    // IsMC = IsMC_back;
   }
 
   void ReadLeptons() {
     Leptons.clear();
     Electrons.clear();
     Muons.clear();
+    if (evts->nElectron > 9) cout << "Error: nElectron = " << evts->nElectron << " at iEvent = " << iEvent << endl;
+    if (evts->nMuon > 9) cout << "Error: nMuon = " << evts->nMuon << " at iEvent = " << iEvent << endl;
     for (unsigned i = 0; i < evts->nElectron; ++i) {
+      if (i >= 9) break;
       Electron tmp;
+      // cout << "Electron i = " << i << ", nElectron = " << evts->nElectron <<endl;
       tmp.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
       //set resolution variations (only matter in MC, will be ineffective in data)
       tmp.ResUp().SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
@@ -291,7 +301,7 @@ public:
       //set scale variations (only filled in data, should be applied to MC, for now FIXME inactive)
       tmp.ScaleUp().SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
       tmp.ScaleDown().SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
-
+      // cout << Form("Pt = %f, ResUp = %f, ResDown = %f", tmp.Pt(), tmp.ResUp().Pt(), tmp.ResDown().Pt()) <<endl;
       tmp.index = i;
       tmp.charge = evts->Electron_charge[i];
 
@@ -376,6 +386,7 @@ public:
       Leptons.push_back(tmp);
     }
     for (unsigned i = 0; i < evts->nMuon; ++i) {
+      if (i >= 9) break;
       Muon tmp;
       tmp.SetPtEtaPhiM(evts->Muon_pt[i],evts->Muon_eta[i],evts->Muon_phi[i],evts->Muon_mass[i]);
       tmp.index = i;
@@ -677,6 +688,8 @@ public:
   }
 
   Configs *conf;
+
+  Long64_t iEvent;
 
   bTagSFReader *R_BTSF;
   PUIDSFReader *R_PUIDSF;
