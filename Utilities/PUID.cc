@@ -1,6 +1,13 @@
+#ifndef PUID_CC
+#define PUID_CC
+
 #include <vector>
 #include <string>
 #include <iostream>
+
+#include "DataFormat.cc"
+#include "TFile.h"
+#include "TH2.h"
 
 //working points for PU jet ID implemented as in https://twiki.cern.ch/twiki/bin/view/CMS/PileupJetIDUL
 std::vector<bool> PUID(float pT_, float absEta_, float PUIDdisc_, string year_){
@@ -123,4 +130,62 @@ std::vector<bool> PUID(float pT_, float absEta_, float PUIDdisc_, string year_){
     }
   }
   return output;
-}
+};
+
+class PUIDSFReader {
+  public:
+  PUIDSFReader(Configs* conf_) {
+    conf = conf_;
+  };
+
+  void ReadPUIDSF() {
+    TString puidfilename = "AUXFiles/PUID_106XTraining_ULRun2_EffSFandUncties_v1.root";
+    puidfile = new TFile(puidfilename);
+    string puidsfname = "h2_eff_sfUL";
+    if (conf->iSampleYear == 0) puidsfname = puidsfname + "2016APV";
+    else puidsfname = puidsfname + conf->SampleYear;
+    vector<string> wps = {"_L","_M","_T"};
+    for (unsigned i = 0; i < 3; ++i) {
+      TString tmpname = puidsfname + wps[i];
+      TString tmpnameerr = tmpname + "_Systuncty";
+      puidsfs.push_back((TH2F*)puidfile->Get(tmpname));
+      puidsferrs.push_back((TH2F*)puidfile->Get(tmpnameerr));
+    }
+  }
+
+  vector<float> GetPUIDSFSingleWP(double eta, double pt, int wp = -1) {
+    if (wp < 0) wp = conf->PUIDWP;
+    vector<float> out = {1.,1.,1.};
+    float nominal = puidsfs[wp]->GetBinContent(puidsfs[wp]->FindBin(pt,eta));
+    float err = puidsferrs[wp]->GetBinContent(puidsferrs[wp]->FindBin(pt,eta));
+    out[0] = nominal;
+    out[1] = nominal + err;
+    out[2] = nominal - err;
+    return out;
+  }
+
+  vector<vector<float> > GetScaleFactors(double eta, double pt, vector<bool> PUIDpasses = {}) {
+    vector<vector<float> > out = {{1.,1.,1.},{1.,1.,1.},{1.,1.,1.}};
+    if (PUIDpasses.size() != 3) PUIDpasses = {true, true, true};
+    for (unsigned iwp = 0; iwp < 3; ++iwp) {
+      if (!PUIDpasses[iwp]) continue;
+      float nominal = puidsfs[iwp]->GetBinContent(puidsfs[iwp]->FindBin(pt,eta));
+      float err = puidsferrs[iwp]->GetBinContent(puidsferrs[iwp]->FindBin(pt,eta));
+      out[0][iwp] = nominal;
+      out[1][iwp] = nominal + err;
+      out[2][iwp] = nominal - err;
+    }
+    return out;
+  }
+
+  vector<vector<float> > GetScaleFactors(Jet& j) {
+    return GetScaleFactors(j.Eta(), j.Pt(), j.PUIDpasses);
+  }
+
+  TFile* puidfile;
+  vector<TH2F*> puidsfs;
+  vector<TH2F*> puidsferrs;
+  Configs* conf;
+};
+
+#endif

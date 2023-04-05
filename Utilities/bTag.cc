@@ -3,8 +3,11 @@
 
 #include <vector>
 #include <string>
+#include <sstream>
+#include <iostream>
 
 #include "TH2.h"
+#include "TF1.h"
 
 #include "Configs.cc"
 #include "DataFormat.cc"
@@ -87,6 +90,10 @@ public:
     if (conf->bTagEffCreation) return;
     f_eff = new TFile(FileName,"READ");
     cout << "Reading from bTagEff file " << FileName << endl;
+    if (f_eff->IsZombie()) {
+      cout << "Faild to read bTagEff file." <<endl;
+      return;
+    }
     h_eff.resize(3);
     h_eff[0] = (TH2F*) f_eff->Get("BtagPass_L");
     h_eff[1] = (TH2F*) f_eff->Get("BtagPass_M");
@@ -154,5 +161,117 @@ public:
   vector<double> MistagEff = {0.1,0.01,0.001};
 };
 
+struct bTagSFEntry {
+// Since solely used by the following class, this struct is not meant to be placed in DataFormat.cc
+// OperatingPoint,measurementType,sysType,jetFlavor,etaMin,etaMax,ptMin,ptMax,discrMin,discrMax,formula
+  bTagSFEntry(vector<string> ent) {
+    HasFunc = false;
+    jetFlavor = stoi(ent[3]);
+    etaMin = stof(ent[4]);
+    etaMax = stof(ent[5]);
+    ptMin = stof(ent[6]);
+    ptMax = stof(ent[7]);
+    discrMin = stof(ent[8]);
+    discrMax = stof(ent[9]);
+    formula = ent[10];
+  };
+
+  bool InRange(int flav, float eta, float pt, float dis = 1.0) {
+    // lower edge included and upper edge excluded just like bins in root histograms.
+    if (abs(flav) != jetFlavor) return false;
+    if (fabs(eta) >= etaMax || fabs(eta) < etaMin) return false;
+    if (pt >= ptMax || pt < ptMin) return false;
+    // if (dis >= discrMax || dis < discrMin) return false;
+    return true;
+  }
+
+  float GetScaleFactor(float pt) {
+    if (!HasFunc) {
+      func = new TF1("Func_bTagSF", formula.c_str(), ptMin, ptMax);
+      HasFunc = true;
+    }
+    return func->Eval(pt);
+  }
+
+
+  bool HasFunc = false;;
+
+  int jetFlavor;
+  float etaMin;
+  float etaMax;
+  float ptMin;
+  float ptMax;
+  float discrMin;
+  float discrMax;
+  string formula;
+  TF1* func;
+
+};
+
+class bTagSFReader {
+public:
+// OperatingPoint, measurementType, sysType, jetFlavor, etaMin, etaMax, ptMin, ptMax, discrMin, discrMax ,formula
+  bTagSFReader(Configs* conf_) {
+    conf = conf_;
+    SFs = {{{},{},{}},{{},{},{}},{{},{},{}}};
+  };
+
+  void ReadCSVFile() {
+    string basepath = "AUXFiles/BTV/";
+    string filename = basepath + conf->SampleYear + "_wp_deepJet.csv";
+    ifstream infile(filename);
+    if (!infile) {
+      cout << "Cannot read from file " << filename << endl;
+      throw runtime_error("Cannot Read from file");
+      return;
+    }
+    else cout << "Reading from bTag CSV file " << filename << endl;
+    string line;
+    getline(infile, line); // skipping the first line
+    while (getline(infile, line)) {
+      stringstream ss(line);
+      vector<string> vs;
+      while (ss.good()) {
+        string subs;
+        getline(ss, subs, ',');
+        vs.push_back(subs);
+      }
+      int iv = -1;
+      // incl are for light jets, and comb deals with c and b jets.
+      if ((vs[1] == "incl" || vs[1] == "comb") && vs[2] == "central") iv = 0;
+      else if ((vs[1] == "incl" || vs[1] == "comb") && vs[2] == "up") iv = 1;
+      else if ((vs[1] == "incl" || vs[1] == "comb") && vs[2] == "down") iv = 2;
+      else continue;
+      int iwp = -1;
+      if (vs[0] == "L") iwp = 0;
+      else if (vs[0] == "M") iwp = 1;
+      else if (vs[0] == "T") iwp = 2;
+      else continue;
+      // SFs[vs[1]][vs[2]][iwp] = bTagSFEntry(vs);
+      SFs[iv][iwp].push_back(bTagSFEntry(vs));
+    }
+  }
+
+  vector<vector<float> > GetScaleFactors(Jet& j) {
+    vector<vector<float> > out = {{1,1,1},{1,1,1},{1,1,1}};
+    for (unsigned iv = 0; iv < 3; ++iv) {
+      for (unsigned iwp = 0; iwp < 3; ++iwp) {
+        for (unsigned isf = 0; isf < SFs[iv][iwp].size(); ++isf) {
+          if (SFs[iv][iwp][isf].InRange(j.hadronFlavour, j.Eta(), j.Pt())){
+            out[iv][iwp] = SFs[iv][iwp][isf].GetScaleFactor(j.Pt());
+            break;
+          }
+        }
+      }
+    }
+    return out;
+  }
+
+  Configs *conf;
+  // map<string, map<string, map<int, bTagSFEntry> > > SFs; // [measurementType][sysType][iWP]
+  vector< vector<vector<bTagSFEntry> > > SFs; // [nominal/ up/ down] [loose/ medium/ tight][index]
+
+
+};
 
 #endif

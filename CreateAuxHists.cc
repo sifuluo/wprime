@@ -9,7 +9,7 @@
 #include "Utilities/NanoAODReader.cc"
 #include "Utilities/JetScale.cc"
 
-void CreateAuxHists(int sampleyear = 3, int sampletype = 19, int ifile = -1) {
+void CreateAuxHists(int sampleyear = 3, int sampletype = 2, int ifile = -1) {
   Configs* conf = new Configs(sampleyear, sampletype, ifile);
   conf->Debug = false;
   conf->DASInput = false;

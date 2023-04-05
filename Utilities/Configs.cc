@@ -46,6 +46,8 @@ struct Configs {
 
   int bTagWP = 2; //0 loose, 1 medium, 2 tight
   int PUIDWP = 2; //0 loose, 1 medium, 2 tight
+  bool UseSkims_bTagSF = false;
+  bool UseSkims_PUIDSF = false;
 
   // Idealy the container for all bool configs, practically only the ones not used extensively should rest in here.
   map<string,bool> Switches;

@@ -32,6 +32,11 @@ public:
 
     IsMC = conf->IsMC;
 
+    R_BTSF = new bTagSFReader(conf);
+    R_BTSF->ReadCSVFile();
+    R_PUIDSF = new PUIDSFReader(conf);
+    R_PUIDSF->ReadPUIDSF();
+
     if (conf->iFile >= 0 || conf->InputFile == "All") { // batch mode
 
       vector<string> rootfiles = GetFileNames();
@@ -160,7 +165,8 @@ public:
 
   void ReadJets() {
     Jets.clear();
-
+    // bool IsMC_back = IsMC; // force IsMC operations and get back after wards.
+    // IsMC = true;
     for (unsigned i = 0; i < evts->nJet; ++i) {
 
       //determine maximum pT of all jet variations
@@ -198,24 +204,35 @@ public:
 
       //set PUID SFs
       if(IsMC && evts->Jet_pt_nom[i] < 50. && evts->Jet_genJetIdx[i] >= 0){ //unlike other SFs, PU Jets and jets failing ID are not supposed to contribute to event weights
-        if(tmp.PUIDpasses[0]){
-          tmp.PUIDSFweights[0][0] = evts->Jet_puIdScaleFactorLoose[i];
-          tmp.PUIDSFweights[1][0] = evts->Jet_puIdScaleFactorLooseUp[i];
-          tmp.PUIDSFweights[2][0] = evts->Jet_puIdScaleFactorLooseDown[i];
+        if (conf->UseSkims_PUIDSF) {
+          if(tmp.PUIDpasses[0]){
+            tmp.PUIDSFweights[0][0] = evts->Jet_puIdScaleFactorLoose[i];
+            tmp.PUIDSFweights[1][0] = evts->Jet_puIdScaleFactorLooseUp[i];
+            tmp.PUIDSFweights[2][0] = evts->Jet_puIdScaleFactorLooseDown[i];
+          }
+          if(tmp.PUIDpasses[1]){
+            tmp.PUIDSFweights[0][1] = evts->Jet_puIdScaleFactorMedium[i];
+            tmp.PUIDSFweights[1][1] = evts->Jet_puIdScaleFactorMediumUp[i];
+            tmp.PUIDSFweights[2][1] = evts->Jet_puIdScaleFactorMediumDown[i];
+          }
+          if(tmp.PUIDpasses[2]){
+            tmp.PUIDSFweights[0][2] = evts->Jet_puIdScaleFactorTight[i];
+            tmp.PUIDSFweights[1][2] = evts->Jet_puIdScaleFactorTightUp[i];
+            tmp.PUIDSFweights[2][2] = evts->Jet_puIdScaleFactorTightDown[i];
+          }
         }
-        if(tmp.PUIDpasses[1]){
-          tmp.PUIDSFweights[0][1] = evts->Jet_puIdScaleFactorMedium[i];
-          tmp.PUIDSFweights[1][1] = evts->Jet_puIdScaleFactorMediumUp[i];
-          tmp.PUIDSFweights[2][1] = evts->Jet_puIdScaleFactorMediumDown[i];
+        else {
+          tmp.PUIDSFweights = R_PUIDSF->GetScaleFactors(tmp);
         }
-        if(tmp.PUIDpasses[2]){
-          tmp.PUIDSFweights[0][2] = evts->Jet_puIdScaleFactorTight[i];
-          tmp.PUIDSFweights[1][2] = evts->Jet_puIdScaleFactorTightUp[i];
-          tmp.PUIDSFweights[2][2] = evts->Jet_puIdScaleFactorTightDown[i];
-        }
-        // for (unsigned ivar = 0 ; ivar < 3; ++ivar) for (unsigned iwp = 0; iwp < 3; ++iwp) {
-        //   if (tmp.PUIDSFweights[ivar][iwp] == 0 || tmp.PUIDSFweights[ivar][iwp] != tmp.PUIDSFweights[ivar][iwp]) 
-        //   cout << "In PU WP " << iwp << " , " << ivar << " variation, the SF is " << tmp.PUIDSFweights[ivar][iwp] <<endl;
+
+        // vector<vector<float> > calc = R_PUIDSF->GetScaleFactors(tmp.Eta(), tmp.Pt());
+        // vector<bool> rep = {false, false, false};
+        // rep[0] = tmp.PUIDpasses[0] && !(tmp.PUIDSFweights[0][0] == calc[0][0] && tmp.PUIDSFweights[1][0] == calc[1][0] && tmp.PUIDSFweights[2][0] == calc[2][0]);
+        // rep[1] = tmp.PUIDpasses[1] && !(tmp.PUIDSFweights[0][1] == calc[0][1] && tmp.PUIDSFweights[1][1] == calc[1][1] && tmp.PUIDSFweights[2][1] == calc[2][1]);
+        // rep[2] = tmp.PUIDpasses[2] && !(tmp.PUIDSFweights[0][2] == calc[0][2] && tmp.PUIDSFweights[1][2] == calc[1][2] && tmp.PUIDSFweights[2][2] == calc[2][2]);
+        // if (rep[0] || rep[1] || rep[2]) cout << "PUIDSF diff. Jet pT = " << tmp.Pt() << ", eta = " << tmp.Eta() << endl;
+        // for (unsigned iwp = 0; iwp < 3; ++iwp) {
+        //   if (rep[iwp]) cout << Form("WP %i: %f(%f), Up %f(%f), Down %f(%f)",iwp, tmp.PUIDSFweights[0][iwp], calc[0][iwp],tmp.PUIDSFweights[1][iwp], calc[1][iwp],tmp.PUIDSFweights[2][iwp], calc[2][iwp]) <<endl;
         // }
       }
 
@@ -228,68 +245,49 @@ public:
 
       //set btagging flags
       tmp.bTagPasses = bTag(evts->Jet_btagDeepFlavB[i], conf->SampleYear);
-      vector<float> bTagEff = bTE->GetEff(tmp);
+      vector<float> bTag_Eff = bTE->GetEff(tmp);
+      // vector<float> bTag_Eff = {0.9,0.7,0.5};
 
       //set btagging SFs
       tmp.bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
       if (IsMC) {
         //FIXME: Need b-tagging efficiency per sample at some point, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/BTagSFMethods#b_tagging_efficiency_in_MC_sampl
-        vector<vector<double> > bTSFs = {{1,1,1},{1,1,1},{1,1,1}};
-        bTSFs[0] = {evts->Jet_bTagScaleFactorLoose[i], evts->Jet_bTagScaleFactorMedium[i], evts->Jet_bTagScaleFactorTight[i]};
-        bTSFs[1] = {evts->Jet_bTagScaleFactorLooseUp[i], evts->Jet_bTagScaleFactorMediumUp[i], evts->Jet_bTagScaleFactorTightUp[i]};
-        bTSFs[2] = {evts->Jet_bTagScaleFactorLooseDown[i], evts->Jet_bTagScaleFactorMediumDown[i], evts->Jet_bTagScaleFactorTightDown[i]};
+        vector<vector<float> > bTSFs = {{1,1,1},{1,1,1},{1,1,1}};
+        if (conf->UseSkims_bTagSF) {
+          bTSFs[0] = {evts->Jet_bTagScaleFactorLoose[i], evts->Jet_bTagScaleFactorMedium[i], evts->Jet_bTagScaleFactorTight[i]};
+          bTSFs[1] = {evts->Jet_bTagScaleFactorLooseUp[i], evts->Jet_bTagScaleFactorMediumUp[i], evts->Jet_bTagScaleFactorTightUp[i]};
+          bTSFs[2] = {evts->Jet_bTagScaleFactorLooseDown[i], evts->Jet_bTagScaleFactorMediumDown[i], evts->Jet_bTagScaleFactorTightDown[i]};
+        }
+        else {
+          bTSFs = R_BTSF->GetScaleFactors(tmp);
+        }
         for (unsigned iv = 0; iv < 3; ++iv) {
           for (unsigned iwp = 0; iwp < 3; ++iwp) {
             if (tmp.bTagPasses[iwp]) tmp.bJetSFweights[iv][iwp] = bTSFs[iv][iwp];
-            else tmp.bJetSFweights[iv][iwp] = (1. - bTagEff[iwp] * bTSFs[iv][iwp]) / (1. - bTagEff[iwp]);
-            // Question: For non-bjets, the bTagEff should be the b-tagging efficiencies for non-b origin jets?
-            //     Or should it also use b-tagging eff for b origin jets.
-            //     If b-tagging efficiency of light jets is used, should it be the combination of all light jets including c?
-            //     Or individual flavour should be assessed separately?
-            //     (Which is not possible anyways, because dataset sort everything but charm together into flav = 0)
+            else tmp.bJetSFweights[iv][iwp] = (1. - bTag_Eff[iwp] * bTSFs[iv][iwp]) / (1. - bTag_Eff[iwp]);
+            if (conf->bTagEffCreation) continue;
             if (tmp.bJetSFweights[iv][iwp] <= 0 || tmp.bJetSFweights[iv][iwp] != tmp.bJetSFweights[iv][iwp]) {
               cout << "In bTag WP " << iwp << " , " << iv << " variation, ";
               if (tmp.bTagPasses[iwp]) cout << " bTagged ";
               else cout << " Non-bTagged ";
-              cout << Form("Jet %i has unexpected bJetSFweight. Eff = %f, SF = %f", i, bTagEff[iwp], bTSFs[iv][iwp]) << endl;
+              cout << Form("Jet %i (pT = %f, eta = %f) has unexpected bJetSFweight. Eff = %f, SF = %f", i, tmp.Pt(), tmp.Eta(), bTag_Eff[iwp], bTSFs[iv][iwp]) << endl;
             }
           }
         }
-
-        // if(tmp.bTagPasses[0]){
-        //   tmp.bJetSFweights[0][0] = evts->Jet_bTagScaleFactorLoose[i];
-        //   tmp.bJetSFweights[1][0] = evts->Jet_bTagScaleFactorLooseUp[i];
-        //   tmp.bJetSFweights[2][0] = evts->Jet_bTagScaleFactorLooseDown[i];
-        // }
-        // else{
-        //   tmp.bJetSFweights[0][0] = (1. - bTagEff[0] * evts->Jet_bTagScaleFactorLoose[i]) / (1. - bTagEff[0]);
-        //   tmp.bJetSFweights[1][0] = (1. - bTagEff[0] * evts->Jet_bTagScaleFactorLooseUp[i]) / (1. - bTagEff[0]);
-        //   tmp.bJetSFweights[2][0] = (1. - bTagEff[0] * evts->Jet_bTagScaleFactorLooseDown[i]) / (1. - bTagEff[0]);
-        // }
-        // if(tmp.bTagPasses[1]){
-        //   tmp.bJetSFweights[0][1] = evts->Jet_bTagScaleFactorMedium[i];
-        //   tmp.bJetSFweights[1][1] = evts->Jet_bTagScaleFactorMediumUp[i];
-        //   tmp.bJetSFweights[2][1] = evts->Jet_bTagScaleFactorMediumDown[i];
-        // }
-        // else{
-        //   tmp.bJetSFweights[0][1] = (1. - bTagEff[1] * evts->Jet_bTagScaleFactorMedium[i]) / (1. - bTagEff[1]);
-        //   tmp.bJetSFweights[1][1] = (1. - bTagEff[1] * evts->Jet_bTagScaleFactorMediumUp[i]) / (1. - bTagEff[1]);
-        //   tmp.bJetSFweights[2][1] = (1. - bTagEff[1] * evts->Jet_bTagScaleFactorMediumDown[i]) / (1. - bTagEff[1]);
-        // }
-        // if(tmp.bTagPasses[2]){
-        //   tmp.bJetSFweights[0][2] = evts->Jet_bTagScaleFactorTight[i];
-        //   tmp.bJetSFweights[1][2] = evts->Jet_bTagScaleFactorTightUp[i];
-        //   tmp.bJetSFweights[2][2] = evts->Jet_bTagScaleFactorTightDown[i];
-        // }
-        // else{
-        //   tmp.bJetSFweights[0][2] = (1. - bTagEff[2] * evts->Jet_bTagScaleFactorTight[i]) / (1. - bTagEff[2]);
-        //   tmp.bJetSFweights[1][2] = (1. - bTagEff[2] * evts->Jet_bTagScaleFactorTightUp[i]) / (1. - bTagEff[2]);
-        //   tmp.bJetSFweights[2][2] = (1. - bTagEff[2] * evts->Jet_bTagScaleFactorTightDown[i]) / (1. - bTagEff[2]);
+        // vector<vector<float> > calc = R_BTSF->GetScaleFactors(tmp);
+        // vector<bool> rep = {false, false, false};
+        // rep[0] = !(bTSFs[0][0] == calc[0][0] && bTSFs[1][0] == calc[1][0] && bTSFs[2][0] == calc[2][0]);
+        // rep[1] = !(bTSFs[0][1] == calc[0][1] && bTSFs[1][1] == calc[1][1] && bTSFs[2][1] == calc[2][1]);
+        // rep[2] = !(bTSFs[0][2] == calc[0][2] && bTSFs[1][2] == calc[1][2] && bTSFs[2][2] == calc[2][2]);
+        // if (rep[0] || rep[1] || rep[2]) cout << "bTSFs diff. Jet pT = " << tmp.Pt() << ", eta = " << tmp.Eta() << endl;
+        // for (unsigned iwp = 0; iwp < 3; ++iwp) {
+        //   if (rep[iwp]) cout << Form("WP %i: %f(%f), Up %f(%f), Down %f(%f)",iwp, bTSFs[0][iwp], calc[0][iwp],bTSFs[1][iwp], calc[1][iwp],bTSFs[2][iwp], calc[2][iwp]) <<endl;
         // }
       }
 
       Jets.push_back(tmp);
     }
+    // IsMC = IsMC_back;
   }
 
   void ReadLeptons() {
@@ -694,6 +692,9 @@ public:
 
   Configs *conf;
 
+  bTagSFReader *R_BTSF;
+  PUIDSFReader *R_PUIDSF;
+
   bool IsMC;
   int bTagWP, PUIDWP;
   TChain* chain;
@@ -703,7 +704,6 @@ public:
   vector<GenPart> GenParts;
   vector<GenJet> GenJets;
   vector<Jet> Jets;
-  // vector<int> nBJets, nNBJets;
   vector<Lepton> Leptons;
   vector<Electron> Electrons;
   vector<Muon> Muons;
