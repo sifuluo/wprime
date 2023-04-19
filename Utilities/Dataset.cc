@@ -133,7 +133,10 @@ public:
     // AddDataset_NGTCXS("Private_FL_M500"        ,""              , 2, 7 , 161.1,  {1,1,1,189291});
   }
   // Adding Dataset with parameters as Name, Group name, Type (0:Data,1:MC,2:Signal), Color, Xsection, SampleSize
-  void AddDataset_NGTCXS(string name, string gname, int type, int color, double xsec, vector<double> size) {
+  int AddDataset_NGTCXS(string name, string gname = "", int type = 2, int color = 3, double xsec = 1.0, vector<double> size = {}) {
+    if (Datasets.find(name) != Datasets.end()) {
+      return Datasets[name].Index;
+    }
     Dataset ds;
     ds.Name = name;
     ds.Index = DatasetNames.size();
@@ -145,6 +148,7 @@ public:
     else ds.GroupName = gname;
     DatasetNames.push_back(name);
     Datasets[name] = ds;
+    return ds.Index;
   }
 
   void SortGroups() {
@@ -198,6 +202,15 @@ public:
   Dataset& GetDataset(string ds) {
     CheckExist(ds,"GetDataset");
     return Datasets[ds];
+  }
+
+  Dataset& GetDataset(int i) {
+    if (i >= Datasets.size()) {
+      string msg = "Index exceeding the size of all Datasets";
+      cout << msg << endl;
+      throw runtime_error(msg);
+    }
+    return Datasets[DatasetNames[i]];
   }
 
   double GetCMSLumi(int i) {

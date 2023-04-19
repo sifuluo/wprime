@@ -344,7 +344,8 @@ public:
       Flag_ecalBadCalibFilter = true;
     }
     else if (SampleYear == "2017"){
-      chain->SetBranchAddress("HLT_Ele35_WPTight_Gsf", &isolated_electron_trigger, &b_isolated_electron_trigger);
+      // chain->SetBranchAddress("HLT_Ele35_WPTight_Gsf", &isolated_electron_trigger, &b_isolated_electron_trigger);
+      chain->SetBranchAddress("HLT_Ele32_WPTight_Gsf_L1DoubleEG", &isolated_electron_trigger, &b_isolated_electron_trigger);
       chain->SetBranchAddress("HLT_IsoMu27",&isolated_muon_trigger, &b_isolated_muon_trigger);
       isolated_muon_track_trigger = false;
       chain->SetBranchAddress("Flag_eeBadScFilter", &Flag_eeBadScFilter, &b_Flag_eeBadScFilter);
@@ -374,8 +375,12 @@ public:
     chain->SetBranchAddress("Flag_HBHENoiseIsoFilter", &Flag_HBHENoiseIsoFilter, &b_Flag_HBHENoiseIsoFilter);
     chain->SetBranchAddress("Flag_EcalDeadCellTriggerPrimitiveFilter", &Flag_EcalDeadCellTriggerPrimitiveFilter, &b_Flag_EcalDeadCellTriggerPrimitiveFilter);
     chain->SetBranchAddress("Flag_BadPFMuonFilter", &Flag_BadPFMuonFilter, &b_Flag_BadPFMuonFilter);
-    chain->SetBranchAddress("Flag_BadPFMuonDzFilter", &Flag_BadPFMuonDzFilter, &b_Flag_BadPFMuonDzFilter);
-
+    if (SampleYear == "2017" || SampleYear == "2018") {
+      chain->SetBranchAddress("Flag_BadPFMuonDzFilter", &Flag_BadPFMuonDzFilter, &b_Flag_BadPFMuonDzFilter);
+    }
+    else {
+      Flag_BadPFMuonDzFilter = true;
+    }
     Notify();
   }
 

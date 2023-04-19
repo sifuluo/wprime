@@ -166,7 +166,12 @@ public:
 
   void ReadJets() {
     Jets.clear();
+    int emptysequence = 0;
+    if (evts->nJet > 27) cout << "Error: nJet = " << evts->nJet << " at iEvent = " << iEvent << endl;
     for (unsigned i = 0; i < evts->nJet; ++i) {
+      if (emptysequence >= 3) break; // 3 empty jets in a row, skip the rest
+      if (evts->Jet_pt_nom[i] == 0) emptysequence++;
+      else emptysequence = 0;
 
       //determine maximum pT of all jet variations
       float maxPt = max(evts->Jet_pt_nom[i], evts->Jet_pt_jesTotalUp[i]);
@@ -267,6 +272,10 @@ public:
             for (unsigned iwp = 0; iwp < 3; ++iwp) {
               if (tmp.bTagPasses[iwp]) tmp.bJetSFweights[iv][iwp] = bTSFs[iv][iwp];
               else tmp.bJetSFweights[iv][iwp] = (1. - bTag_Eff[iwp] * bTSFs[iv][iwp]) / (1. - bTag_Eff[iwp]);
+              if (tmp.Pt() < 20 || tmp.Pt() > 1000 || fabs(tmp.Eta()) > 2.5) {
+                tmp.bJetSFweights[iv][iwp] = 1.0;
+                continue;
+              }
               if (conf->bTagEffCreation) continue;
               if (tmp.bJetSFweights[iv][iwp] <= 0 || tmp.bJetSFweights[iv][iwp] != tmp.bJetSFweights[iv][iwp]) {
                 cout << "In bTag WP " << iwp << " , " << iv << " variation, ";
@@ -288,20 +297,25 @@ public:
     Muons.clear();
     if (evts->nElectron > 9) cout << "Error: nElectron = " << evts->nElectron << " at iEvent = " << iEvent << endl;
     if (evts->nMuon > 9) cout << "Error: nMuon = " << evts->nMuon << " at iEvent = " << iEvent << endl;
+    int emptysequence = 0;
     for (unsigned i = 0; i < evts->nElectron; ++i) {
-      if (i >= 9) break;
+      if (emptysequence >= 3) break;
+      if (evts->Electron_pt[i] == 0) {
+        emptysequence++;
+        continue;
+      }
+      else emptysequence = 0;
       Electron tmp;
       // cout << "Electron i = " << i << ", nElectron = " << evts->nElectron <<endl;
       tmp.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
       //set resolution variations (only matter in MC, will be ineffective in data)
-      tmp.ResUp().SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
-      tmp.ResUp().SetE(tmp.E()-evts->Electron_dEsigmaUp[i]);
-      tmp.ResDown().SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
-      tmp.ResDown().SetE(tmp.E()-evts->Electron_dEsigmaDown[i]);
+      tmp.ResUp() = ((TLorentzVector) tmp) * ((tmp.E() - evts->Electron_dEsigmaUp[i]) / tmp.E());
+      tmp.ResDown() = ((TLorentzVector) tmp) * ((tmp.E() - evts->Electron_dEsigmaDown[i]) / tmp.E());
       //set scale variations (only filled in data, should be applied to MC, for now FIXME inactive)
-      tmp.ScaleUp().SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
-      tmp.ScaleDown().SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
-      // cout << Form("Pt = %f, ResUp = %f, ResDown = %f", tmp.Pt(), tmp.ResUp().Pt(), tmp.ResDown().Pt()) <<endl;
+      // tmp.ScaleUp() = ((TLorentzVector) tmp) * (tmp.E() - evts->Electron_dEscaleUp[i]) / tmp.E();
+      // tmp.ScaleDown() = ((TLorentzVector) tmp) * (tmp.E() - evts->Electron_dEscaleDown[i]) / tmp.E();
+      tmp.ScaleUp() = tmp;
+      tmp.ScaleDown() = tmp;
       tmp.index = i;
       tmp.charge = evts->Electron_charge[i];
 
@@ -385,8 +399,14 @@ public:
       Electrons.push_back(tmp);
       Leptons.push_back(tmp);
     }
+    emptysequence = 0;
     for (unsigned i = 0; i < evts->nMuon; ++i) {
-      if (i >= 9) break;
+      if (emptysequence >= 3) break; // [9] is the hard cap of Muon array size
+      if (evts->Muon_pt[i] == 0) {
+        emptysequence++;
+        continue;
+      }
+      else emptysequence = 0;
       Muon tmp;
       tmp.SetPtEtaPhiM(evts->Muon_pt[i],evts->Muon_eta[i],evts->Muon_phi[i],evts->Muon_mass[i]);
       tmp.index = i;
@@ -535,31 +555,6 @@ public:
           nel += Leptons[j].IsLoose;
           nep += Leptons[j].IsPrimary;
         }
-        // if(i==1 && Electrons[j].ScaleUp.Pt() >= 40.){
-        //   nev += Leptons[j].IsVeto;
-        //   nel += Leptons[j].IsLoose;
-        //   nep += Leptons[j].IsPrimary;
-        // }
-        // else if(i==2 && Electrons[j].ScaleDown.Pt() >= 40.){
-        //   nev += Leptons[j].IsVeto;
-        //   nel += Leptons[j].IsLoose;
-        //   nep += Leptons[j].IsPrimary;
-        // }
-        // else if(i==3 && Electrons[j].ResUp.Pt() >= 40.){
-        //   nev += Electrons[j].IsVeto;
-        //   nel += Electrons[j].IsLoose;
-        //   nep += Electrons[j].IsPrimary;
-        // }
-        // else if(i==4 && Electrons[j].ResDown.Pt() >= 40.){
-        //   nev += Electrons[j].IsVeto;
-        //   nel += Electrons[j].IsLoose;
-        //   nep += Electrons[j].IsPrimary;
-        // }
-        // else if(Electrons[j].Pt() >= 40.){
-        //   nev += Electrons[j].IsVeto;
-        //   nel += Electrons[j].IsLoose;
-        //   nep += Electrons[j].IsPrimary;
-        // }
       }
 
       int nmuv = 0;

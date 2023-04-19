@@ -37,6 +37,7 @@ public:
   bTagEff(Configs* conf_) {
     conf = conf_;
     bTagWP = conf->bTagWP;
+    if (!conf->IsMC) return;
     GetFileName();
     if (conf->bTagEffCreation) CreateEffFile();
     else ReadEffFile();
@@ -77,7 +78,7 @@ public:
   }
 
   void PostProcess() {
-    if (!conf->bTagEffCreation) return;
+    if (!conf->bTagEffCreation || !conf->IsMC) return;
     for (unsigned i = 0; i < 3; ++i) {
       h_eff[i]->Divide(TotalEvts);
     }
@@ -87,7 +88,7 @@ public:
   }
 
   void ReadEffFile() {
-    if (conf->bTagEffCreation) return;
+    if (conf->bTagEffCreation || !conf->IsMC) return;
     f_eff = new TFile(FileName,"READ");
     cout << "Reading from bTagEff file " << FileName << endl;
     if (f_eff->IsZombie()) {
@@ -99,6 +100,11 @@ public:
     h_eff[1] = (TH2F*) f_eff->Get("BtagPass_M");
     h_eff[2] = (TH2F*) f_eff->Get("BtagPass_T");
     TotalEvts = (TH2F*) f_eff->Get("TotalEvts");
+    h_eff[0]->SetDirectory(0);
+    h_eff[1]->SetDirectory(0);
+    h_eff[2]->SetDirectory(0);
+    TotalEvts->SetDirectory(0);
+    f_eff->Close();
     cout << "Done reading bTagEff file. Testing tight bTagging eff. at pT = 100 is ";
     cout << h_eff[2]->GetBinContent(h_eff[2]->FindBin(5,100)) <<endl;
   }
@@ -267,12 +273,21 @@ public:
     return out;
   }
 
+  bool eq(float sf1, float sf2) {
+    if (sf1 == sf2) return true;
+    if (sf1 * sf2 == 0 && sf1 + sf2 == 1) return true;
+    return false;
+  }
+
   void CompareScaleFactors(Jet& j, vector<vector<float> > bTSFs) {
     vector<vector<float> > calc = GetScaleFactors(j);
     vector<bool> rep = {false, false, false};
-    rep[0] = !(bTSFs[0][0] == calc[0][0] && bTSFs[1][0] == calc[1][0] && bTSFs[2][0] == calc[2][0]);
-    rep[1] = !(bTSFs[0][1] == calc[0][1] && bTSFs[1][1] == calc[1][1] && bTSFs[2][1] == calc[2][1]);
-    rep[2] = !(bTSFs[0][2] == calc[0][2] && bTSFs[1][2] == calc[1][2] && bTSFs[2][2] == calc[2][2]);
+    rep[0] = !(eq(bTSFs[0][0], calc[0][0]) && eq(bTSFs[1][0], calc[1][0]) && eq(bTSFs[2][0], calc[2][0]));
+    rep[0] = !(eq(bTSFs[0][1], calc[0][1]) && eq(bTSFs[1][1], calc[1][1]) && eq(bTSFs[2][1], calc[2][1]));
+    rep[0] = !(eq(bTSFs[0][2], calc[0][2]) && eq(bTSFs[1][2], calc[1][2]) && eq(bTSFs[2][2], calc[2][2]));
+    // rep[0] = !(bTSFs[0][0] == calc[0][0] && bTSFs[1][0] == calc[1][0] && bTSFs[2][0] == calc[2][0]);
+    // rep[1] = !(bTSFs[0][1] == calc[0][1] && bTSFs[1][1] == calc[1][1] && bTSFs[2][1] == calc[2][1]);
+    // rep[2] = !(bTSFs[0][2] == calc[0][2] && bTSFs[1][2] == calc[1][2] && bTSFs[2][2] == calc[2][2]);
     if (rep[0] || rep[1] || rep[2]) cout << "bTSFs diff. Jet pT = " << j.Pt() << ", eta = " << j.Eta() << endl;
     for (unsigned iwp = 0; iwp < 3; ++iwp) {
       if (rep[iwp]) cout << Form("WP %i: %f(%f), Up %f(%f), Down %f(%f)",iwp, bTSFs[0][iwp], calc[0][iwp],bTSFs[1][iwp], calc[1][iwp],bTSFs[2][iwp], calc[2][iwp]) <<endl;
