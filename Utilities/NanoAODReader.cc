@@ -272,7 +272,7 @@ public:
             for (unsigned iwp = 0; iwp < 3; ++iwp) {
               if (tmp.bTagPasses[iwp]) tmp.bJetSFweights[iv][iwp] = bTSFs[iv][iwp];
               else tmp.bJetSFweights[iv][iwp] = (1. - bTag_Eff[iwp] * bTSFs[iv][iwp]) / (1. - bTag_Eff[iwp]);
-              if (tmp.Pt() < 20 || tmp.Pt() > 1000 || fabs(tmp.Eta()) > 2.5) {
+              if (tmp.Pt() < 20 || tmp.Pt() > 1000 || fabs(tmp.Eta()) => 2.5) {
                 tmp.bJetSFweights[iv][iwp] = 1.0;
                 continue;
               }
@@ -445,9 +445,15 @@ public:
 
       //set SF and variation for primary only
       if(passPrimary && IsMC){
-        tmp.SFs[0] = evts->Muon_scaleFactor[i];
-        tmp.SFs[1] = evts->Muon_scaleFactor[i] + sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
-        tmp.SFs[2] = evts->Muon_scaleFactor[i] - sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
+        float muonSF = evts->Muon_triggerScaleFactor[i] * evts->Muon_idScaleFactor[i] * evts->Muon_isoScaleFactor[i];
+        float muonSFup = sqrt(pow(evts->Muon_triggerScaleFactorSystUp,2) + pow(evts->Muon_idScaleFactorSystUp,2) + pow(evts->Muon_isoScaleFactorSystUp,2));
+        float muonSFdown = sqrt(pow(evts->Muon_triggerScaleFactorSystDown,2) + pow(evts->Muon_idScaleFactorSystDown,2) + pow(evts->Muon_isoScaleFactorSystDown,2));
+        tmp.SF[0] = muonSF;
+        tmp.SF[1] = muonSF + muonSFup;
+        tmp.SF[2] = muonSF - muonSFdown;
+        // tmp.SFs[0] = evts->Muon_scaleFactor[i];
+        // tmp.SFs[1] = evts->Muon_scaleFactor[i] + sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
+        // tmp.SFs[2] = evts->Muon_scaleFactor[i] - sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
       }
       else tmp.SFs = {1., 1., 1.};
 
