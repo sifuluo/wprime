@@ -119,9 +119,15 @@ public:
   Float_t	  Electron_scaleFactor[64]; //nElectron
   Float_t	  Electron_scaleFactorUp[64]; //[nElectron]
   Float_t	  Electron_scaleFactorDown[64]; //[nElectron]
-  Float_t	  Muon_scaleFactor[64]; //[nMuon]
-  Float_t	  Muon_scaleFactorSyst[64]; //[nMuon]
-  Float_t	  Muon_scaleFactorStat[64]; //[nMuon]
+  Float_t   Muon_triggerScaleFactor[64]; // [nMuon]
+  Float_t   Muon_triggerScaleFactorSystUp[64]; // [nMuon]
+  Float_t   Muon_triggerScaleFactorSystDown[64]; // [nMuon]
+  Float_t   Muon_idScaleFactor[64]; // [nMuon]
+  Float_t   Muon_idScaleFactorSystUp[64]; // [nMuon]
+  Float_t   Muon_idScaleFactorSystDown[64]; // [nMuon]
+  Float_t   Muon_isoScaleFactor[64]; // [nMuon]
+  Float_t   Muon_isoScaleFactorSystUp[64]; // [nMuon]
+  Float_t   Muon_isoScaleFactorSystDown[64]; // [nMuon]
   Float_t	  Jet_bTagScaleFactorTight[64]; //[nJet]
   Float_t	  Jet_bTagScaleFactorTightUp[64]; //[nJet]
   Float_t	  Jet_bTagScaleFactorTightDown[64]; //[nJet]
@@ -140,6 +146,11 @@ public:
   Float_t         Jet_puIdScaleFactorLoose[64]; //[nJet]
   Float_t         Jet_puIdScaleFactorLooseUp[64]; //nJet]
   Float_t         Jet_puIdScaleFactorLooseDown[64]; //[nJet]
+
+  Int_t      nLHEPdfWeight;
+  Float_t    LHEPdfWeight[200];
+  Int_t      nLHEScaleWeight;
+  Float_t    LHEScaleWeight[9];
 
   //Trigger
   Bool_t isolated_electron_trigger;
@@ -310,9 +321,16 @@ public:
       chain->SetBranchAddress("Electron_scaleFactor", Electron_scaleFactor);
       chain->SetBranchAddress("Electron_scaleFactorUp", Electron_scaleFactorUp);
       chain->SetBranchAddress("Electron_scaleFactorDown", Electron_scaleFactorDown);
-      chain->SetBranchAddress("Muon_scaleFactor", Muon_scaleFactor);
-      chain->SetBranchAddress("Muon_scaleFactorSyst", Muon_scaleFactorSyst);
-      chain->SetBranchAddress("Muon_scaleFactorStat", Muon_scaleFactorStat);
+      chain->SetBranchAddress("Muon_triggerScaleFactor", Muon_triggerScaleFactor);
+      chain->SetBranchAddress("Muon_triggerScaleFactorSystUp", Muon_triggerScaleFactorSystUp);
+      chain->SetBranchAddress("Muon_triggerScaleFactorSystDown", Muon_triggerScaleFactorSystDown);
+      chain->SetBranchAddress("Muon_idScaleFactor", Muon_idScaleFactor);
+      chain->SetBranchAddress("Muon_idScaleFactorSystUp", Muon_idScaleFactorSystUp);
+      chain->SetBranchAddress("Muon_idScaleFactorSystDown", Muon_idScaleFactorSystDown);
+      chain->SetBranchAddress("Muon_isoScaleFactor", Muon_isoScaleFactor);
+      chain->SetBranchAddress("Muon_isoScaleFactorSystUp", Muon_isoScaleFactorSystUp);
+      chain->SetBranchAddress("Muon_isoScaleFactorSystDown", Muon_isoScaleFactorSystDown);
+
       chain->SetBranchAddress("Jet_bTagScaleFactorTight", Jet_bTagScaleFactorTight);
       chain->SetBranchAddress("Jet_bTagScaleFactorTightUp", Jet_bTagScaleFactorTightUp);
       chain->SetBranchAddress("Jet_bTagScaleFactorTightDown", Jet_bTagScaleFactorTightDown);
@@ -331,6 +349,11 @@ public:
       chain->SetBranchAddress("Jet_puIdScaleFactorLoose", Jet_puIdScaleFactorLoose);
       chain->SetBranchAddress("Jet_puIdScaleFactorLooseUp", Jet_puIdScaleFactorLooseUp);
       chain->SetBranchAddress("Jet_puIdScaleFactorLooseDown", Jet_puIdScaleFactorLooseDown);
+
+      chain->SetBranchAddress("nLHEPdfWeight", &nLHEPdfWeight);
+      chain->SetBranchAddress("LHEPdfWeight", LHEPdfWeight);
+      chain->SetBranchAddress("nLHEScaleWeight", &nLHEScaleWeight);
+      chain->SetBranchAddress("LHEScaleWeight", LHEScaleWeight);
 
       chain->SetBranchAddress("Pileup_scaleFactor", &Pileup_scaleFactor);
       chain->SetBranchAddress("Pileup_scaleFactorUp", &Pileup_scaleFactorUp);

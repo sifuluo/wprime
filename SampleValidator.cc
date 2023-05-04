@@ -49,7 +49,7 @@ void SampleValidation(int sampleyear = 2, int sampletype = 1, int ifile = -1, st
   conf->UseSkims_bTagSF = true;
   conf->UseSkims_PUIDSF = true;
   conf->Compare_bTagSF = 100; // Lines of outputs to print
-  if (sampletype != 0) conf->Compare_PUIDSF = 100;
+  if (conf->IsMC) conf->Compare_PUIDSF = 100;
   // ifile needs to be negative to let the InputFile to work.
   // conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/wprime_500_latter_leptonic/2018/05E4564C-20A7-324B-BCCD-1D869EB6CE77.root";
   conf->InputFile = infile;
@@ -70,6 +70,7 @@ void SampleValidation(int sampleyear = 2, int sampletype = 1, int ifile = -1, st
     for (unsigned i = 0; i < r->Jets.size(); ++i) {
       int err = InValidJet(r->Jets[i]);
       if (!err) continue;
+      if (err == 1 && InValidVarPO(r->Jets[i]) != 5 && !conf->IsMC) continue; // Data ignore zero variations
       cout << "Invalid Jet detected: ";
       if (err == 1) {
         vector<string> lvs{"","SU","SD","RU","RD","Nom"};
@@ -104,40 +105,33 @@ void SampleValidation(int sampleyear = 2, int sampletype = 1, int ifile = -1, st
   }
 }
 
-void SampleValidator() {
+void SampleValidator(int sampleyear = 3, int iter = 1) {
   string infile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/";
-  int sampletype, sampleyear;
-
-  infile += "wprime_500/2018/172299C4-2D12-FA48-8A1F-9117F69514FA.root";
-  sampleyear = 3;
-  // infile += "wprime_500/2017/4CBF8DAC-6BFD-4F44-BCDE-57AC816614EB.root";
-  // sampleyear = 2;
-  // infile += "wprime_500/2016/4766B675-2F69-CA4D-8FE3-5C57DBB0BB99.root";
-  // sampleyear = 1;
-  // infile += "wprime_500/2016_APV/DEF70539-4F28-3848-8AC9-29062814D542.root";
-  // sampleyear = 0;
-  sampletype = dlib.AddDataset_NGTCXS("WP500");
-
-  // infile += "SingleMuon/2018/0A7B4EA1-E44D-E64A-B269-22A132D5E72E.root";
-  // sampleyear = 3;
-  // infile += "SingleMuon/2017/0A7BEB92-DC6C-D74B-B814-A7165C2419FF.root";
-  // sampleyear = 2;
-  // infile += "SingleMuon/2016/0A4230E2-0C75-604D-890F-A4CE5E5C164E.root";
-  // sampleyear = 1;
-  // infile += "SingleMuon/2016_APV/0ACEDA1E-BB5E-6E4C-A9E1-DD3B86880F97.root";
-  // sampleyear = 0;
-  // sampletype = dlib.AddDataset_NGTCXS("SingleMuon");
+  int sampletype;
+  if (iter == 0) {
+    if (sampleyear == 3) infile += "wprime_500/2018/172299C4-2D12-FA48-8A1F-9117F69514FA.root";
+    if (sampleyear == 2) infile += "wprime_500/2017/4CBF8DAC-6BFD-4F44-BCDE-57AC816614EB.root";
+    if (sampleyear == 1) infile += "wprime_500/2016/4766B675-2F69-CA4D-8FE3-5C57DBB0BB99.root";
+    if (sampleyear == 0) infile += "wprime_500/2016_APV/DEF70539-4F28-3848-8AC9-29062814D542.root";
+    sampletype = dlib.AddDataset_NGTCXS("WP500");
+  }
   
-  // infile += "EGamma/2018/0A021BC8-7D79-4044-9A4C-611BADEE7798.root";
-  // sampleyear = 3;
-  // infile += "SingleElectron/2017/0A485330-ED63-DE43-91EB-B7D65DD2CC5D.root";
-  // sampleyear = 2;
-  // infile += "SingleElectron/2016/0D19EF2A-904C-5347-A8FA-8DCA87868F37.root";
-  // sampleyear = 1;
-  // infile += "SingleElectron/2016_APV/0A50C081-DE8C-3A47-A708-B678749AD664.root";
-  // sampleyear = 0;
-  // sampletype = dlib.AddDataset_NGTCXS("SingleElectron");
+  if (iter == 1) {
+    if (sampleyear == 3) infile += "SingleMuon/2018/0A7B4EA1-E44D-E64A-B269-22A132D5E72E.root";
+    if (sampleyear == 2) infile += "SingleMuon/2017/0A7BEB92-DC6C-D74B-B814-A7165C2419FF.root";
+    if (sampleyear == 1) infile += "SingleMuon/2016/0A4230E2-0C75-604D-890F-A4CE5E5C164E.root";
+    if (sampleyear == 0) infile += "SingleMuon/2016_APV/0ACEDA1E-BB5E-6E4C-A9E1-DD3B86880F97.root";
+    sampletype = dlib.AddDataset_NGTCXS("SingleMuon");
+  }
 
+  if (iter == 2) {
+    if (sampleyear == 3) infile += "EGamma/2018/0A021BC8-7D79-4044-9A4C-611BADEE7798.root";
+    if (sampleyear == 2) infile += "SingleElectron/2017/0A485330-ED63-DE43-91EB-B7D65DD2CC5D.root";
+    if (sampleyear == 1) infile += "SingleElectron/2016/0D19EF2A-904C-5347-A8FA-8DCA87868F37.root";
+    if (sampleyear == 0) infile += "SingleElectron/2016_APV/0A50C081-DE8C-3A47-A708-B678749AD664.root";
+    sampletype = dlib.AddDataset_NGTCXS("SingleElectron");
+  }
+  
   if (dlib.GetDataset(sampletype).Type != 0) {
     cout << "Creating AuxHist for " << dlib.DatasetNames[sampletype] <<endl;
     CreateAuxHists(sampleyear, sampletype,-1,infile);

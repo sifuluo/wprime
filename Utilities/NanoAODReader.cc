@@ -272,7 +272,7 @@ public:
             for (unsigned iwp = 0; iwp < 3; ++iwp) {
               if (tmp.bTagPasses[iwp]) tmp.bJetSFweights[iv][iwp] = bTSFs[iv][iwp];
               else tmp.bJetSFweights[iv][iwp] = (1. - bTag_Eff[iwp] * bTSFs[iv][iwp]) / (1. - bTag_Eff[iwp]);
-              if (tmp.Pt() < 20 || tmp.Pt() > 1000 || fabs(tmp.Eta()) => 2.5) {
+              if (tmp.Pt() < 20 || tmp.Pt() > 1000 || fabs(tmp.Eta()) >= 2.5) {
                 tmp.bJetSFweights[iv][iwp] = 1.0;
                 continue;
               }
@@ -446,11 +446,16 @@ public:
       //set SF and variation for primary only
       if(passPrimary && IsMC){
         float muonSF = evts->Muon_triggerScaleFactor[i] * evts->Muon_idScaleFactor[i] * evts->Muon_isoScaleFactor[i];
-        float muonSFup = sqrt(pow(evts->Muon_triggerScaleFactorSystUp,2) + pow(evts->Muon_idScaleFactorSystUp,2) + pow(evts->Muon_isoScaleFactorSystUp,2));
-        float muonSFdown = sqrt(pow(evts->Muon_triggerScaleFactorSystDown,2) + pow(evts->Muon_idScaleFactorSystDown,2) + pow(evts->Muon_isoScaleFactorSystDown,2));
-        tmp.SF[0] = muonSF;
-        tmp.SF[1] = muonSF + muonSFup;
-        tmp.SF[2] = muonSF - muonSFdown;
+        float muonSFup = sqrt(pow(evts->Muon_triggerScaleFactorSystUp[i],2) + pow(evts->Muon_idScaleFactorSystUp[i],2) + pow(evts->Muon_isoScaleFactorSystUp[i],2));
+        float muonSFdown = sqrt(pow(evts->Muon_triggerScaleFactorSystDown[i],2) + pow(evts->Muon_idScaleFactorSystDown[i],2) + pow(evts->Muon_isoScaleFactorSystDown[i],2));
+        if (muonSF != 0) {
+          tmp.SFs[0] = muonSF;
+          tmp.SFs[1] = muonSF + muonSFup;
+          tmp.SFs[2] = muonSF - muonSFdown;
+        }
+        else {
+          cout << "Zero muon SF" <<endl;
+        }
         // tmp.SFs[0] = evts->Muon_scaleFactor[i];
         // tmp.SFs[1] = evts->Muon_scaleFactor[i] + sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
         // tmp.SFs[2] = evts->Muon_scaleFactor[i] - sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
@@ -623,13 +628,15 @@ public:
   vector<pair<double, string> > CalcEventSFweights() {
     vector<EventWeight> SFweights;
     //set SF weights per object
-    EventWeight electronW, muonW, BjetW, PUIDW, L1PreFiringW, PUreweight;
+    EventWeight electronW, muonW, BjetW, PUIDW, L1PreFiringW, PUreweight, PDFWeight, LHEScaleW;
     electronW.source = "electron";
     muonW.source = "muon";
     BjetW.source = "BjetTag";
     PUIDW.source = "PUID";
     L1PreFiringW.source = "L1PreFiring";
     PUreweight.source = "PUreweight";
+    PDFWeight.source = "PDF";
+    LHEScaleW.source = "LHEScale";
 
     if (IsMC) {
       int modes[3]={0, +1, -1};
@@ -660,6 +667,33 @@ public:
       PUreweight.variations[0] = evts->Pileup_scaleFactor;
       PUreweight.variations[1] = evts->Pileup_scaleFactorUp;
       PUreweight.variations[2] = evts->Pileup_scaleFactorDown;
+
+      // ISR
+      // Quoted Percentile definition:
+      // Before giving a general definition of all percentiles, we will define the 80th percentile of a collection of values to be the smallest value in the collection that is at least as large as 80% of all of the values.
+      // The lowest element is only the 0th percentile, and cannot be anything else.
+      vector<float> lhepdfws;
+      for (int i = 0; i < evts->nLHEPdfWeight; ++i) {
+        lhepdfws.push_back(evts->LHEPdfWeight[i]);
+      }
+      sort(lhepdfws.begin(), lhepdfws.end());
+      int le = ceil(0.1587 * evts->nLHEPdfWeight);
+      int ne = ceil(0.5 * evts->nLHEPdfWeight);
+      int ue = ceil(0.8413 * evts->nLHEPdfWeight);
+      PDFWeight.variations[0] = lhepdfws[ne];
+      PDFWeight.variations[1] = lhepdfws[ue];
+      PDFWeight.variations[2] = lhepdfws[le];
+
+      // FSR
+      vector<float> lhescalews;
+      if (evts->nLHEScaleWeight != 9) cout << "nLHEScaleWeight != 9" << endl;
+      for (unsigned i = 0; i < evts->nLHEScaleWeight; ++i) {
+        lhescalews.push_back(evts->LHEScaleWeight[i]);
+      }
+      sort(lhescalews.begin(); lhescalews.end());
+      LHEScaleW.variations[0] = lhescalews[4];
+      LHEScaleW.variations[1] = lhescalews[8];
+      LHEScaleW.variations[2] = lhescalews[0];
     }
 
     SFweights.push_back(electronW);
@@ -668,7 +702,8 @@ public:
     SFweights.push_back(PUIDW);
     SFweights.push_back(L1PreFiringW);
     SFweights.push_back(PUreweight);
-    //FIXME: Needs PDF weight variations and ISR/FSR
+    SFweights.push_back(PDFWeight);
+    SFweights.push_back(LHEScaleW);
 
     //determine nominal event weight
     vector<pair<double, string> > EventWeight_out;
