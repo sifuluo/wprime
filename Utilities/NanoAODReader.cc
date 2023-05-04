@@ -445,22 +445,21 @@ public:
 
       //set SF and variation for primary only
       if(passPrimary && IsMC){
-        float muonSF = evts->Muon_triggerScaleFactor[i] * evts->Muon_idScaleFactor[i] * evts->Muon_isoScaleFactor[i];
-        float muonSFup = sqrt(pow(evts->Muon_triggerScaleFactorSystUp[i],2) + pow(evts->Muon_idScaleFactorSystUp[i],2) + pow(evts->Muon_isoScaleFactorSystUp[i],2));
-        float muonSFdown = sqrt(pow(evts->Muon_triggerScaleFactorSystDown[i],2) + pow(evts->Muon_idScaleFactorSystDown[i],2) + pow(evts->Muon_isoScaleFactorSystDown[i],2));
-        if (muonSF != 0) {
-          tmp.SFs[0] = muonSF;
-          tmp.SFs[1] = muonSF + muonSFup;
-          tmp.SFs[2] = muonSF - muonSFdown;
-        }
-        else {
+        if (evts->Muon_triggerScaleFactor[i] * evts->Muon_idScaleFactor[i] * evts->Muon_isoScaleFactor[i] == 0) {
           cout << "Zero muon SF" <<endl;
         }
-        // tmp.SFs[0] = evts->Muon_scaleFactor[i];
-        // tmp.SFs[1] = evts->Muon_scaleFactor[i] + sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
-        // tmp.SFs[2] = evts->Muon_scaleFactor[i] - sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
+        else {
+          tmp.triggerSFs[0] = evts->Muon_triggerScaleFactor[i];
+          tmp.triggerSFs[1] = evts->Muon_triggerScaleFactorSystUp[i];
+          tmp.triggerSFs[2] = evts->Muon_triggerScaleFactorSystDown[i];
+          tmp.idSFs[0] = evts->Muon_idScaleFactor[i];
+          tmp.idSFs[1] = evts->Muon_idScaleFactorSystUp[i];
+          tmp.idSFs[2] = evts->Muon_idScaleFactorSystDown[i];
+          tmp.isoSFs[0] = evts->Muon_isoScaleFactor[i];
+          tmp.isoSFs[1] = evts->Muon_isoScaleFactorSystUp[i];
+          tmp.isoSFs[2] = evts->Muon_isoScaleFactorSystDown[i];
+        }
       }
-      else tmp.SFs = {1., 1., 1.};
 
       Muons.push_back(tmp);
       Leptons.push_back(tmp);
@@ -628,9 +627,11 @@ public:
   vector<pair<double, string> > CalcEventSFweights() {
     vector<EventWeight> SFweights;
     //set SF weights per object
-    EventWeight electronW, muonW, BjetW, PUIDW, L1PreFiringW, PUreweight, PDFWeight, LHEScaleW;
+    EventWeight electronW, muonTriggerW, muonIdW, muonIsoW, BjetW, PUIDW, L1PreFiringW, PUreweight, PDFWeight, LHEScaleW;
     electronW.source = "electron";
-    muonW.source = "muon";
+    muonTriggerW.source = "muonTrigger";
+    muonIdW.source = "muonId";
+    muonIsoW.source = "muonIso";
     BjetW.source = "BjetTag";
     PUIDW.source = "PUID";
     L1PreFiringW.source = "L1PreFiring";
@@ -642,7 +643,11 @@ public:
       int modes[3]={0, +1, -1};
       for(unsigned i=0; i<3; ++i){
         for(unsigned j = 0; j < Electrons.size(); ++j) electronW.variations[i] *= Electrons[j].SFs[i];
-        for(unsigned j = 0; j < Muons.size(); ++j) muonW.variations[i] *= Muons[j].SFs[i];
+        for(unsigned j = 0; j < Muons.size(); ++j) {
+          muonTriggerW.variations[i] *= Muons[j].triggerSFs[i];
+          muonIdW.variations[i] *= Muons[j].idSFs[i];
+          muonIsoW.variations[i] *= Muons[j].isoSFs[i];
+        }
         for(unsigned j = 0; j < Jets.size(); ++j){
           BjetW.variations[i] *= Jets[j].bJetSFweights[i][bTagWP];
           PUIDW.variations[i] *= Jets[j].PUIDSFweights[i][PUIDWP];
@@ -668,7 +673,7 @@ public:
       PUreweight.variations[1] = evts->Pileup_scaleFactorUp;
       PUreweight.variations[2] = evts->Pileup_scaleFactorDown;
 
-      // ISR
+      // PDF
       // Quoted Percentile definition:
       // Before giving a general definition of all percentiles, we will define the 80th percentile of a collection of values to be the smallest value in the collection that is at least as large as 80% of all of the values.
       // The lowest element is only the 0th percentile, and cannot be anything else.
@@ -684,7 +689,7 @@ public:
       PDFWeight.variations[1] = lhepdfws[ue];
       PDFWeight.variations[2] = lhepdfws[le];
 
-      // FSR
+      // LHEScale
       vector<float> lhescalews;
       if (evts->nLHEScaleWeight != 9) cout << "nLHEScaleWeight != 9" << endl;
       for (unsigned i = 0; i < evts->nLHEScaleWeight; ++i) {
@@ -697,7 +702,11 @@ public:
     }
 
     SFweights.push_back(electronW);
-    SFweights.push_back(muonW);
+    SFweights.push_back({
+      muonTriggerW.variations[i] *= Muons[j].triggerSFs[i];
+      muonIdW.variations[i] *= Muons[j].idSFs[i];
+      );
+    }
     SFweights.push_back(BjetW);
     SFweights.push_back(PUIDW);
     SFweights.push_back(L1PreFiringW);

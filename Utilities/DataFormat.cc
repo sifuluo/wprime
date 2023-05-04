@@ -86,7 +86,6 @@ struct Lepton : VarPO {
   bool IsLoose;
   bool IsVeto;
   vector<bool> OverlapsJet = {false, false, false}; //{PUID: loose, medium, tight}
-  vector<float> SFs = {1.,1.,1.}; // {nominal, up, down}
   // float jetRelIso;
   // int pdgId;
   // int jetIdx;
@@ -96,12 +95,16 @@ struct Lepton : VarPO {
 
 struct Electron : Lepton {
   Electron(TLorentzVector v_ = TLorentzVector()) : Lepton(v_) {};
+  vector<float> SFs = {1.,1.,1.}; // {nominal, up, down}
   //int cutBased;
   //bool cutBasedHEEP;
 };
 
 struct Muon: Lepton {
   Muon(TLorentzVector v_ = TLorentzVector()) :Lepton(v_) {};
+  vector<float> triggerSFs = {1.,1.,1.};
+  vector<float> idSFs = {1.,1.,1.};
+  vector<float> isoSFs = {1.,1.,1.};
   //int tightId;
   //int looseId;
   //double relIso;
