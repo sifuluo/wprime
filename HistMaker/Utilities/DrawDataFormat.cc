@@ -8,8 +8,8 @@
 #include "TString.h"
 #include "TH1.h"
 
-#include "../Utilities/DataFormat.cc"
-#include "../Utilities/Dataset.cc"
+#include "../../Utilities/DataFormat.cc"
+#include "../../Utilities/Dataset.cc"
 
 TString Replacement(TString in, TString tr, TString n) {
   TString out = in.ReplaceAll(tr, n);
@@ -105,16 +105,17 @@ public:
   vector<TString> LatexRanges;
   // Variations is not very comfortable to be placed inside RegionManager.
   // But rest here at the momemt, as RegionManager is assured to be widely included.
-  // vector<string> Variations =
-  // {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown", 
-  // "EleSFup", "EleSFdown", "MuonSFup", "MuonSFdown", "BjetTagSFup", "BjetTagSFdown",
-  // "PUIDSFup", "PUIDSFdown", "L1PreFiringSFup", "L1PreFiringSFdown", "PUreweightSFup","PUreweightSFdown"};
+  vector<string> Variations = {"central"
+  , "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown"
+  , "EleSFup", "EleSFdown", "MuonSFup", "MuonSFdown", "BjetTagSFup", "BjetTagSFdown"
+  , "PUIDSFup", "PUIDSFdown", "L1PreFiringSFup", "L1PreFiringSFdown", "PUreweightSFup","PUreweightSFdown"
+  };
   // // Indices for each line: 0-8; 9-14; 15-20;
 
   // Temperary working version below Take the version above next time. FIXME
   // Variations have to be ordered as central followed by Up variations and Down variations.
   // Histmanager will determine the variation type based on 
-  vector<string> Variations = {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown", "SFup", "SFdown"};
+  // vector<string> Variations = {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown", "SFup", "SFdown"};
 
   void DefaultInit() {
     Reset();
@@ -208,6 +209,9 @@ public:
     Regions = rm.StringRanges;
   }
 
+  void SetSampleTypes(vector<string> sts) {SampleTypes = sts;}
+  void SetVariations(vector<string> vars) {Variations = vars;}
+
   TString GetHistName(int ist, int iv, int ir, int io) {
     TString histname = NameFormat;
     histname.ReplaceAll("=SampleType=", SampleTypes[ist]);
@@ -243,7 +247,15 @@ public:
     }
   }
 
-  void Fill(int ist, int iv, int rid, string ob, double x, double w) {
+  int Fill(int ist, int iv, int rid, string ob, double x, double w) {
+    if (x !=x ) {
+      cout << Form("Skipping filling nan value to ob %s, ist %i, iv %i, region %i",ob.c_str(), ist, iv, rid) <<endl;
+      return 1;
+    }
+    if (w != w) {
+      cout << Form("Skipping filling nan weight to ob %s, ist %i, iv %i, region %i",ob.c_str(), ist, iv, rid) <<endl;
+      return 2;
+    }
     int io = -1;
     for (unsigned iob_ = 0; iob_ < Observables.size(); ++iob_) {
       if (Observables[iob_] == ob) {
@@ -257,8 +269,9 @@ public:
       throw runtime_error(msg);
     }
     int ir = rm.GetRangeIndex(rid);
-    if (ir < 0) return;
+    if (ir < 0) return 3;
     Hists[ist][iv][ir][io]->Fill(x,w);
+    return 0;
   }
 
   vector< vector< vector< vector<TH1F*> > > > Hists; // Hists[isampletype][ivariation][irange][iobservable]

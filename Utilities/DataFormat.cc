@@ -4,15 +4,16 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <iostream>
 // #include "TChain.h"
 #include "TLorentzVector.h"
 #include "TString.h"
 #include "Configs.cc"
+
 using namespace std;
 
 struct PO : TLorentzVector {
   PO(TLorentzVector v_ = TLorentzVector()) : TLorentzVector(v_), index(-1) {};
-  // operator TLorentzVector() {return v;};
   int index;
   TString PrintXYZT() {
     TString a = Form("X = %f, Y = %f, Z = %f, T = %f", X(), Y(), Z(), T());
@@ -25,6 +26,27 @@ struct PO : TLorentzVector {
   TString PrintPtEtaPhiM() {
     TString a = Form("Pt = %f, Eta = %f, Phi = %f, M = %f", Pt(), Eta(), Phi(), M());
     return a;
+  }
+};
+
+struct VarPO : PO {
+  VarPO(TLorentzVector v_ = TLorentzVector()) : PO(v_) {};
+  TLorentzVector SU, SD, RU, RD;
+  TLorentzVector& ScaleUp(){return SU;}
+  TLorentzVector& ScaleDown(){return SD;}
+  TLorentzVector& ResUp(){return RU;}
+  TLorentzVector& ResDown(){return RD;}
+  TLorentzVector& JESup(){return SU;}
+  TLorentzVector& JESdown(){return SD;}
+  TLorentzVector& JERup(){return RU;}
+  TLorentzVector& JERdown(){return RD;}
+
+  TLorentzVector& GetV(int iv = 0) {
+    if (iv == 1) return SU;
+    else if (iv == 2) return SD;
+    else if (iv == 3) return RU;
+    else if (iv == 4) return RD;
+    else return *this;
   }
 };
 
@@ -42,29 +64,28 @@ struct GenJet : PO {
   int hadronFlavour;
 };
 
-struct Jet : PO {
-  Jet(TLorentzVector v_ = TLorentzVector()) : PO(v_) {};
-  TLorentzVector JESup, JESdown, JERup, JERdown;
+struct Jet : VarPO {
+  Jet(TLorentzVector v_ = TLorentzVector()) : VarPO(v_) {};
+  TLorentzVector& v ( int ir = 0) { return GetV(ir - 4); } // Jet variation index is 5 to 8 in region id.
   vector<bool> PUIDpasses = {false, false, false}; // {loose, medium, tight}
   vector<vector<float> > PUIDSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; // {nominal, up, down} x {loose, medium, tight}
-
 
   int genJetIdx;
   int hadronFlavour;
   int partonFlavour;
   vector<bool> bTagPasses = {false, false, false}; // {loose, medium, tight}
   vector<vector<float> > bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; // {nominal, up, down} x {loose, medium, tight}
+  vector<float> bTagEffs = {0.9, 0.7, 0.5};
 };
 
-struct Lepton : PO {
-  Lepton(TLorentzVector v_ = TLorentzVector()) : PO(v_) {};
-  TLorentzVector ScaleUp, ScaleDown, ResUp, ResDown;
+struct Lepton : VarPO {
+  Lepton(TLorentzVector v_ = TLorentzVector()) : VarPO(v_) {};
+  TLorentzVector& v(int ir = 0) { return GetV(ir);} // Ele variations index is 1 to 4
   int charge;
   bool IsPrimary;
   bool IsLoose;
   bool IsVeto;
   vector<bool> OverlapsJet = {false, false, false}; //{PUID: loose, medium, tight}
-  vector<float> SFs = {1.,1.,1.}; // {nominal, up, down}
   // float jetRelIso;
   // int pdgId;
   // int jetIdx;
@@ -74,25 +95,29 @@ struct Lepton : PO {
 
 struct Electron : Lepton {
   Electron(TLorentzVector v_ = TLorentzVector()) : Lepton(v_) {};
+  vector<float> SFs = {1.,1.,1.}; // {nominal, up, down}
   //int cutBased;
   //bool cutBasedHEEP;
 };
 
 struct Muon: Lepton {
   Muon(TLorentzVector v_ = TLorentzVector()) :Lepton(v_) {};
+  vector<float> triggerSFs = {1.,1.,1.};
+  vector<float> idSFs = {1.,1.,1.};
+  vector<float> isoSFs = {1.,1.,1.};
   //int tightId;
   //int looseId;
   //double relIso;
 };
 
-struct MET : PO {
-  MET(TLorentzVector v_ = TLorentzVector()) : PO(v_) {};
-  TLorentzVector JESup, JESdown, JERup, JERdown;
+struct MET : VarPO {
+  MET(TLorentzVector v_ = TLorentzVector()) : VarPO(v_) {};
+  TLorentzVector& v ( int ir = 0) { return GetV(ir - 4); } // Same as Jet
 };
 
-struct GenMET : PO {
-  GenMET(TLorentzVector v_ = TLorentzVector()) : PO(v_) {};
-  TLorentzVector JESup, JESdown, JERup, JERdown;
+struct GenMET : VarPO {
+  GenMET(TLorentzVector v_ = TLorentzVector()) : VarPO(v_) {};
+  TLorentzVector& v ( int ir = 0) { return GetV(ir - 4); }
 };
 
 struct EventWeight{
@@ -119,6 +144,12 @@ struct RegionID{
     for (unsigned i = 0; i < RegionCount; ++i) out.push_back(Regions[i]);
     return out;
   }
+
+  int GetLepType(unsigned ir = 0) {return Regions[ir] / 1000;}
+  int GetLepReq(unsigned ir = 0) {return Regions[ir] / 100 % 10;}
+  int GetNJets(unsigned ir = 0) {return Regions[ir] / 10 % 10;}
+  int GetbTags(unsigned ir = 0) {return Regions[ir] % 10;}
+
 };
 //region identifier key: 1xyz muon region, 2xyz electron region; x=1 primary, x=2 loose; y=jet multiplicity; z=b-tag multiplicity
 

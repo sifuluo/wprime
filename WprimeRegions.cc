@@ -126,9 +126,8 @@ public:
 };//end ThisAnalyzer
 
 void WprimeRegions(int sampleyear = 3, int sampletype = 16, int itrigger = 0, int ifile = -1){
-  Configs *conf = new Configs(sampleyear, sampletype, itrigger, ifile);
+  Configs *conf = new Configs(sampleyear, sampletype, ifile);
   conf->Debug = false;
-  conf->PUEvaluation = false;
   conf->DASInput = false;
   conf->InputFile = "All";
   if(sampleyear == 3) conf->SampleYear="2018";

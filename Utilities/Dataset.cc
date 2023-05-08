@@ -12,24 +12,6 @@
 
 using namespace std;
 
-// namespace Constants {
-//   const vector<string> SampleYears{"2016apv","2016","2017","2018"};
-//   const vector<string> SampleTypes{"SingleElectron","SingleMuon", // 0,1
-//   "ttbar", // 2,
-//   "wjets_HT_70_100", "wjets_HT_100_200", "wjets_HT_200_400", "wjets_HT_400_600",
-//   // 3                  4                     5                    6
-//   "wjets_HT_600_800", "wjets_HT_800_1200", "wjets_HT_1200_2500", "wjets_HT_2500_inf", "wjets_inclusive"
-//   // 7                  8                     9                    10                    11
-//   "single_antitop_tchan","single_antitop_tw","single_top_schan","single_top_tchan","single_top_tw",
-//   // 12                        13                  14                 15                 16
-//   "FL300","FL400","FL500","FL600","FL700","FL800","FL900","FL1000","FL1100",
-//   // 17     18      19       20      21       22     23      24       25
-//   "LL300","LL400","LL500","LL600","LL700","LL800","LL900","LL1000","LL1100"
-//   // 26     27      28       29      30      31      32       33      34
-//   };
-//   const vector<double> CMSLumiYears{19.52, 16.81, 41.48, 59.83};
-// }
-
 struct Dataset {
   string Name;
   string GroupName;
@@ -49,7 +31,7 @@ struct Dataset {
     if (Size.size() != 4) cout << "Not well defined";
     cout << endl;
     cout << "         Plot group is " << GroupName << ", Colored " << Color;
-    if (Color < colors.size()) cout << " (" << colors[Color] << ") ";
+    if (Color < (int) colors.size()) cout << " (" << colors[Color] << ") ";
     cout << endl;
   }
 };
@@ -73,12 +55,12 @@ struct DatasetGroup {
       dummy->SetMarkerStyle(20);
       l->AddEntry(dummy, gname, "p");
     }
-    if (Type == 1) {
+    else if (Type == 1) {
       dummy->SetLineStyle(1);
       dummy->SetFillColor(Color);
       l->AddEntry(dummy, gname, "f");
     }
-    if (Type == 2) {
+    else if (Type == 2) {
       dummy->SetLineStyle(2);
       dummy->SetLineWidth(2);
       l->AddEntry(dummy, gname, "l");
@@ -151,7 +133,10 @@ public:
     // AddDataset_NGTCXS("Private_FL_M500"        ,""              , 2, 7 , 161.1,  {1,1,1,189291});
   }
   // Adding Dataset with parameters as Name, Group name, Type (0:Data,1:MC,2:Signal), Color, Xsection, SampleSize
-  void AddDataset_NGTCXS(string name, string gname, int type, int color, double xsec, vector<double> size) {
+  int AddDataset_NGTCXS(string name, string gname = "", int type = 2, int color = 3, double xsec = 1.0, vector<double> size = {}) {
+    if (Datasets.find(name) != Datasets.end()) {
+      return Datasets[name].Index;
+    }
     Dataset ds;
     ds.Name = name;
     ds.Index = DatasetNames.size();
@@ -163,6 +148,7 @@ public:
     else ds.GroupName = gname;
     DatasetNames.push_back(name);
     Datasets[name] = ds;
+    return ds.Index;
   }
 
   void SortGroups() {
@@ -218,6 +204,15 @@ public:
     return Datasets[ds];
   }
 
+  Dataset& GetDataset(int i) {
+    if (i >= Datasets.size()) {
+      string msg = "Index exceeding the size of all Datasets";
+      cout << msg << endl;
+      throw runtime_error(msg);
+    }
+    return Datasets[DatasetNames[i]];
+  }
+
   double GetCMSLumi(int i) {
     return CMSLumiYears[i];
   }
@@ -242,6 +237,13 @@ public:
       if (gp == GroupNames[ig]) return ig;
     }
     return -1;
+  }
+
+  bool DatasetInList(int ist, vector<string> list) {
+    for (unsigned i = 0; i < list.size(); ++i) {
+      if (DatasetNames[ist] == list[i]) return true;
+    }
+    return false;
   }
 
   int GetType(string ds) {

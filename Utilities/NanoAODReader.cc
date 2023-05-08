@@ -5,6 +5,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <array>
+
 #include "TChain.h"
 #include "TFile.h"
 
@@ -17,6 +19,8 @@
 
 #include "XYMETCorrection_withUL17andUL18andUL16.h"
 
+#include "ProgressBar.cc"
+
 using namespace std;
 
 class NanoAODReader {
@@ -28,9 +32,11 @@ public:
 
     IsMC = conf->IsMC;
 
-    JetPtThreshold = 30.;
-    JetIdThreshold = 6;
-    LepPtThreshold = 40.;
+    R_BTSF = new bTagSFReader(conf);
+    R_BTSF->ReadCSVFile();
+    R_PUIDSF = new PUIDSFReader(conf);
+    R_PUIDSF->ReadPUIDSF();
+
     if (conf->iFile >= 0 || conf->InputFile == "All") { // batch mode
 
       vector<string> rootfiles = GetFileNames();
@@ -87,6 +93,14 @@ public:
     return chain->GetEntries();
   }
 
+  Long64_t GetEntriesFast() {
+    return chain->GetEntriesFast();
+  }
+
+  void SetbTag(bTagEff* bt) {
+    bTE = bt;
+  }
+
   //function to determine lepton-jet overlaps, gives answer depending on PUID passing or not
   vector<bool> OverlapCheck(Lepton ell_){
     vector<bool> out = {true, true, true};
@@ -94,20 +108,19 @@ public:
     return out;
   }
 
-  void ReadEvent(Long64_t i) {
+  int ReadEvent(Long64_t i) {
     bTagWP = conf->bTagWP;
     PUIDWP = conf->PUIDWP;
 
+    Long64_t evtcode = evts->LoadTree(i);
+    if (evtcode < 0) return 0;
+    iEvent = i;
     evts->GetEntry(i);
-    if(ReadMETFilterStatus() == false) return; //skip events not passing MET filter flags
+    if(ReadMETFilterStatus() == false) return 1; //skip events not passing MET filter flags
     run = evts->run;
     luminosityBlock = evts->luminosityBlock;
     if (!IsMC && (run < 0 || luminosityBlock < 0)) cout << "Run/LuminosityBlock number is negative" <<endl;
-    if (conf->PUEvaluation) { // It will only run on MC
-      ReadPileup();
-      ReadVertices();
-      return;
-    }
+    
     if (IsMC) {
       ReadGenParts();
       ReadGenJets();
@@ -115,6 +128,7 @@ public:
       ReadPileup();
     }
     ReadJets();
+    if (conf->bTagEffCreation || conf->JetScaleCreation) return 1;
     ReadLeptons();
     ReadMET();
     ReadTriggers();
@@ -122,6 +136,7 @@ public:
     RegionAssociations = RegionReader();
     KeepEvent = RegionAssociations.KeepEvent();
     EventWeights = CalcEventSFweights();
+    return 1;
   }
 
   void ReadGenParts() {
@@ -151,8 +166,12 @@ public:
 
   void ReadJets() {
     Jets.clear();
-
+    int emptysequence = 0;
+    if (evts->nJet > 27) cout << "Error: nJet = " << evts->nJet << " at iEvent = " << iEvent << endl;
     for (unsigned i = 0; i < evts->nJet; ++i) {
+      if (emptysequence >= 3) break; // 3 empty jets in a row, skip the rest
+      if (evts->Jet_pt_nom[i] == 0) emptysequence++;
+      else emptysequence = 0;
 
       //determine maximum pT of all jet variations
       float maxPt = max(evts->Jet_pt_nom[i], evts->Jet_pt_jesTotalUp[i]);
@@ -173,37 +192,48 @@ public:
 
       TLorentzVector PtVars;
       PtVars.SetPtEtaPhiM(evts->Jet_pt_jesTotalUp[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jesTotalUp[i]);
-      tmp.JESup = PtVars;
+      tmp.JESup() = PtVars;
 
       PtVars.SetPtEtaPhiM(evts->Jet_pt_jesTotalDown[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jesTotalDown[i]);
-      tmp.JESdown = PtVars;
+      tmp.JESdown() = PtVars;
 
       PtVars.SetPtEtaPhiM(evts->Jet_pt_jerUp[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jerUp[i]);
-      tmp.JERup = PtVars;
+      tmp.JERup() = PtVars;
 
       PtVars.SetPtEtaPhiM(evts->Jet_pt_jerDown[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jerDown[i]);
-      tmp.JERdown = PtVars;
+      tmp.JERdown() = PtVars;
 
       //set PUID flags
       tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], conf->SampleYear);
 
       //set PUID SFs
-      if(IsMC && evts->Jet_pt_nom[i] < 50. && evts->Jet_genJetIdx[i] >= 0){ //unlike other SFs, PU Jets and jets failing ID are not supposed to contribute to event weights
-        if(tmp.PUIDpasses[0]){
-          tmp.PUIDSFweights[0][0] = evts->Jet_puIdScaleFactorLoose[i];
-          tmp.PUIDSFweights[1][0] = evts->Jet_puIdScaleFactorLooseUp[i];
-          tmp.PUIDSFweights[2][0] = evts->Jet_puIdScaleFactorLooseDown[i];
+      if((IsMC || conf->Compare_PUIDSF) && evts->Jet_pt_nom[i] < 50. && evts->Jet_genJetIdx[i] >= 0){ //unlike other SFs, PU Jets and jets failing ID are not supposed to contribute to event weights
+        vector<vector<float> > PUIDSFs = {{1,1,1},{1,1,1},{1,1,1}};
+        if (conf->UseSkims_PUIDSF || conf->Compare_PUIDSF) {
+          if(tmp.PUIDpasses[0]){
+            PUIDSFs[0][0] = evts->Jet_puIdScaleFactorLoose[i];
+            PUIDSFs[1][0] = evts->Jet_puIdScaleFactorLooseUp[i];
+            PUIDSFs[2][0] = evts->Jet_puIdScaleFactorLooseDown[i];
+          }
+          if(tmp.PUIDpasses[1]){
+            PUIDSFs[0][1] = evts->Jet_puIdScaleFactorMedium[i];
+            PUIDSFs[1][1] = evts->Jet_puIdScaleFactorMediumUp[i];
+            PUIDSFs[2][1] = evts->Jet_puIdScaleFactorMediumDown[i];
+          }
+          if(tmp.PUIDpasses[2]){
+            PUIDSFs[0][2] = evts->Jet_puIdScaleFactorTight[i];
+            PUIDSFs[1][2] = evts->Jet_puIdScaleFactorTightUp[i];
+            PUIDSFs[2][2] = evts->Jet_puIdScaleFactorTightDown[i];
+          }
         }
-        if(tmp.PUIDpasses[1]){
-          tmp.PUIDSFweights[0][1] = evts->Jet_puIdScaleFactorMedium[i];
-          tmp.PUIDSFweights[1][1] = evts->Jet_puIdScaleFactorMediumUp[i];
-          tmp.PUIDSFweights[2][1] = evts->Jet_puIdScaleFactorMediumDown[i];
+        if (conf->Compare_PUIDSF) {
+          R_PUIDSF->CompareScaleFactors(tmp, PUIDSFs);
+          conf->Compare_PUIDSF--;
         }
-        if(tmp.PUIDpasses[2]){
-          tmp.PUIDSFweights[0][2] = evts->Jet_puIdScaleFactorTight[i];
-          tmp.PUIDSFweights[1][2] = evts->Jet_puIdScaleFactorTightUp[i];
-          tmp.PUIDSFweights[2][2] = evts->Jet_puIdScaleFactorTightDown[i];
+        if (!conf->UseSkims_PUIDSF) {
+          PUIDSFs = R_PUIDSF->GetScaleFactors(tmp);
         }
+        tmp.PUIDSFweights = PUIDSFs;
       }
 
       //set generator information
@@ -215,44 +245,48 @@ public:
 
       //set btagging flags
       tmp.bTagPasses = bTag(evts->Jet_btagDeepFlavB[i], conf->SampleYear);
+      
 
       //set btagging SFs
       tmp.bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
-      if (IsMC) {
+      if (IsMC || conf->Compare_bTagSF) {
         //FIXME: Need b-tagging efficiency per sample at some point, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/BTagSFMethods#b_tagging_efficiency_in_MC_sampl
-        float bTagEff[3] = {.5, .7, .9};
-        if(tmp.bTagPasses[0]){
-          tmp.bJetSFweights[0][0] = evts->Jet_bTagScaleFactorLoose[i];
-          tmp.bJetSFweights[1][0] = evts->Jet_bTagScaleFactorLooseUp[i];
-          tmp.bJetSFweights[2][0] = evts->Jet_bTagScaleFactorLooseDown[i];
+        vector<vector<float> > bTSFs = {{1,1,1},{1,1,1},{1,1,1}};
+        if (conf->UseSkims_bTagSF || conf->Compare_bTagSF) {
+          bTSFs[0] = {evts->Jet_bTagScaleFactorLoose[i], evts->Jet_bTagScaleFactorMedium[i], evts->Jet_bTagScaleFactorTight[i]};
+          bTSFs[1] = {evts->Jet_bTagScaleFactorLooseUp[i], evts->Jet_bTagScaleFactorMediumUp[i], evts->Jet_bTagScaleFactorTightUp[i]};
+          bTSFs[2] = {evts->Jet_bTagScaleFactorLooseDown[i], evts->Jet_bTagScaleFactorMediumDown[i], evts->Jet_bTagScaleFactorTightDown[i]};
         }
-        else{
-          tmp.bJetSFweights[0][0] = (1. - bTagEff[0] * evts->Jet_bTagScaleFactorLoose[i]) / (1. - bTagEff[0]);
-          tmp.bJetSFweights[1][0] = (1. - bTagEff[0] * evts->Jet_bTagScaleFactorLooseUp[i]) / (1. - bTagEff[0]);
-          tmp.bJetSFweights[2][0] = (1. - bTagEff[0] * evts->Jet_bTagScaleFactorLooseDown[i]) / (1. - bTagEff[0]);
+        if (conf->Compare_bTagSF) {
+          R_BTSF->CompareScaleFactors(tmp, bTSFs);
+          conf->Compare_bTagSF--;
         }
-        if(tmp.bTagPasses[1]){
-          tmp.bJetSFweights[0][1] = evts->Jet_bTagScaleFactorMedium[i];
-          tmp.bJetSFweights[1][1] = evts->Jet_bTagScaleFactorMediumUp[i];
-          tmp.bJetSFweights[2][1] = evts->Jet_bTagScaleFactorMediumDown[i];
+        if (!conf->UseSkims_bTagSF) {
+          bTSFs = R_BTSF->GetScaleFactors(tmp);
         }
-        else{
-          tmp.bJetSFweights[0][1] = (1. - bTagEff[1] * evts->Jet_bTagScaleFactorMedium[i]) / (1. - bTagEff[1]);
-          tmp.bJetSFweights[1][1] = (1. - bTagEff[1] * evts->Jet_bTagScaleFactorMediumUp[i]) / (1. - bTagEff[1]);
-          tmp.bJetSFweights[2][1] = (1. - bTagEff[1] * evts->Jet_bTagScaleFactorMediumDown[i]) / (1. - bTagEff[1]);
-        }
-        if(tmp.bTagPasses[2]){
-          tmp.bJetSFweights[0][2] = evts->Jet_bTagScaleFactorTight[i];
-          tmp.bJetSFweights[1][2] = evts->Jet_bTagScaleFactorTightUp[i];
-          tmp.bJetSFweights[2][2] = evts->Jet_bTagScaleFactorTightDown[i];
-        }
-        else{
-          tmp.bJetSFweights[0][2] = (1. - bTagEff[2] * evts->Jet_bTagScaleFactorTight[i]) / (1. - bTagEff[2]);
-          tmp.bJetSFweights[1][2] = (1. - bTagEff[2] * evts->Jet_bTagScaleFactorTightUp[i]) / (1. - bTagEff[2]);
-          tmp.bJetSFweights[2][2] = (1. - bTagEff[2] * evts->Jet_bTagScaleFactorTightDown[i]) / (1. - bTagEff[2]);
+        
+        if (IsMC) {
+          vector<float> bTag_Eff = bTE->GetEff(tmp);
+          // vector<float> bTag_Eff = {0.9,0.7,0.5};
+          for (unsigned iv = 0; iv < 3; ++iv) {
+            for (unsigned iwp = 0; iwp < 3; ++iwp) {
+              if (tmp.bTagPasses[iwp]) tmp.bJetSFweights[iv][iwp] = bTSFs[iv][iwp];
+              else tmp.bJetSFweights[iv][iwp] = (1. - bTag_Eff[iwp] * bTSFs[iv][iwp]) / (1. - bTag_Eff[iwp]);
+              if (tmp.Pt() < 20 || tmp.Pt() > 1000 || fabs(tmp.Eta()) >= 2.5) {
+                tmp.bJetSFweights[iv][iwp] = 1.0;
+                continue;
+              }
+              if (conf->bTagEffCreation) continue;
+              if (tmp.bJetSFweights[iv][iwp] <= 0 || tmp.bJetSFweights[iv][iwp] != tmp.bJetSFweights[iv][iwp]) {
+                cout << "In bTag WP " << iwp << " , " << iv << " variation, ";
+                if (tmp.bTagPasses[iwp]) cout << " bTagged ";
+                else cout << " Non-bTagged ";
+                cout << Form("Jet %i (pT = %f, eta = %f) has unexpected bJetSFweight. Eff = %f, SF = %f", i, tmp.Pt(), tmp.Eta(), bTag_Eff[iwp], bTSFs[iv][iwp]) << endl;
+              }
+            }
+          }
         }
       }
-
       Jets.push_back(tmp);
     }
   }
@@ -261,26 +295,35 @@ public:
     Leptons.clear();
     Electrons.clear();
     Muons.clear();
+    if (evts->nElectron > 9) cout << "Error: nElectron = " << evts->nElectron << " at iEvent = " << iEvent << endl;
+    if (evts->nMuon > 9) cout << "Error: nMuon = " << evts->nMuon << " at iEvent = " << iEvent << endl;
+    int emptysequence = 0;
     for (unsigned i = 0; i < evts->nElectron; ++i) {
+      if (emptysequence >= 3) break;
+      if (evts->Electron_pt[i] == 0) {
+        emptysequence++;
+        continue;
+      }
+      else emptysequence = 0;
       Electron tmp;
+      // cout << "Electron i = " << i << ", nElectron = " << evts->nElectron <<endl;
       tmp.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
       //set resolution variations (only matter in MC, will be ineffective in data)
-      tmp.ResUp.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
-      tmp.ResUp.SetE(tmp.E()-evts->Electron_dEsigmaUp[i]);
-      tmp.ResDown.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
-      tmp.ResDown.SetE(tmp.E()-evts->Electron_dEsigmaDown[i]);
+      tmp.ResUp() = ((TLorentzVector) tmp) * ((tmp.E() - evts->Electron_dEsigmaUp[i]) / tmp.E());
+      tmp.ResDown() = ((TLorentzVector) tmp) * ((tmp.E() - evts->Electron_dEsigmaDown[i]) / tmp.E());
       //set scale variations (only filled in data, should be applied to MC, for now FIXME inactive)
-      tmp.ScaleUp.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
-      tmp.ScaleDown.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
-
+      // tmp.ScaleUp() = ((TLorentzVector) tmp) * (tmp.E() - evts->Electron_dEscaleUp[i]) / tmp.E();
+      // tmp.ScaleDown() = ((TLorentzVector) tmp) * (tmp.E() - evts->Electron_dEscaleDown[i]) / tmp.E();
+      tmp.ScaleUp() = tmp;
+      tmp.ScaleDown() = tmp;
       tmp.index = i;
       tmp.charge = evts->Electron_charge[i];
 
       //find maxmimum pT of any variation
-      double maxPt = max(tmp.Pt(), tmp.ResUp.Pt());
-      maxPt = max(maxPt, tmp.ResDown.Pt());
-      maxPt = max(maxPt, tmp.ScaleUp.Pt());
-      maxPt = max(maxPt, tmp.ScaleDown.Pt());
+      double maxPt = max(tmp.Pt(), tmp.ResUp().Pt());
+      maxPt = max(maxPt, tmp.ResDown().Pt());
+      maxPt = max(maxPt, tmp.ScaleUp().Pt());
+      maxPt = max(maxPt, tmp.ScaleDown().Pt());
 
       //CommonSelectionBlock
       float absEta = fabs(tmp.Eta());
@@ -356,7 +399,14 @@ public:
       Electrons.push_back(tmp);
       Leptons.push_back(tmp);
     }
+    emptysequence = 0;
     for (unsigned i = 0; i < evts->nMuon; ++i) {
+      if (emptysequence >= 3) break; // [9] is the hard cap of Muon array size
+      if (evts->Muon_pt[i] == 0) {
+        emptysequence++;
+        continue;
+      }
+      else emptysequence = 0;
       Muon tmp;
       tmp.SetPtEtaPhiM(evts->Muon_pt[i],evts->Muon_eta[i],evts->Muon_phi[i],evts->Muon_mass[i]);
       tmp.index = i;
@@ -365,10 +415,10 @@ public:
       //Dummy for scale variations, not to be used without Rochester corrections (not compulsory)
       TLorentzVector dummy;
       dummy.SetPtEtaPhiM(evts->Muon_pt[i],evts->Muon_eta[i],evts->Muon_phi[i],evts->Muon_mass[i]);
-      tmp.ResUp = dummy;
-      tmp.ResDown = dummy;
-      tmp.ScaleUp = dummy;
-      tmp.ScaleDown = dummy;
+      tmp.ResUp() = dummy;
+      tmp.ResDown() = dummy;
+      tmp.ScaleUp() = dummy;
+      tmp.ScaleDown() = dummy;
 
       //CommonSelectionBlock
       float absEta = fabs(tmp.Eta());
@@ -395,11 +445,21 @@ public:
 
       //set SF and variation for primary only
       if(passPrimary && IsMC){
-        tmp.SFs[0] = evts->Muon_scaleFactor[i];
-        tmp.SFs[1] = evts->Muon_scaleFactor[i] + sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
-        tmp.SFs[2] = evts->Muon_scaleFactor[i] - sqrt( pow(evts->Muon_scaleFactorStat[i],2) + pow(evts->Muon_scaleFactorSyst[i],2) );
+        if (evts->Muon_triggerScaleFactor[i] * evts->Muon_idScaleFactor[i] * evts->Muon_isoScaleFactor[i] == 0) {
+          cout << "Zero muon SF" <<endl;
+        }
+        else {
+          tmp.triggerSFs[0] = evts->Muon_triggerScaleFactor[i];
+          tmp.triggerSFs[1] = evts->Muon_triggerScaleFactorSystUp[i];
+          tmp.triggerSFs[2] = evts->Muon_triggerScaleFactorSystDown[i];
+          tmp.idSFs[0] = evts->Muon_idScaleFactor[i];
+          tmp.idSFs[1] = evts->Muon_idScaleFactorSystUp[i];
+          tmp.idSFs[2] = evts->Muon_idScaleFactorSystDown[i];
+          tmp.isoSFs[0] = evts->Muon_isoScaleFactor[i];
+          tmp.isoSFs[1] = evts->Muon_isoScaleFactorSystUp[i];
+          tmp.isoSFs[2] = evts->Muon_isoScaleFactorSystDown[i];
+        }
       }
-      else tmp.SFs = {1., 1., 1.};
 
       Muons.push_back(tmp);
       Leptons.push_back(tmp);
@@ -407,7 +467,7 @@ public:
   }
 
   void ReadMET() {
-    Met = TLorentzVector();
+    Met.v() = TLorentzVector();
 
     //conversion of the constant SampleYear into the correction's year string where needed
     string convertedYear = "";
@@ -424,19 +484,19 @@ public:
 
       std::pair<double,double> METXYCorr_JESup = METXYCorr_Met_MetPhi(evts->MET_T1Smear_pt_jesTotalUp, evts->MET_T1Smear_phi_jesTotalUp, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       JESup.SetPtEtaPhiM(METXYCorr_JESup.first, 0, METXYCorr_JESup.second, 0);
-      Met.JESup = JESup;
+      Met.JESup() = JESup;
 
       std::pair<double,double> METXYCorr_JESdown = METXYCorr_Met_MetPhi(evts->MET_T1Smear_pt_jesTotalDown, evts->MET_T1Smear_phi_jesTotalDown, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       JESdown.SetPtEtaPhiM(METXYCorr_JESdown.first, 0, METXYCorr_JESdown.second, 0);
-      Met.JESdown = JESdown;
+      Met.JESdown() = JESdown;
 
       std::pair<double,double> METXYCorr_JERup = METXYCorr_Met_MetPhi(evts->MET_T1Smear_pt_jerUp, evts->MET_T1Smear_phi_jerUp, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       JERup.SetPtEtaPhiM(METXYCorr_JERup.first, 0, METXYCorr_JERup.second, 0);
-      Met.JERup = JERup;
+      Met.JERup() = JERup;
 
       std::pair<double,double> METXYCorr_JERdown = METXYCorr_Met_MetPhi(evts->MET_T1Smear_pt_jerDown, evts->MET_T1Smear_phi_jerDown, evts->run, convertedYear, IsMC, evts->PV_npvs, true, false);
       JERdown.SetPtEtaPhiM(METXYCorr_JERdown.first, 0, METXYCorr_JERdown.second, 0);
-      Met.JERdown = JERdown;
+      Met.JERdown() = JERdown;
     }
     else{
       TLorentzVector dummy;
@@ -445,10 +505,10 @@ public:
       Met.SetPtEtaPhiM(METXYCorr.first, 0, METXYCorr.second, 0);
 
       dummy.SetPtEtaPhiM(METXYCorr.first, 0, METXYCorr.second, 0);
-      Met.JESup = dummy;
-      Met.JESdown = dummy;
-      Met.JERup = dummy;
-      Met.JERdown = dummy;
+      Met.JESup() = dummy;
+      Met.JESdown() = dummy;
+      Met.JERup() = dummy;
+      Met.JERdown() = dummy;
     }
   }
 
@@ -500,30 +560,10 @@ public:
       int nel = 0;
       int nep = 0;
       for(unsigned j = 0; j<Electrons.size(); ++j){
-        if(i==1 && Electrons[j].ScaleUp.Pt() >= 40.){
+        if (Electrons[j].v(i).Pt() >= 40.) {
           nev += Leptons[j].IsVeto;
           nel += Leptons[j].IsLoose;
           nep += Leptons[j].IsPrimary;
-        }
-        else if(i==2 && Electrons[j].ScaleDown.Pt() >= 40.){
-          nev += Leptons[j].IsVeto;
-          nel += Leptons[j].IsLoose;
-          nep += Leptons[j].IsPrimary;
-        }
-        else if(i==3 && Electrons[j].ResUp.Pt() >= 40.){
-          nev += Electrons[j].IsVeto;
-          nel += Electrons[j].IsLoose;
-          nep += Electrons[j].IsPrimary;
-        }
-        else if(i==4 && Electrons[j].ResDown.Pt() >= 40.){
-          nev += Electrons[j].IsVeto;
-          nel += Electrons[j].IsLoose;
-          nep += Electrons[j].IsPrimary;
-        }
-        else if(Electrons[j].Pt() >= 40.){
-          nev += Electrons[j].IsVeto;
-          nel += Electrons[j].IsLoose;
-          nep += Electrons[j].IsPrimary;
         }
       }
 
@@ -560,11 +600,12 @@ public:
       int nj = 0;
       int nb = 0;
       for(unsigned j = 0; j<Jets.size(); ++j){
-        float pT = Jets[j].Pt();
-        if(i==5) pT = Jets[j].JESup.Pt();
-        else if(i==6) pT = Jets[j].JESdown.Pt();
-        else if(i==7) pT = Jets[j].JERup.Pt();
-        else if(i==8) pT = Jets[j].JERdown.Pt();
+        float pT = Jets[j].v(i).Pt();
+        // float pT = Jets[j].Pt();
+        // if(i==5) pT = Jets[j].JESup.Pt();
+        // else if(i==6) pT = Jets[j].JESdown.Pt();
+        // else if(i==7) pT = Jets[j].JERup.Pt();
+        // else if(i==8) pT = Jets[j].JERdown.Pt();
         if(pT < 30.) continue;
         if(!Jets[j].PUIDpasses[PUIDWP]) continue;//select working point for PUID to none by commenting this line out, loose by PUIDpasses 0, medium by 1, tight by 2
         nj++;
@@ -586,24 +627,33 @@ public:
   vector<pair<double, string> > CalcEventSFweights() {
     vector<EventWeight> SFweights;
     //set SF weights per object
-    EventWeight electronW, muonW, BjetW, PUIDW, L1PreFiringW, PUreweight;
+    EventWeight electronW, muonTriggerW, muonIdW, muonIsoW, BjetW, PUIDW, L1PreFiringW, PUreweight, PDFWeight, LHEScaleW;
     electronW.source = "electron";
-    muonW.source = "muon";
+    muonTriggerW.source = "muonTrigger";
+    muonIdW.source = "muonId";
+    muonIsoW.source = "muonIso";
     BjetW.source = "BjetTag";
     PUIDW.source = "PUID";
     L1PreFiringW.source = "L1PreFiring";
     PUreweight.source = "PUreweight";
+    PDFWeight.source = "PDF";
+    LHEScaleW.source = "LHEScale";
 
     if (IsMC) {
       int modes[3]={0, +1, -1};
       for(unsigned i=0; i<3; ++i){
         for(unsigned j = 0; j < Electrons.size(); ++j) electronW.variations[i] *= Electrons[j].SFs[i];
-        for(unsigned j = 0; j < Muons.size(); ++j) muonW.variations[i] *= Muons[j].SFs[i];
+        for(unsigned j = 0; j < Muons.size(); ++j) {
+          muonTriggerW.variations[i] *= Muons[j].triggerSFs[i];
+          muonIdW.variations[i] *= Muons[j].idSFs[i];
+          muonIsoW.variations[i] *= Muons[j].isoSFs[i];
+        }
         for(unsigned j = 0; j < Jets.size(); ++j){
           BjetW.variations[i] *= Jets[j].bJetSFweights[i][bTagWP];
           PUIDW.variations[i] *= Jets[j].PUIDSFweights[i][PUIDWP];
         }
       }
+      if (BjetW.variations[0] != BjetW.variations[0]) cout << "Caught BjetW nan" <<endl;
       // return;
       string sampleyear;
       string sy = conf->SampleYear;
@@ -622,48 +672,82 @@ public:
       PUreweight.variations[0] = evts->Pileup_scaleFactor;
       PUreweight.variations[1] = evts->Pileup_scaleFactorUp;
       PUreweight.variations[2] = evts->Pileup_scaleFactorDown;
+
+      // PDF
+      // Quoted Percentile definition:
+      // Before giving a general definition of all percentiles, we will define the 80th percentile of a collection of values to be the smallest value in the collection that is at least as large as 80% of all of the values.
+      // The lowest element is only the 0th percentile, and cannot be anything else.
+      vector<float> lhepdfws;
+      for (int i = 0; i < evts->nLHEPdfWeight; ++i) {
+        lhepdfws.push_back(evts->LHEPdfWeight[i]);
+      }
+      sort(lhepdfws.begin(), lhepdfws.end());
+      int le = ceil(0.1587 * evts->nLHEPdfWeight); // one sigma down
+      int ne = ceil(0.5 * evts->nLHEPdfWeight); // nominal
+      int ue = ceil(0.8413 * evts->nLHEPdfWeight); // one sigma up
+      PDFWeight.variations[0] = lhepdfws[ne];
+      PDFWeight.variations[1] = lhepdfws[ue];
+      PDFWeight.variations[2] = lhepdfws[le];
+
+      // LHEScale
+      vector<float> lhescalews;
+      if (evts->nLHEScaleWeight != 9) cout << "nLHEScaleWeight != 9" << endl;
+      for (unsigned i = 0; i < evts->nLHEScaleWeight; ++i) {
+        lhescalews.push_back(evts->LHEScaleWeight[i]);
+      }
+      sort(lhescalews.begin(), lhescalews.end());
+      LHEScaleW.variations[0] = lhescalews[4];
+      LHEScaleW.variations[1] = lhescalews[8];
+      LHEScaleW.variations[2] = lhescalews[0];
     }
 
     SFweights.push_back(electronW);
-    SFweights.push_back(muonW);
+    SFweights.push_back({
+      muonTriggerW.variations[i] *= Muons[j].triggerSFs[i];
+      muonIdW.variations[i] *= Muons[j].idSFs[i];
+      );
+    }
     SFweights.push_back(BjetW);
     SFweights.push_back(PUIDW);
     SFweights.push_back(L1PreFiringW);
     SFweights.push_back(PUreweight);
-    //FIXME: Needs PDF weight variations and ISR/FSR
+    SFweights.push_back(PDFWeight);
+    SFweights.push_back(LHEScaleW);
 
     //determine nominal event weight
-    vector<pair<double, string> > EventWeight;
+    vector<pair<double, string> > EventWeight_out;
     float CentralWeight = 1.;
     for(unsigned i = 0; i < SFweights.size(); ++i){
       CentralWeight *= SFweights[i].variations[0];
     }
-    EventWeight.push_back(make_pair(CentralWeight, "Nominal"));
+    EventWeight_out.push_back(make_pair(CentralWeight, "Nominal"));
 
     //select source for up and down variations
     for(unsigned i = 0; i < SFweights.size(); ++i){
 
       //create variations with strings for later combine histograms
-      EventWeight.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[1], SFweights[i].source + "_up"));
-      EventWeight.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[2], SFweights[i].source + "_down"));
+      EventWeight_out.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[1], SFweights[i].source + "_up"));
+      EventWeight_out.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[2], SFweights[i].source + "_down"));
     }
-    return EventWeight;
+    return EventWeight_out;
   }
 
   Configs *conf;
+
+  Long64_t iEvent;
+
+  bTagSFReader *R_BTSF;
+  PUIDSFReader *R_PUIDSF;
 
   bool IsMC;
   int bTagWP, PUIDWP;
   TChain* chain;
   Events* evts;
+  bTagEff* bTE;
   int run, luminosityBlock;
   vector<GenPart> GenParts;
   vector<GenJet> GenJets;
-  float JetPtThreshold;
-  int JetIdThreshold;
   vector<Jet> Jets;
-  // vector<int> nBJets, nNBJets;
-  float LepPtThreshold;
   vector<Lepton> Leptons;
   vector<Electron> Electrons;
   vector<Muon> Muons;

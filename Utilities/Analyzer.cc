@@ -10,9 +10,7 @@
 #include <string>
 
 #include "NanoAODReader.cc"
-#include "ProgressBar.cc"
-// #include "PUReweight.cc"
-#include "UserSpecifics.cc"
+#include "Fitter.cc"
 
 using namespace std;
 
@@ -29,11 +27,16 @@ public:
   }
   void Init() {
     r = new NanoAODReader(conf);
+    bTE = new bTagEff(conf);
+    JS = new JetScale(conf);
+    r->SetbTag(bTE);
+    Ftr = new Fitter(conf);
+    Ftr->SetJetScale(JS);
+    Ftr->SetbTag(bTE);
     if (conf->EntryMax > 0 && conf->EntryMax < r->GetEntries()) EntryMax = conf->EntryMax;
     else EntryMax = r->GetEntries();
     cout << "Processing " << EntryMax << " events" << endl;
     progress = new Progress(EntryMax, conf->ProgressInterval);
-    // if (IsMC) pureweight = new PUReweight(conf);
   }
 
   Long64_t GetEntryMax() {return EntryMax;}
@@ -46,10 +49,10 @@ public:
   }
 
   void SetOutput(string folder = "Validation") {
-    string path = UserSpecifics::EOSBasePath + folder + "/"; //FIXME: Needs to be propagated from elsewhere
+    string path = UserSpecifics::EOSBasePath + folder + "/";
     string subpath = Form("%s_%s/",conf->SampleYear.c_str(), conf->SampleType.c_str());
     string outname = Form("%s_%s_%i.root",conf->SampleYear.c_str(), conf->SampleType.c_str(), conf->iFile);
-    if (conf->GetSwitch("LocalOutput")) {
+    if (conf->LocalOutput) {
       path = "";
       subpath = "outputs/";
     }
@@ -80,11 +83,6 @@ public:
     return r->KeepEvent;
   }
 
-  // double GetEventPUWeight(int ixsec = 1) {
-  //   if (!IsMC) return 1.;
-  //   else return pureweight->GetWeight(r->Pileup_nTrueInt, ixsec);
-  // }
-
   void FillTree() {
     t->Fill();
   }
@@ -104,8 +102,10 @@ public:
   TFile *ofile;
   TTree *t;
   NanoAODReader *r;
+  bTagEff *bTE;
+  JetScale *JS;
+  Fitter *Ftr;
   Progress* progress;
-  // PUReweight* pureweight;
 
   std::array<int, 10> ExampleArray;
 

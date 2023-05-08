@@ -8,8 +8,8 @@
 
 #include "TString.h"
 
-// #include "Constants.cc"
 #include "Dataset.cc"
+#include "UserSpecifics.cc"
 
 struct Configs {
   Configs(int isy_ = 2, int ist_ = 2, int ifile_ = 0) {
@@ -46,18 +46,28 @@ struct Configs {
 
   int bTagWP = 2; //0 loose, 1 medium, 2 tight
   int PUIDWP = 2; //0 loose, 1 medium, 2 tight
+  bool UseSkims_bTagSF = true;
+  bool UseSkims_PUIDSF = true;
+  int Compare_bTagSF = 0; // Lines to print out, -1 for infinite, 0 for not print out
+  int Compare_PUIDSF = 0;
 
   // Idealy the container for all bool configs, practically only the ones not used extensively should rest in here.
   map<string,bool> Switches;
 
   bool Debug = false;
 
+  bool LocalOutput = false;
+
   // In batch mode, it is suggested to turn off, or will result in a large log file.
   bool PrintProgress = false;
   int ProgressInterval = 1000;
 
-  bool PUEvaluation = false;
   bool DASInput = false;
+
+  bool bTagEffCreation = false;
+  string bTagEffBasepath = "outputs/";
+  bool JetScaleCreation = false;
+  string JetScaleBasepath = "outputs/";
 
   void SetSwitch(string sw, bool b) {
     Switches[sw] = b;

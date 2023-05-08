@@ -5,8 +5,9 @@ def GetLocalDataset(names, iy):
   inname = names[0]
   if len(names) == 2:
     inname = names[1]
-  basepath = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/"
   # basepath = "/eos/user/d/doverton/skimmed_samples"
+  basepath = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/"
+  # basepath = "/eos/user/e/eusebi/andrewsdata/skimmed_samples/"
   inyears = ["2016","2016_APV","2017","2018"]
   outyears = ["2016","2016apv","2017","2018"]
   if inname == "SingleElectron" and iy == 3: inname = "EGamma/"
@@ -68,7 +69,7 @@ def GetSampleTypes():
     sts.append(ds[0])
   return sts
 
-CreateFileNames = False
+CreateFileNames = True
 if CreateFileNames:
   for iy in range(4):
     for ids in GetDatasetNames():
