@@ -682,9 +682,9 @@ public:
         lhepdfws.push_back(evts->LHEPdfWeight[i]);
       }
       sort(lhepdfws.begin(), lhepdfws.end());
-      int le = ceil(0.1587 * evts->nLHEPdfWeight);
-      int ne = ceil(0.5 * evts->nLHEPdfWeight);
-      int ue = ceil(0.8413 * evts->nLHEPdfWeight);
+      int le = ceil(0.1587 * evts->nLHEPdfWeight); // one sigma down
+      int ne = ceil(0.5 * evts->nLHEPdfWeight); // nominal
+      int ue = ceil(0.8413 * evts->nLHEPdfWeight); // one sigma up
       PDFWeight.variations[0] = lhepdfws[ne];
       PDFWeight.variations[1] = lhepdfws[ue];
       PDFWeight.variations[2] = lhepdfws[le];
@@ -695,7 +695,7 @@ public:
       for (unsigned i = 0; i < evts->nLHEScaleWeight; ++i) {
         lhescalews.push_back(evts->LHEScaleWeight[i]);
       }
-      sort(lhescalews.begin(); lhescalews.end());
+      sort(lhescalews.begin(), lhescalews.end());
       LHEScaleW.variations[0] = lhescalews[4];
       LHEScaleW.variations[1] = lhescalews[8];
       LHEScaleW.variations[2] = lhescalews[0];
