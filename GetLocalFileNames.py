@@ -6,13 +6,15 @@ def GetLocalDataset(names, iy):
   if len(names) == 2:
     inname = names[1]
   # basepath = "/eos/user/d/doverton/skimmed_samples"
-  basepath = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/"
-  # basepath = "/eos/user/e/eusebi/andrewsdata/skimmed_samples/"
+  pbasepath = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/"
+  ebasepath = "/eos/user/e/eusebi/andrewsdata/skimmed_samples/"
   inyears = ["2016","2016_APV","2017","2018"]
   outyears = ["2016","2016apv","2017","2018"]
   if inname == "SingleElectron" and iy == 3: inname = "EGamma/"
   else: inname = inname + "/"
 
+  if iy == 3: basepath = pbasepath
+  else: basepath = ebasepath
   infile = basepath + inname + inyears[iy] + "/*"
   if not os.path.exists("filenames/"):
     os.makedirs("filenames")

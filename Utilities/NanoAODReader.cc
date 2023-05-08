@@ -702,11 +702,9 @@ public:
     }
 
     SFweights.push_back(electronW);
-    SFweights.push_back({
-      muonTriggerW.variations[i] *= Muons[j].triggerSFs[i];
-      muonIdW.variations[i] *= Muons[j].idSFs[i];
-      );
-    }
+    SFweights.push_back(muonTriggerW);
+    SFweights.push_back(muonIdW);
+    SFweights.push_back(muonIsoW);
     SFweights.push_back(BjetW);
     SFweights.push_back(PUIDW);
     SFweights.push_back(L1PreFiringW);

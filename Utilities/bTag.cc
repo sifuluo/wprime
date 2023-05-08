@@ -65,6 +65,7 @@ public:
   }
 
   void FillJet(Jet& j) {
+    if (!conf->IsMC) return;
     int had = abs(j.hadronFlavour);
     if (had > 5) had = -1; // Other particles
     if (had >= 0) TotalEvts->Fill(had,j.Pt());
@@ -111,7 +112,7 @@ public:
 
   vector<float> GetEff(Jet& j) { // This function is intented to be used by NanoAODReader 
     vector<float> out = {0.9,0.7,0.5};
-    if (conf->bTagEffCreation) {
+    if (conf->bTagEffCreation || !conf->IsMC) {
       return out;
     }
     for (unsigned iwp = 0; iwp < 3; ++iwp) {
