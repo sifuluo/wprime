@@ -21,15 +21,17 @@ struct Dataset {
   double CrossSection; // Unit in fb
   vector<double> Size;
 
-  void Print() {
+  void Print(int verbosity = 0) {
     vector<string> types{"Data","MC","Signal"};
     vector<string> colors{"white","black","red","green","blue","yellow","magenta","cyan","lush green","purple"};
     //                       0       1      2      3      4       5         6        7        8          9
     cout << "Dataset: " << Name << " ,Index = " << Index << ", (" << types[Type] << ")" <<endl;
+    if (verbosity < 1) return;
     cout << "         CrossSection = " << CrossSection << ", Sample Size  = ";
     for (unsigned i = 0; i < Size.size(); ++i) cout << Size[i] << ", ";
     if (Size.size() != 4) cout << "Not well defined";
     cout << endl;
+    if (verbosity < 2) return;
     cout << "         Plot group is " << GroupName << ", Colored " << Color;
     if (Color < (int) colors.size()) cout << " (" << colors[Color] << ") ";
     cout << endl;
@@ -81,7 +83,7 @@ public:
     DatasetNames.clear();
     Groups.clear();
     GroupNames.clear();
-    // Add Dataset with parameters as Name, Group Name, Type(0:Data, 1:MC, 2:Signal), Color, Xsection, SampleSize
+    // Add Dataset with parameters as Name, Group Name, Type(0:Data, 1:MC, 2:Signal), Color, Xsection(In fb), SampleSize
     //                Name                      Group Name     Type Color  Xsection   SampleSizes for each year
     AddDataset_NGTCXS("SingleElectron"         ,"Data"          , 0, 1 , 1., {1,1,1,1}); // 0
     AddDataset_NGTCXS("SingleMuon"             ,"Data"          , 0, 1 , 1., {1,1,1,1}); // 1
@@ -96,13 +98,20 @@ public:
     AddDataset_NGTCXS("wjets_HT_800_1200"      ,"wjets"         , 1, 3 , 6656,    {1, 2132228, 5088483, 7306187}); // 8
     AddDataset_NGTCXS("wjets_HT_1200_2500"     ,"wjets"         , 1, 3 , 1608,    {1, 2090561, 4752118, 6481518}); // 9
     AddDataset_NGTCXS("wjets_HT_2500_inf"      ,"wjets"         , 1, 3 , 39,      {1, 709514, 1185699, 2097648}); // 10
-    AddDataset_NGTCXS("wjets_inclusive"        ,"wjets"         , 1, 3 , 0,       {0,0,0,0});                     // 11
+    // AddDataset_NGTCXS("wjets_inclusive"        ,"wjets"         , 1, 3 , 0,       {0,0,0,0});                     
 
-    AddDataset_NGTCXS("single_antitop_tchan"   ,"single_top"    , 1, 4 , 69090,  {1,30609000,69793000,395627000}); // 12 // 9562700 events
-    AddDataset_NGTCXS("single_antitop_tw"      ,"single_top"    , 1, 4 , 34970,  {1,3654510,8433998,10949620}); // 13
-    AddDataset_NGTCXS("single_top_schan"       ,"single_top"    , 1, 4 , 3740,   {1,5471000,13620000,19365999}); // 14
-    AddDataset_NGTCXS("single_top_tchan"       ,"single_top"    , 1, 4 , 115300, {1,63073000,129903000,178336000}); // 15
-    AddDataset_NGTCXS("single_top_tw"          ,"single_top"    , 1, 4 , 34910,  {1,3368375,8507203,11270430}); // 16
+    AddDataset_NGTCXS("single_top_schan"       ,"single_top"    , 1, 4 , 3740,   {1,5471000,13620000,19365999}); // 11
+    AddDataset_NGTCXS("single_top_tchan"       ,"single_top"    , 1, 4 , 115300, {1,63073000,129903000,178336000}); // 12
+    AddDataset_NGTCXS("single_antitop_tchan"   ,"single_top"    , 1, 4 , 69090,  {1,30609000,69793000,95627000}); // 13
+    AddDataset_NGTCXS("single_top_tw"          ,"single_top"    , 1, 4 , 34910,  {1,3368375,8507203,11270430}); // 14
+    AddDataset_NGTCXS("single_antitop_tw"      ,"single_top"    , 1, 4 , 34970,  {1,3654510,8433998,10949620}); // 15
+
+    AddDataset_NGTCXS("WW"                     ,"diboson"       , 1, 5 , 51650,  {1, 19976139, 39931603, 40272013});
+    AddDataset_NGTCXS("ZZ"                     ,"diboson"       , 1, 5 , 12170,  {1, 1151000, 2706000, 3526000});
+    AddDataset_NGTCXS("WZTo1L1Nu2Q"            ,"diboson"       , 1, 5 , 9119,   {1, 3690271, 7345742, 7395487});
+    AddDataset_NGTCXS("WZTo1L3Nu"              ,"diboson"       , 1, 5 , 3414,   {1, 2468727, 2481654, 2497292});
+    AddDataset_NGTCXS("WZTo2Q2L"               ,"diboson"       , 1, 5 , 6565,   {1, 13526954, 29091996, 28576996});
+    AddDataset_NGTCXS("WZTo3LNu"               ,"diboson"       , 1, 5 , 4430,   {1, 20810003, 10339582, 38624209});
 
     // McM page
     // https://cms-pdmv.cern.ch/mcm/requests?range=B2G-RunIISummer20UL16wmLHEGEN-03230,B2G-RunIISummer20UL16wmLHEGEN-03247&page=0&shown=127
@@ -149,6 +158,13 @@ public:
     DatasetNames.push_back(name);
     Datasets[name] = ds;
     return ds.Index;
+  }
+
+  void ListDatasets() {
+    cout << endl;
+    for (unsigned i = 0; i < DatasetNames.size(); ++i) {
+      Datasets[DatasetNames[i]].Print();
+    }
   }
 
   void SortGroups() {

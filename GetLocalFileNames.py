@@ -53,6 +53,13 @@ def GetDatasetNames():
   datasets.append(["single_top_tchan"]) # 15
   datasets.append(["single_top_tw"]) # 16
 
+  datasets.append(["WW"])
+  datasets.append(["ZZ"])
+  datasets.append(["WZTo1L1Nu2Q"])
+  datasets.append(["WZTo1L3Nu"])
+  datasets.append(["WZTo2Q2L"])
+  datasets.append(["WZTo3LNu"])
+
   for im in ["300","400","500","600","700","800","900","1000","1100"]: # 17 18 19 20 21 22 23 24 25
     inname = "wprime_" + im + "_former_leptonic"
     outname = "FL" + im
