@@ -167,7 +167,7 @@ public:
   void ReadJets() {
     Jets.clear();
     int emptysequence = 0;
-    if (evts->nJet > 27) cout << "Error: nJet = " << evts->nJet << " at iEvent = " << iEvent << endl;
+    if (evts->nJet > evts->nJetMax) cout << "Error: nJet = " << evts->nJet << " at iEvent = " << iEvent << endl;
     for (unsigned i = 0; i < evts->nJet; ++i) {
       if (emptysequence >= 3) break; // 3 empty jets in a row, skip the rest
       if (evts->Jet_pt_nom[i] == 0) emptysequence++;
@@ -267,7 +267,6 @@ public:
         
         if (IsMC) {
           vector<float> bTag_Eff = bTE->GetEff(tmp);
-          // vector<float> bTag_Eff = {0.9,0.7,0.5};
           for (unsigned iv = 0; iv < 3; ++iv) {
             for (unsigned iwp = 0; iwp < 3; ++iwp) {
               if (tmp.bTagPasses[iwp]) tmp.bJetSFweights[iv][iwp] = bTSFs[iv][iwp];
@@ -283,6 +282,7 @@ public:
                 else cout << " Non-bTagged ";
                 cout << Form("Jet %i (pT = %f, eta = %f) has unexpected bJetSFweight. Eff = %f, SF = %f", i, tmp.Pt(), tmp.Eta(), bTag_Eff[iwp], bTSFs[iv][iwp]) << endl;
               }
+              if (tmp.bJetSFweights[iv][iwp] == 0) tmp.bJetSFweights[iv][iwp] = 1.0; // Final safeguard
             }
           }
         }
@@ -692,7 +692,7 @@ public:
       // LHEScale
       vector<float> lhescalews;
       if (evts->nLHEScaleWeight != 9) cout << "nLHEScaleWeight != 9" << endl;
-      for (unsigned i = 0; i < evts->nLHEScaleWeight; ++i) {
+      for (int i = 0; i < evts->nLHEScaleWeight; ++i) {
         lhescalews.push_back(evts->LHEScaleWeight[i]);
       }
       sort(lhescalews.begin(), lhescalews.end());
@@ -728,6 +728,18 @@ public:
       EventWeight_out.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[2], SFweights[i].source + "_down"));
     }
     return EventWeight_out;
+  }
+  
+  void BranchSizeCheck() {
+    vector<TString> varnames{"GenPart_pt","GenJet_pt","Jet_pt","Electron_pt","Muon_pt",
+      "TrigObj_pt","Electron_scaleFactor","LHEPdfWeight","LHEScaleWeight"};
+    vector<int> cursizes{evts->nGenPartMax, evts->nGenJetMax, evts->nJetMax, evts->nElectronMax, evts->nMuonMax,
+      evts->nTrigObjMax, evts->nSFMax, evts->nLHEPdfWeightMax, evts->nLHEScaleWeightMax};
+    if (varnames.size() != cursizes.size()) cout << "Please double check the varnames and cursizes container contents. Lenghth is differnet" << endl;
+    for (unsigned i = 0; i < varnames.size(); ++i) {
+      int newsize = chain->GetLeaf(varnames[i])->GetLen();
+      if (newsize > cursizes[i]) cout << endl << varnames[i] << " has size = " << newsize << " exceeded current fixed size = " << cursizes[i] << endl;
+    }
   }
 
   Configs *conf;

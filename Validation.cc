@@ -231,46 +231,20 @@ public:
   }
 };
 
-void Validation(int isampleyear = 3, int isampletype = 16, int itrigger = 0, int ifile = -1) {
-  Configs *conf = new Configs(isampleyear, isampletype, itrigger, ifile);
-  conf->Debug = false;
-  conf->PUEvaluation = false;
-  conf->DASInput = false;
-  if (false) { // TestRun
-    conf->SetSwitch("LocalOutput",true);
-    conf->PrintProgress = true;
-    conf->ProgressInterval = 1;
-  }
-  if (ifile < 0) {
-    if (conf->iSampleYear == 1 && conf->iSampleType == 0) {
-      conf->InputFile = "/eos/cms/store/data/Run2016F/SingleElectron/NANOAOD/UL2016_MiniAODv2_NanoAODv9-v1/130000/31BADB98-BCD8-4B40-9825-7709B08299BD.root";
-    }
-    else if (conf->iSampleYear == 3 && conf->iSampleType == 16) {
-      conf->InputFile = "FL500.root";
-    }
-    else if (conf->iSampleYear == 3 && conf->iSampleType == 1) {
-      conf->InputFile = "SingleMuon_2018.root";
-    }
-    else if (conf->iSampleYear == 3 && conf->iSampleType == 2) {
-      conf->InputFile = "ttbar_2018.root";
-    }
-    else {
-      cout << "Test File not specified for SampleYear = " << conf->SampleYear << ", SampleType = " << conf->SampleType <<endl;
-    }
-  }
+void Validation(int isampleyear = 3, int isampletype = 16, int ifile = 0) {
+  Configs *conf = new Configs(isampleyear, isampletype, ifile);
+  conf->LocalOutput = true;
+  conf->PrintProgress = true;
+  conf->ProgressInterval = 1;
+  conf->EntryMax = 1000000;
+
   ThisAnalysis *a = new ThisAnalysis(conf);
   a->SetOutput("Validation");
-  if (ifile < 0) a->SetEntryMax(10000);
   for (Long64_t iEvent = 0; iEvent < a->GetEntryMax(); ++iEvent) {
-    bool failed = a->ReadEvent(iEvent);
-    // bool except = a->Exception();
-    // if (failed && !except) continue;
-    if (failed) continue;
-    // a->PreSelContent();
+    if (!a->ReadEvent(iEvent)) continue;
     a->FillBranchContent();
     a->FillTree();
   }
   a->SaveOutput();
   a->CloseOutput();
-  // a->SuccessFlag();
 }

@@ -30,10 +30,20 @@ int InValidJet(Jet j) {
   return 0;
 }
 
-int InValidLep(Lepton l) {
-  if (InValidVarPO(l)) return 1;
+int InValidEle(Electron e) {
+  if (InValidVarPO(e)) return 1;
   for (unsigned iv = 0; iv < 3; ++iv) {
-    if (IsNan(l.SFs[iv])) return 2;
+    if (IsNan(e.SFs[iv])) return 2;
+  }
+  return 0;
+}
+
+int InValidMuon(Muon m) {
+  if (InValidVarPO(m)) return 1;
+  for (unsigned iv = 0; iv < 3; ++iv) {
+    if (IsNan(m.triggerSFs[iv])) return 2;
+    if (IsNan(m.idSFs[iv])) return 3;
+    if (IsNan(m.isoSFs[iv])) return 4;
   }
   return 0;
 }
@@ -84,7 +94,7 @@ void SampleValidation(int sampleyear = 2, int sampletype = 1, int ifile = -1, st
     unsigned nElectrons = r->evts->nElectron;
     if (nElectrons > 10) cout << "Excessive nElectrons = " << nElectrons << endl;
     for (unsigned i = 0; i < r->Electrons.size(); ++i) {
-      int err = InValidLep(r->Electrons[i]);
+      int err = InValidEle(r->Electrons[i]);
       if (!err) continue;
       cout << "Invalid Electron detected: ";
       if (err == 1) cout << "Pt = 0";
@@ -95,7 +105,7 @@ void SampleValidation(int sampleyear = 2, int sampletype = 1, int ifile = -1, st
     unsigned nMuons = r->evts->nMuon;
     if (nMuons > 10) cout << "Excessive nMuons = " << nMuons << endl;
     for (unsigned i = 0; i < r->Muons.size(); ++i) {
-      int err = InValidLep(r->Muons[i]);
+      int err = InValidMuon(r->Muons[i]);
       if (!err) continue;
       cout << "Invalid Muon detected: ";
       if (err == 1) cout << "Pt = 0";
@@ -105,7 +115,7 @@ void SampleValidation(int sampleyear = 2, int sampletype = 1, int ifile = -1, st
   }
 }
 
-void SampleValidator(int sampleyear = 3, int iter = 1) {
+void SampleValidator(int sampleyear = 3, int iter = 0) {
   string infile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/";
   int sampletype;
   if (iter == 0) {

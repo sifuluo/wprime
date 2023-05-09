@@ -204,7 +204,7 @@ public:
     return Datasets[ds];
   }
 
-  Dataset& GetDataset(int i) {
+  Dataset& GetDataset(unsigned i) {
     if (i >= Datasets.size()) {
       string msg = "Index exceeding the size of all Datasets";
       cout << msg << endl;
