@@ -9,6 +9,7 @@
 
 #include "TChain.h"
 #include "TFile.h"
+#include "TLeaf.h"
 
 #include "DataFormat.cc"
 #include "BranchReader.cc"
@@ -271,7 +272,7 @@ public:
             for (unsigned iwp = 0; iwp < 3; ++iwp) {
               if (tmp.bTagPasses[iwp]) tmp.bJetSFweights[iv][iwp] = bTSFs[iv][iwp];
               else tmp.bJetSFweights[iv][iwp] = (1. - bTag_Eff[iwp] * bTSFs[iv][iwp]) / (1. - bTag_Eff[iwp]);
-              if (tmp.Pt() < 20 || tmp.Pt() > 1000 || fabs(tmp.Eta()) >= 2.5) {
+              if (tmp.Pt() < 20 || tmp.Pt() > 1000 || fabs(tmp.Eta()) >= 2.4999) {
                 tmp.bJetSFweights[iv][iwp] = 1.0;
                 continue;
               }
@@ -295,8 +296,6 @@ public:
     Leptons.clear();
     Electrons.clear();
     Muons.clear();
-    if (evts->nElectron > 9) cout << "Error: nElectron = " << evts->nElectron << " at iEvent = " << iEvent << endl;
-    if (evts->nMuon > 9) cout << "Error: nMuon = " << evts->nMuon << " at iEvent = " << iEvent << endl;
     int emptysequence = 0;
     for (unsigned i = 0; i < evts->nElectron; ++i) {
       if (emptysequence >= 3) break;
@@ -311,7 +310,7 @@ public:
       //set resolution variations (only matter in MC, will be ineffective in data)
       tmp.ResUp() = ((TLorentzVector) tmp) * ((tmp.E() - evts->Electron_dEsigmaUp[i]) / tmp.E());
       tmp.ResDown() = ((TLorentzVector) tmp) * ((tmp.E() - evts->Electron_dEsigmaDown[i]) / tmp.E());
-      //set scale variations (only filled in data, should be applied to MC, for now FIXME inactive)
+      // set scale variations (only filled in data, should be applied to MC, for now FIXME inactive)
       // tmp.ScaleUp() = ((TLorentzVector) tmp) * (tmp.E() - evts->Electron_dEscaleUp[i]) / tmp.E();
       // tmp.ScaleDown() = ((TLorentzVector) tmp) * (tmp.E() - evts->Electron_dEscaleDown[i]) / tmp.E();
       tmp.ScaleUp() = tmp;
@@ -464,6 +463,8 @@ public:
       Muons.push_back(tmp);
       Leptons.push_back(tmp);
     }
+    if (evts->nElectron > evts->nElectronMax) cout << "Error: nElectron = " << evts->nElectron << " at iEvent = " << iEvent << endl;
+    if (evts->nMuon > evts->nMuonMax) cout << "Error: nMuon = " << evts->nMuon << " at iEvent = " << iEvent << endl;
   }
 
   void ReadMET() {
@@ -691,14 +692,17 @@ public:
 
       // LHEScale
       vector<float> lhescalews;
-      if (evts->nLHEScaleWeight != 9) cout << "nLHEScaleWeight != 9" << endl;
+      if (evts->nLHEScaleWeight != 9 && nRepnLHEScaleWeight > 0) {
+        cout << "nLHEScaleWeight != 9" << endl;
+        nRepnLHEScaleWeight--;
+      }
       for (int i = 0; i < evts->nLHEScaleWeight; ++i) {
         lhescalews.push_back(evts->LHEScaleWeight[i]);
       }
       sort(lhescalews.begin(), lhescalews.end());
-      LHEScaleW.variations[0] = lhescalews[4];
-      LHEScaleW.variations[1] = lhescalews[8];
-      LHEScaleW.variations[2] = lhescalews[0];
+      LHEScaleW.variations[0] = 1.0;
+      LHEScaleW.variations[1] = lhescalews.back();
+      LHEScaleW.variations[2] = lhescalews.front();
     }
 
     SFweights.push_back(electronW);
@@ -774,6 +778,8 @@ public:
   RegionID RegionAssociations;
   bool KeepEvent;
   vector<pair<double, string> > EventWeights;
+
+  int nRepnLHEScaleWeight = 10; // Report maximum 10 lines;
 };
 
 

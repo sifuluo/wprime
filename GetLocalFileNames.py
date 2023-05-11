@@ -45,27 +45,27 @@ def GetDatasetNames():
   datasets.append(["wjets_HT_800_1200"]) # 8
   datasets.append(["wjets_HT_1200_2500"]) # 9
   datasets.append(["wjets_HT_2500_inf"]) # 10
-  datasets.append(["wjets_inclusive"]) # 11
+  # datasets.append(["wjets_inclusive"]) # 11
 
-  datasets.append(["single_antitop_tchan"]) # 12
-  datasets.append(["single_antitop_tw"]) # 13
-  datasets.append(["single_top_schan"]) # 14
-  datasets.append(["single_top_tchan"]) # 15
-  datasets.append(["single_top_tw"]) # 16
+  datasets.append(["single_top_schan"]) # 11
+  datasets.append(["single_top_tchan"]) # 12
+  datasets.append(["single_antitop_tchan"]) # 13
+  datasets.append(["single_top_tw"]) # 14
+  datasets.append(["single_antitop_tw"]) # 15
 
-  datasets.append(["WW"])
-  datasets.append(["ZZ"])
-  datasets.append(["WZTo1L1Nu2Q"])
-  datasets.append(["WZTo1L3Nu"])
-  datasets.append(["WZTo2Q2L"])
-  datasets.append(["WZTo3LNu"])
+  datasets.append(["WW"]) # 16
+  datasets.append(["ZZ"]) # 17
+  datasets.append(["WZTo1L1Nu2Q"]) # 18
+  datasets.append(["WZTo1L3Nu"]) # 19
+  datasets.append(["WZTo2Q2L"]) # 20
+  datasets.append(["WZTo3LNu"]) # 21
 
-  for im in ["300","400","500","600","700","800","900","1000","1100"]: # 17 18 19 20 21 22 23 24 25
+  for im in ["300","400","500","600","700","800","900","1000","1100"]: # 22 23 24 25 26 27 28 29 30
     inname = "wprime_" + im + "_former_leptonic"
     outname = "FL" + im
     datasets.append([outname, inname])
     
-  for im in ["300","400","500","600","700","800","900","1000","1100"]: # 26 27 28 29 30 31 32 33 34
+  for im in ["300","400","500","600","700","800","900","1000","1100"]: # 31 32 33 34 35 36 37 38 39
     inname = "wprime_" + im + "_latter_leptonic"
     outname = "LL" + im
     datasets.append([outname, inname])

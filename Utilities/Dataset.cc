@@ -106,12 +106,12 @@ public:
     AddDataset_NGTCXS("single_top_tw"          ,"single_top"    , 1, 4 , 34910,  {1,3368375,8507203,11270430}); // 14
     AddDataset_NGTCXS("single_antitop_tw"      ,"single_top"    , 1, 4 , 34970,  {1,3654510,8433998,10949620}); // 15
 
-    AddDataset_NGTCXS("WW"                     ,"diboson"       , 1, 5 , 51650,  {1, 19976139, 39931603, 40272013});
-    AddDataset_NGTCXS("ZZ"                     ,"diboson"       , 1, 5 , 12170,  {1, 1151000, 2706000, 3526000});
-    AddDataset_NGTCXS("WZTo1L1Nu2Q"            ,"diboson"       , 1, 5 , 9119,   {1, 3690271, 7345742, 7395487});
-    AddDataset_NGTCXS("WZTo1L3Nu"              ,"diboson"       , 1, 5 , 3414,   {1, 2468727, 2481654, 2497292});
-    AddDataset_NGTCXS("WZTo2Q2L"               ,"diboson"       , 1, 5 , 6565,   {1, 13526954, 29091996, 28576996});
-    AddDataset_NGTCXS("WZTo3LNu"               ,"diboson"       , 1, 5 , 4430,   {1, 20810003, 10339582, 38624209});
+    AddDataset_NGTCXS("WW"                     ,"diboson"       , 1, 5 , 51650,  {1, 19976139, 39931603, 40272013}); // 16
+    AddDataset_NGTCXS("ZZ"                     ,"diboson"       , 1, 5 , 12170,  {1, 1151000, 2706000, 3526000}); // 17
+    AddDataset_NGTCXS("WZTo1L1Nu2Q"            ,"diboson"       , 1, 5 , 9119,   {1, 3690271, 7345742, 7395487}); // 18
+    AddDataset_NGTCXS("WZTo1L3Nu"              ,"diboson"       , 1, 5 , 3414,   {1, 2468727, 2481654, 2497292}); // 19
+    AddDataset_NGTCXS("WZTo2Q2L"               ,"diboson"       , 1, 5 , 6565,   {1, 13526954, 29091996, 28576996}); // 20
+    AddDataset_NGTCXS("WZTo3LNu"               ,"diboson"       , 1, 5 , 4430,   {1, 20810003, 10339582, 38624209}); // 21
 
     // McM page
     // https://cms-pdmv.cern.ch/mcm/requests?range=B2G-RunIISummer20UL16wmLHEGEN-03230,B2G-RunIISummer20UL16wmLHEGEN-03247&page=0&shown=127
@@ -119,25 +119,25 @@ public:
     // dataset=/btWprimeToBottomTop_*Leptonic_M-*_TuneCP5_13TeV-madgraphMLM-pythia8/*/NANOAODSIM
     // Example command to get the sample size:
     // for i in 3 4 5 6 7 8 9 10 11; do dasgoclient -query="dataset=/btWprimeToBottomTop_LatterLeptonic_M-${i}00_TuneCP5_13TeV-madgraphMLM-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v1/NANOAODSIM | grep dataset.nevents"; done
-    AddDataset_NGTCXS("FL300"                  ,"M300"            , 2, 4 , 683.8,  {542974, 451706, 989541, 973312}); // 17
-    AddDataset_NGTCXS("FL400"                  ,"M400"            , 2, 5 , 321.7,  {542917, 457628, 1009763, 1005777}); // 18
-    AddDataset_NGTCXS("FL500"                  ,"M500"            , 2, 6 , 161.1,  {539889, 472634, 990910, 995846}); // 19
-    AddDataset_NGTCXS("FL600"                  ,"M600"            , 2, 7 , 85.92,  {538626, 459533, 1002905, 1013268}); // 20
-    AddDataset_NGTCXS("FL700"                  ,"M700"            , 2, 8 , 48.84,  {0, 458032, 993657, 1007434}); // 21
-    AddDataset_NGTCXS("FL800"                  ,"M800"            , 2, 9 , 29.81,  {544804, 457557, 989717, 994770}); // 22
-    AddDataset_NGTCXS("FL900"                  ,"M900"            , 2, 30, 18.33,  {537197, 459185, 996690, 1014207}); // 23
-    AddDataset_NGTCXS("FL1000"                 ,"M1000"           , 2, 40, 11.73,  {533034, 443584, 999049, 999380}); // 24
-    AddDataset_NGTCXS("FL1100"                 ,"M1100"           , 2, 46, 7.683,  {467268, 466768, 1001850, 986599}); // 25
+    AddDataset_NGTCXS("FL300"                  ,"M300"            , 2, 4 , 683.8,  {542974, 451706, 989541, 973312}); // 22
+    AddDataset_NGTCXS("FL400"                  ,"M400"            , 2, 5 , 321.7,  {542917, 457628, 1009763, 1005777}); // 23
+    AddDataset_NGTCXS("FL500"                  ,"M500"            , 2, 6 , 161.1,  {539889, 472634, 990910, 995846}); // 24
+    AddDataset_NGTCXS("FL600"                  ,"M600"            , 2, 7 , 85.92,  {538626, 459533, 1002905, 1013268}); // 25
+    AddDataset_NGTCXS("FL700"                  ,"M700"            , 2, 8 , 48.84,  {0, 458032, 993657, 1007434}); // 26
+    AddDataset_NGTCXS("FL800"                  ,"M800"            , 2, 9 , 29.81,  {544804, 457557, 989717, 994770}); // 27
+    AddDataset_NGTCXS("FL900"                  ,"M900"            , 2, 30, 18.33,  {537197, 459185, 996690, 1014207}); // 28
+    AddDataset_NGTCXS("FL1000"                 ,"M1000"           , 2, 40, 11.73,  {533034, 443584, 999049, 999380}); // 29
+    AddDataset_NGTCXS("FL1100"                 ,"M1100"           , 2, 46, 7.683,  {467268, 466768, 1001850, 986599}); // 30
 
-    AddDataset_NGTCXS("LL300"                  ,"M300"            , 2, 4 , 708.3,  {533339, 463438, 1016545, 979122}); // 26
-    AddDataset_NGTCXS("LL400"                  ,"M400"            , 2, 5 , 336.1,  {527708, 451102, 991505, 990858}); // 27
-    AddDataset_NGTCXS("LL500"                  ,"M500"            , 2, 6 , 165.3,  {548554, 462578, 990701, 1001088}); // 28
-    AddDataset_NGTCXS("LL600"                  ,"M600"            , 2, 7 , 85.82,  {530042, 467804, 997101, 995847}); // 29
-    AddDataset_NGTCXS("LL700"                  ,"M700"            , 2, 8 , 47.47,  {539337, 454955, 999882, 993510}); // 30
-    AddDataset_NGTCXS("LL800"                  ,"M800"            , 2, 9 , 27.73,  {0, 462499, 978958, 988361}); // 31
-    AddDataset_NGTCXS("LL900"                  ,"M900"            , 2, 30, 16.49,  {0, 464288, 1015927, 1006881}); // 32
-    AddDataset_NGTCXS("LL1000"                 ,"M1000"           , 2, 40, 10.25,  {540970, 457909, 998840, 1008866}); // 33
-    AddDataset_NGTCXS("LL1100"                 ,"M1100"           , 2, 46, 6.546,  {535810, 461040, 990631, 1010305}); // 34
+    AddDataset_NGTCXS("LL300"                  ,"M300"            , 2, 4 , 708.3,  {533339, 463438, 1016545, 979122}); // 31
+    AddDataset_NGTCXS("LL400"                  ,"M400"            , 2, 5 , 336.1,  {527708, 451102, 991505, 990858}); // 32
+    AddDataset_NGTCXS("LL500"                  ,"M500"            , 2, 6 , 165.3,  {548554, 462578, 990701, 1001088}); // 33
+    AddDataset_NGTCXS("LL600"                  ,"M600"            , 2, 7 , 85.82,  {530042, 467804, 997101, 995847}); // 34
+    AddDataset_NGTCXS("LL700"                  ,"M700"            , 2, 8 , 47.47,  {539337, 454955, 999882, 993510}); // 35
+    AddDataset_NGTCXS("LL800"                  ,"M800"            , 2, 9 , 27.73,  {0, 462499, 978958, 988361}); // 36
+    AddDataset_NGTCXS("LL900"                  ,"M900"            , 2, 30, 16.49,  {0, 464288, 1015927, 1006881}); // 37
+    AddDataset_NGTCXS("LL1000"                 ,"M1000"           , 2, 40, 10.25,  {540970, 457909, 998840, 1008866}); // 38
+    AddDataset_NGTCXS("LL1100"                 ,"M1100"           , 2, 46, 6.546,  {535810, 461040, 990631, 1010305}); // 39
 
     // AddDataset_NGTCXS("Private_FL_M500"        ,""              , 2, 7 , 161.1,  {1,1,1,189291});
   }

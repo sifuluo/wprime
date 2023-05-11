@@ -10,7 +10,7 @@
 #include <string>
 
 #include "NanoAODReader.cc"
-#include "Fitter.cc"
+// #include "Fitter.cc"
 
 using namespace std;
 
@@ -28,11 +28,11 @@ public:
   void Init() {
     r = new NanoAODReader(conf);
     bTE = new bTagEff(conf);
-    JS = new JetScale(conf);
+    // JS = new JetScale(conf);
     r->SetbTag(bTE);
-    Ftr = new Fitter(conf);
-    Ftr->SetJetScale(JS);
-    Ftr->SetbTag(bTE);
+    // Ftr = new Fitter(conf);
+    // Ftr->SetJetScale(JS);
+    // Ftr->SetbTag(bTE);
     if (conf->EntryMax > 0 && conf->EntryMax < r->GetEntries()) EntryMax = conf->EntryMax;
     else EntryMax = r->GetEntries();
     cout << "Processing " << EntryMax << " events" << endl;
@@ -103,8 +103,8 @@ public:
   TTree *t;
   NanoAODReader *r;
   bTagEff *bTE;
-  JetScale *JS;
-  Fitter *Ftr;
+  // JetScale *JS;
+  // Fitter *Ftr;
   Progress* progress;
 
   std::array<int, 10> ExampleArray;
