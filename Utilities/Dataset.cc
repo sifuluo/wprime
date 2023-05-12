@@ -186,7 +186,7 @@ public:
   }
 
   void GroupOrder() { // When need to override the order in which the hist groups are drawn
-    GroupNames = {"ttbar","wjets","single_top","M300","M400","M500","M600","M700","M800","M900","M1000","M1100"};
+    GroupNames = {"ttbar","wjets","single_top","diboson","M300","M400","M500","M600","M700","M800","M900","M1000","M1100"};
     GroupNames.push_back("Data");
   }
 

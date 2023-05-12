@@ -30,6 +30,7 @@
 class HistManager : public Histograms {
 public:
   HistManager() : Histograms() {
+    Init();
     GroupNames = dlib.GroupNames;
   };
   
@@ -45,6 +46,10 @@ public:
   void SetTitles(vector<string> xt, string yt = "Number of Entries") {
     XTitles = xt;
     YTitles = vector<string>(XTitles.size(), yt);
+  }
+
+  void SetRegions(vector<string> rs) {
+    Regions = rs;
   }
   
   // Reading Histograms
@@ -75,20 +80,18 @@ public:
           }
         }
       }
+      cout << "Finished reading from dataset " << SampleTypes[ist] <<endl;
     }
   }
 
   void SortHists() {
     GroupHists.clear();
     GroupHists.resize(GroupNames.size());
-    for (unsigned ig = 0; ig < GroupNames.size(); ++ig)
-    {
+    for (unsigned ig = 0; ig < GroupNames.size(); ++ig) {
       GroupHists[ig].resize(Variations.size());
-      for (unsigned iv = 0; iv < Variations.size(); ++iv)
-      {
+      for (unsigned iv = 0; iv < Variations.size(); ++iv) {
         GroupHists[ig][iv].resize(Regions.size());
-        for (unsigned ir = 0; ir < Regions.size(); ++ir)
-        {
+        for (unsigned ir = 0; ir < Regions.size(); ++ir) {
           GroupHists[ig][iv][ir].resize(Observables.size());
         }
       }
@@ -113,6 +116,7 @@ public:
           }
         }
       }
+      // cout << "Sorted dataset " << SampleTypes[ist] << " into group " << gp << endl;
     }
   }
 

@@ -13,7 +13,7 @@ class Progress {
 public:
   Progress(Long64_t itotal, unsigned div = 1000) {
     time(&starttime);
-    EntryMax = itotal - 1;
+    SetEntryMax(itotal);
     dividend = div;
     barlength = 50;
     cout << "Process started at " << ctime(&starttime);
@@ -21,7 +21,10 @@ public:
     for (unsigned i = 0; i < barlength; ++i) bar += " ";
   };
 
-  void SetEntryMax(Long64_t itotal) {EntryMax = itotal - 1;};
+  void SetEntryMax(Long64_t itotal) {
+    EntryMax = itotal - 1;
+    time(&checkedtime);
+  };
 
   void Print(unsigned ie) {
     if (EntryMax == 0) return;
@@ -35,10 +38,11 @@ public:
       }
       time(&currenttime);
       ptime = difftime(currenttime, starttime);
-      rtime = ptime / rate - ptime;
+      pcheckedtime = difftime(currenttime, checkedtime);
+      rtime = pcheckedtime / rate - pcheckedtime;
       ptime_s = Form("Elapsed: %i:%i:%i",int(ptime/3600), int(ptime/60) % 60, int(ptime) % 60);
-      rtime_s = Form("Remain: %i:%i:%i",int(rtime/3600), int(rtime/60) % 60, int(rtime) % 60);
-      if (ptime < 2) rtime_s = "";
+      rtime_s = Form("Remaining: %i:%i:%i",int(rtime/3600), int(rtime/60) % 60, int(rtime) % 60);
+      if (pcheckedtime < 5) rtime_s = "";
       //This is the style with the bar. Best used in dryrun.
       // cout <<Form("\r[%s] %i / %lli, (%.1f%%), %s, %s",bar.Data(), ie, EntryMax, per, ptime_s.c_str(), rtime_s.c_str()) <<flush;
       //This is the style withou the bar. Best used in batch, because flushed text are also in the log.
@@ -55,11 +59,12 @@ public:
 
 private:
   time_t starttime;
+  time_t checkedtime;
   time_t currenttime;
   Long64_t EntryMax;
   unsigned dividend, barloc, barlength;
   float rate, per;
-  double ptime, rtime;
+  double ptime, rtime, pcheckedtime;
   string ptime_s, rtime_s;
   TString bar;
 };
