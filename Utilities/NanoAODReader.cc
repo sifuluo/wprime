@@ -551,50 +551,82 @@ public:
 
   //function to determine all regions an event belongs to as a function of all object pT variations
   RegionID RegionReader(){
-    RegionID Regions;
+    RegionID rids;
 
     //loop over variations: nominal, e-scale up, e-scale down, e-res up, e-res down, JES up, JES down, JER up, JER down
-    for(unsigned i = 0; i < Regions.RegionCount; ++i){
+    for(unsigned i = 0; i < rids.RegionCount; ++i){
       int RegionNumber = -1; //-1 no region
+      int iChosenLep = -1; // note the index of the loose/primary lepton.
       //check lepton multiplicity
       int nev = 0;
       int nel = 0;
       int nep = 0;
       for(unsigned j = 0; j<Electrons.size(); ++j){
-        if (Electrons[j].v(i).Pt() >= 40.) {
-          nev += Leptons[j].IsVeto;
-          nel += Leptons[j].IsLoose;
-          nep += Leptons[j].IsPrimary;
+        if (Electrons[j].IsVeto && Electrons[j].v(i).Pt() > 10.) nev++;
+        if (Electrons[j].IsLoose && Electrons[j].v(i).Pt() > 40.) {
+          nel++;
+          iChosenLep = j;
         }
+        if (Electrons[j].IsPrimary && Electrons[j].v(i).Pt() > 40.) {
+          nep++;
+          iChosenLep = j;
+        }
+        // if (Electrons[j].v(i).Pt() >= 40.) {
+        //   nev += Electrons[j].IsVeto;
+        //   nel += Electrons[j].IsLoose;
+        //   nep += Electrons[j].IsPrimary;
+        // }
       }
 
       int nmuv = 0;
       int nmul = 0;
       int nmup = 0;
       for(unsigned j = 0; j<Muons.size(); ++j){//no scale variations foreseen as of yet, due to not applying Rochester corrections
-        nmuv += Muons[j].IsVeto;
-        nmul += Muons[j].IsLoose;
-        nmup += Muons[j].IsPrimary;
+        if (Muons[j].IsVeto && Muons[j].Pt() > 10.) nmuv++;
+        if (Muons[j].IsLoose && Muons[j].Pt() > 35.) {
+          nmul++;
+          iChosenLep = j;
+        }
+        if (Muons[j].IsPrimary && Muons[j].Pt() > 35.) {
+          nmup++;
+          iChosenLep = j;
+        }
+        // nmuv += Muons[j].IsVeto;
+        // nmul += Muons[j].IsLoose;
+        // nmup += Muons[j].IsPrimary;
       }
 
       //Region Formats key is in DataFormat.cc
-      if(nmuv + nev != 1) {
-        Regions.Regions[i] = -2; // Lepton failed
+      if(nmuv + nev != 1) { // No more than 1 lepton
+        rids.Regions[i] = -2; // Lepton failed
         continue;
       }
       if(nmup == 1) RegionNumber = 1100;
       else if(nep == 1) RegionNumber = 2100;
       else if(nmul == 1) RegionNumber = 1200;
       else if(nel ==1) RegionNumber = 2200;
+      else { // Accepted event must have a primary or loose lepton
+        rids.Regions[i] = -2;
+        continue;
+      }
 
       //check trigger matching lepton flavour
-      if(RegionNumber/1000 == 2 && !isolated_electron_trigger ) {
-        Regions.Regions[i] = -3;
-        continue; //FIXME: Needs lepton trigger matching for veracity
+      if (RegionNumber/1000 == 2) {
+        if (!isolated_electron_trigger) {
+          rids.Regions[i] = -3;
+          continue;
+        }//FIXME: Needs lepton trigger matching for veracity
+        // bool matched = false;
+        // for (unsigned itrig = 0; itrig < evts->nTrigObj; ++itrig) {
+        //   if ( abs(evts->TrigObj_id) != 11) continue;
+        // }
       }
-      else if(RegionNumber/1000 == 1 && !(isolated_muon_trigger || isolated_muon_track_trigger)) {
-        Regions.Regions[i] = -3;
-        continue; //FIXME: Needs lepton trigger matching for veracity
+      else if (RegionNumber/1000 == 1) {
+        if (!(isolated_muon_trigger || isolated_muon_track_trigger)) {
+          rids.Regions[i] = -3;
+          continue;
+        }//FIXME: Needs lepton trigger matching for veracity
+
       }
 
       //check jet multiplicity
@@ -613,15 +645,20 @@ public:
         if(Jets[j].bTagPasses[bTagWP]) nb++;//select working point for b-tagging by bTagPasses[0] = loose, 1 medium and 2 tight
       }
       if(nj<5 || nj>6) {
-        Regions.Regions[i] = -4;
+        rids.Regions[i] = -4;
         continue; //in no region we're interested in
       }
       RegionNumber += nj*10;
       RegionNumber += nb;
-      Regions.Regions[i]=RegionNumber;
+      rids.Regions[i]=RegionNumber;
+      if (RegionNumber < 1100 || true) cout << Form("nmup=%i,nep=%i,nmul=%i,nel=%i,nmuv=%i,nev=%i,nj=%i,nb=%i",nmup,nep,nmul,nel,nmuv,nev,nj,nb) << endl;
+      else if (Leptons[0].Pt() < 30) {
+        cout << Form("LepPt = %f nmup=%i,nep=%i,nmul=%i,nel=%i,nmuv=%i,nev=%i,nj=%i,nb=%i",Leptons[0].Pt(),nmup,nep,nmul,nel,nmuv,nev,nj,nb) << endl;
+        if (Muons[0].IsPrimary) cout << "MuonPt = " << Muons[0].Pt() <<endl; 
+      }
     }
 
-    return Regions;
+    return rids;
   }
 
   //function to derive event weights from SFs on objects
@@ -692,10 +729,6 @@ public:
 
       // LHEScale
       vector<float> lhescalews;
-      if (evts->nLHEScaleWeight != 9 && nRepnLHEScaleWeight > 0) {
-        cout << "nLHEScaleWeight != 9" << endl;
-        nRepnLHEScaleWeight--;
-      }
       for (int i = 0; i < evts->nLHEScaleWeight; ++i) {
         lhescalews.push_back(evts->LHEScaleWeight[i]);
       }
@@ -763,6 +796,7 @@ public:
   vector<GenJet> GenJets;
   vector<Jet> Jets;
   vector<Lepton> Leptons;
+  Lepton TheLepton;
   vector<Electron> Electrons;
   vector<Muon> Muons;
   MET Met;
@@ -778,8 +812,6 @@ public:
   RegionID RegionAssociations;
   bool KeepEvent;
   vector<pair<double, string> > EventWeights;
-
-  int nRepnLHEScaleWeight = 10; // Report maximum 10 lines;
 };
 
 

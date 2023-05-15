@@ -102,6 +102,9 @@ public:
   void FillBranchContent() {
     for(unsigned i = 0; i < 9; ++i){
       RegionIdentifier[i] = r->RegionAssociations.Regions[i];
+      if (RegionIdentifier[i] > 2000 && r->Muons.size() > 0) {
+        cout << "Lepton Pt = " << r->Leptons[0].Pt() << ", Region = " << RegionIdentifier[i] <<endl;
+      }
     }
 
     for(unsigned i = 0; i < 21; ++i){
@@ -163,7 +166,7 @@ void Validation(int isampleyear = 3, int isampletype = 24, int ifile = 0) {
   conf->LocalOutput = false;
   conf->PrintProgress = false;
   conf->ProgressInterval = 2000;
-  // conf->EntryMax = 1000000;
+  conf->EntryMax = 1000;
 
   ThisAnalysis *a = new ThisAnalysis(conf);
   a->SetOutput("Validation");
