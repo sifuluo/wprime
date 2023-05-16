@@ -16,15 +16,15 @@ public:
   string          SampleYear;
   Bool_t          IsMC;
 
-  static const int nGenPartMax = 250;
-  static const int nGenJetMax = 35;
-  static const int nJetMax = 35;
-  static const int nElectronMax = 20;
-  static const int nMuonMax = 23;
-  static const int nTrigObjMax = 61;
-  static const int nSFMax = 64;
-  static const int nLHEPdfWeightMax = 200;
-  static const int nLHEScaleWeightMax = 9;
+  static const unsigned nGenPartMax = 250;
+  static const unsigned nGenJetMax = 35;
+  static const unsigned nJetMax = 35;
+  static const unsigned nElectronMax = 20;
+  static const unsigned nMuonMax = 23;
+  static const unsigned nTrigObjMax = 61;
+  static const unsigned nSFMax = 64;
+  static const unsigned nLHEPdfWeightMax = 200;
+  static const unsigned nLHEScaleWeightMax = 9;
 
   // GenPart
   UInt_t          nGenPart;
@@ -93,9 +93,9 @@ public:
   Float_t         Muon_mass[nMuonMax];   //[nMuon]
   Int_t           Muon_charge[nMuonMax];   //[nMuon]
   // Int_t           Muon_genPartIdx[nMuonMax];   //[nMuon]
-  Int_t           Muon_tightId[nMuonMax];   //[nMuon]
+  Bool_t          Muon_tightId[nMuonMax];   //[nMuon]
   Bool_t          Muon_looseId[nMuonMax];   //[nMuon]
-  UChar_t	  Muon_highPtId[nMuonMax];  //[nMuon]
+  // UChar_t	  Muon_highPtId[nMuonMax];  //[nMuon]
   Float_t         Muon_pfRelIso04_all[nMuonMax];   //[nMuon]
 
   //MET
@@ -158,9 +158,9 @@ public:
   Float_t         Jet_puIdScaleFactorLooseUp[nSFMax]; //nJet]
   Float_t         Jet_puIdScaleFactorLooseDown[nSFMax]; //[nJet]
 
-  Int_t      nLHEPdfWeight;
+  UInt_t      nLHEPdfWeight;
   Float_t    LHEPdfWeight[200];
-  Int_t      nLHEScaleWeight;
+  UInt_t      nLHEScaleWeight;
   Float_t    LHEScaleWeight[9];
 
   //Trigger

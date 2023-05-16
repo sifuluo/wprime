@@ -205,7 +205,8 @@ public:
       tmp.JERdown() = PtVars;
 
       //set PUID flags
-      tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], conf->SampleYear);
+      // tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], conf->SampleYear);
+      tmp.PUIDpasses = {(evts->Jet_puId[i]>= 4), (evts->Jet_puId[i]>=6), (evts->Jet_puId[i]==7)};
 
       //set PUID SFs
       if((IsMC || conf->Compare_PUIDSF) && evts->Jet_pt_nom[i] < 50. && evts->Jet_genJetIdx[i] >= 0){ //unlike other SFs, PU Jets and jets failing ID are not supposed to contribute to event weights
@@ -334,7 +335,14 @@ public:
       bool passVeto = (evts->Electron_cutBased[i] >= 2) && passCommon;
       passCommon &= (maxPt >= 40.); //change pT cut for non-veto electrons to be on trigger plateau
       bool passLoose = (evts->Electron_cutBased[i] >= 3) && passCommon;
-      bool passPrimary = evts->Electron_cutBased_HEEP[i] && passCommon;
+      bool passPrimary = evts->Electron_cutBased_HEEP[i] && passLoose && passCommon;
+
+      if ((!passVeto && passLoose) || (!passVeto && passPrimary) || (!passLoose && passPrimary)) {
+        cout << "Electron " << (passVeto?"T ":"F ") << (passLoose?"T ":"F ") << (passPrimary?"T ":"F ");
+        cout << "max pT = " << maxPt << " ";
+        cout << "cutBased = " << evts->Electron_cutBased[i] << " ";
+        cout << "HEEP " <<(evts->Electron_cutBased_HEEP[i]? "T":"F") <<endl;
+      }
 
       tmp.IsPrimary = passPrimary;
       tmp.IsLoose = passLoose;
@@ -436,6 +444,14 @@ public:
       tmp.IsPrimary = passPrimary;
       tmp.IsLoose = passLoose;
       tmp.IsVeto = passVeto;
+      // if (!evts->Muon_looseId[i] && evts->Muon_tightId[i]) cout << "Muon is wrong" <<endl;
+      if ((!passVeto && passLoose) || (!passVeto && passPrimary) || (!passLoose && passPrimary)) {
+        cout << "Muon " << (passVeto?"T ":"F ") << (passLoose?"T ":"F ") << (passPrimary?"T ":"F ");
+        cout << "pT = " << tmp.Pt() << " ";
+        cout << "Iso = " << evts->Muon_pfRelIso04_all[i] << " ";
+        cout << "LooseId " << (evts->Muon_looseId[i]? "T":"F") << " ";
+        cout << "TightId " << (evts->Muon_tightId[i]? "T":"F") << " "<<endl;
+      }
 
       if(!passVeto && !passLoose && !passPrimary) continue;
 
@@ -582,10 +598,12 @@ public:
           nep++;
           iChosenLep = j;
         }
-        // if (Electrons[j].v(i).Pt() >= 40.) {
-        //   nev += Electrons[j].IsVeto;
-        //   nel += Electrons[j].IsLoose;
-        //   nep += Electrons[j].IsPrimary;
+        // if (nel > nev || nep > nel || nep > nev) {
+        //   cout << "Electron pT = " << Electrons[j].v(i).Pt() << ", ";
+        //   cout << " " << (Electrons[j].IsVeto ? "T": "F") << ", ";
+        //   cout << " " << (Electrons[j].IsLoose ? "T": "F") << ", ";
+        //   cout << " " << (Electrons[j].IsPrimary ? "T": "F") << " ";
+        //   cout << endl;
         // }
       }
 
@@ -602,9 +620,13 @@ public:
           nmup++;
           iChosenLep = j;
         }
-        // nmuv += Muons[j].IsVeto;
-        // nmul += Muons[j].IsLoose;
-        // nmup += Muons[j].IsPrimary;
+        // if (nmul > nmuv || nmup > nmul || nmup > nmuv) {
+        //   cout << "Muon pT = " << Muons[j].Pt() << ", ";
+        //   cout << " " << (Muons[j].IsVeto ? "T": "F") << ", ";
+        //   cout << " " << (Muons[j].IsLoose ? "T": "F") << ", ";
+        //   cout << " " << (Muons[j].IsPrimary ? "T": "F") << " ";
+        //   cout << endl;
+        // }
       }
 
       //Region Formats key is in DataFormat.cc
@@ -678,11 +700,15 @@ public:
       RegionNumber += nj*10;
       RegionNumber += nb;
       rids.Regions[i]=RegionNumber;
-      if (RegionNumber < 1100) cout << Form("nmup=%i,nep=%i,nmul=%i,nel=%i,nmuv=%i,nev=%i,nj=%i,nb=%i",nmup,nep,nmul,nel,nmuv,nev,nj,nb) << endl;
-      else if (Leptons[0].Pt() < 30) {
-        cout << Form("LepPt = %f nmup=%i,nep=%i,nmul=%i,nel=%i,nmuv=%i,nev=%i,nj=%i,nb=%i",Leptons[0].Pt(),nmup,nep,nmul,nel,nmuv,nev,nj,nb) << endl;
-        if (Muons[0].IsPrimary) cout << "MuonPt = " << Muons[0].Pt() <<endl; 
-      }
+      // if (RegionNumber < 1100) cout << Form("nmup=%i,nep=%i,nmul=%i,nel=%i,nmuv=%i,nev=%i,nj=%i,nb=%i",nmup,nep,nmul,nel,nmuv,nev,nj,nb) << endl;
+      // else if (TheLepton.Pt() < 30) {
+      //   cout << Form("TheLepPt = %f nmup=%i,nep=%i,nmul=%i,nel=%i,nmuv=%i,nev=%i,nj=%i,nb=%i",TheLepton.Pt(),nmup,nep,nmul,nel,nmuv,nev,nj,nb) << endl;
+      //   if (Muons[0].IsPrimary) cout << "MuonPt = " << Muons[0].Pt() <<endl; 
+      // }
+      // if ((RegionNumber > 2000 && Muons.size() > 0) || (RegionNumber < 2000 && Electrons.size() > 0)) {
+      //   cout << Form("RegionNumber = %i, Muon Pt = %f, ",RegionNumber, Muons[0].Pt());
+      //   cout << Form("nmup=%i,nep=%i,nmul=%i,nel=%i,nmuv=%i,nev=%i,nj=%i,nb=%i",nmup,nep,nmul,nel,nmuv,nev,nj,nb) << endl;
+      // }
     }
 
     return rids;
@@ -797,12 +823,15 @@ public:
   void BranchSizeCheck() {
     vector<TString> varnames{"GenPart_pt","GenJet_pt","Jet_pt","Electron_pt","Muon_pt",
       "TrigObj_pt","Electron_scaleFactor","LHEPdfWeight","LHEScaleWeight"};
-    vector<int> cursizes{evts->nGenPartMax, evts->nGenJetMax, evts->nJetMax, evts->nElectronMax, evts->nMuonMax,
+    vector<unsigned> cursizes{evts->nGenPartMax, evts->nGenJetMax, evts->nJetMax, evts->nElectronMax, evts->nMuonMax,
       evts->nTrigObjMax, evts->nSFMax, evts->nLHEPdfWeightMax, evts->nLHEScaleWeightMax};
+    vector<unsigned> evtsize{evts->nGenPart, evts->nGenJet, evts->nJet, evts->nElectron, evts->nMuon,
+      evts->nTrigObj, 10, (unsigned)evts->nLHEPdfWeight, (unsigned)evts->nLHEScaleWeight};
     if (varnames.size() != cursizes.size()) cout << "Please double check the varnames and cursizes container contents. Lenghth is differnet" << endl;
     for (unsigned i = 0; i < varnames.size(); ++i) {
       int newsize = chain->GetLeaf(varnames[i])->GetLen();
       if (newsize > cursizes[i]) cout << endl << varnames[i] << " has size = " << newsize << " exceeded current fixed size = " << cursizes[i] << endl;
+      if (evtsize[i] > cursizes[i]) cout << endl << varnames[i] << "has nsize = " << evtsize[i] << "exceeded current fixed size = " << cursizes[i] <<endl;
     }
   }
 
