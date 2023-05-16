@@ -519,9 +519,20 @@ public:
   }
 
   void ReadTriggers() {
+    Triggers.clear();
     isolated_electron_trigger = evts->isolated_electron_trigger;
     isolated_muon_trigger = evts->isolated_muon_trigger;
     isolated_muon_track_trigger = evts->isolated_muon_track_trigger;
+    for (unsigned i = 0; i < evts->nTrigObj; ++i) {
+      if (evts->TrigObj_id == 13 || evts->TrigObj_id == 11) {
+        Trigger tmp;
+        tmp.SetPtEtaPhiM(evts->TrigObj_pt, evts->TrigObj_eta, evts->TrigObj_phi,0);
+        tmp.index = i;
+        tmp.id = evts->TrigObj_id;
+        tmp.filterBits = evts->TrigObj_filterBits;
+        Triggers.push_back(tmp);
+      }
+    }
   }
 
   void ReadPileup() {
@@ -612,21 +623,35 @@ public:
 
       //check trigger matching lepton flavour
       if (RegionNumber/1000 == 2) {
-        if (!isolated_electron_trigger) {
+        bool matchedtype = isolated_electron_trigger;
+        bool matched = false;
+        for (unsigned i = 0; i < Triggers.size(); ++i) {
+          if (Triggers[i].id != 11) continue;
+          if (Triggers[i].DeltaR(Electrons[iChosenLep]) > 0.4) continue;
+          if (conf->SampleYear == "2017") matchedtype = matchedtype && (1024 & Triggers[i].filterBits);
+          matched = true;
+          break;
+        }
+        matched = matched && matchedtype;
+        if (!matched) {
           rids.Regions[i] = -3;
           continue;
-        }//FIXME: Needs lepton trigger matching for veracity
-        // bool matched = false;
-        // for (unsigned itrig = 0; itrig < evts->nTrigObj; ++itrig) {
-        //   if ( abs(evts->TrigObj_id) != 11) continue;
-        // }
+        }
       }
       else if (RegionNumber/1000 == 1) {
-        if (!(isolated_muon_trigger || isolated_muon_track_trigger)) {
+        bool matchedtype = (isolated_muon_trigger || isolated_muon_track_trigger);
+        bool matched = false;
+        for (unsigned i = 0; i < Triggers.size(); ++i) {
+          if (Triggers[i].id != 13) continue;
+          if (Triggers[i].DeltaR(Muons[iChosenLep]) > 0.4) continue;
+          matched = true;
+          break;
+        }
+        matched = matched && matchedtype;
+        if (!matched) {
           rids.Regions[i] = -3;
           continue;
-        }//FIXME: Needs lepton trigger matching for veracity
-
+        }
       }
 
       //check jet multiplicity
@@ -795,6 +820,7 @@ public:
   vector<GenPart> GenParts;
   vector<GenJet> GenJets;
   vector<Jet> Jets;
+  vector<Trigger> Triggers;
   vector<Lepton> Leptons;
   Lepton TheLepton;
   vector<Electron> Electrons;

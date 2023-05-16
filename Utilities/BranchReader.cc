@@ -124,6 +124,7 @@ public:
   Float_t         TrigObj_eta[nTrigObjMax];   //[nTrigObj]
   Float_t         TrigObj_phi[nTrigObjMax];   //[nTrigObj]
   Int_t           TrigObj_id[nTrigObjMax];   //[nTrigObj]
+  Int_t           TrigObj_filterBits[nTrigObjMax];   //[nTrigObj]
 
   //SFs
   Float_t	  Electron_scaleFactor[nSFMax]; //nElectron
@@ -272,6 +273,7 @@ public:
     chain->SetBranchAddress("TrigObj_eta", TrigObj_eta);
     chain->SetBranchAddress("TrigObj_phi", TrigObj_phi);
     chain->SetBranchAddress("TrigObj_id", TrigObj_id);
+    chain->SetBranchAddress("TrigObj_filterBits", TrigObj_filterBits);
 
     chain->SetBranchAddress("run", &run);
     chain->SetBranchAddress("luminosityBlock", &luminosityBlock);
