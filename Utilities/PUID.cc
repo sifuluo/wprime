@@ -10,6 +10,11 @@
 #include "TH2.h"
 
 //working points for PU jet ID implemented as in https://twiki.cern.ch/twiki/bin/view/CMS/PileupJetIDUL
+vector<bool> PUID(float pt, int puid) {
+  vector<bool> out = {true, true, true};
+  if (pt >= 50.) return {true, true, true};
+  return {(puid>= 4), (puid>=6), (puid==7)};
+}
 std::vector<bool> PUID(float pT_, float absEta_, float PUIDdisc_, string year_){
  std::vector<bool> output = {true, true, true};
   if(pT_ >= 50.) output = {true, true, true};

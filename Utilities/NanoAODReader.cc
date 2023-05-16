@@ -206,7 +206,8 @@ public:
 
       //set PUID flags
       // tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], conf->SampleYear);
-      tmp.PUIDpasses = {(evts->Jet_puId[i]>= 4), (evts->Jet_puId[i]>=6), (evts->Jet_puId[i]==7)};
+      if (tmp.Pt() >= 50) tmp.PUIDpasses = {true, true, true};
+      else tmp.PUIDpasses = {(evts->Jet_puId[i]>= 4), (evts->Jet_puId[i]>=6), (evts->Jet_puId[i]==7)};
 
       //set PUID SFs
       if((IsMC || conf->Compare_PUIDSF) && evts->Jet_pt_nom[i] < 50. && evts->Jet_genJetIdx[i] >= 0){ //unlike other SFs, PU Jets and jets failing ID are not supposed to contribute to event weights
