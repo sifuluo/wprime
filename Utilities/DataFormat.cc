@@ -82,7 +82,7 @@ struct Trigger : PO {
   Trigger(TLorentzVector v_ = TLorentzVector()) : PO(v_) {};
   int id;
   int filterBits;
-}
+};
 
 struct Lepton : VarPO {
   Lepton(TLorentzVector v_ = TLorentzVector()) : VarPO(v_) {};

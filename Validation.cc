@@ -103,7 +103,7 @@ public:
     for(unsigned i = 0; i < 9; ++i){
       RegionIdentifier[i] = r->RegionAssociations.Regions[i];
       if (RegionIdentifier[i] > 2000 && r->Muons.size() > 0) {
-        cout << "Lepton Pt = " << r->Leptons[0].Pt() << ", Region = " << RegionIdentifier[i] <<endl;
+        cout << "Lepton Pt = " << r->TheLepton.Pt() << ", Region = " << RegionIdentifier[i] <<endl;
       }
     }
 
@@ -111,12 +111,12 @@ public:
       EventWeight[i] = r->EventWeights[i].first;
     }
 
-    LeptonPt = r->Leptons[0].Pt();
-    LeptonPt_SU = r->Leptons[0].SU.Pt();
-    LeptonPt_SD = r->Leptons[0].SD.Pt();
-    LeptonPt_RU = r->Leptons[0].RU.Pt();
-    LeptonPt_RD = r->Leptons[0].RD.Pt();
-    LeptonEta = r->Leptons[0].Eta();
+    LeptonPt = r->TheLepton.Pt();
+    LeptonPt_SU = r->TheLepton.SU.Pt();
+    LeptonPt_SD = r->TheLepton.SD.Pt();
+    LeptonPt_RU = r->TheLepton.RU.Pt();
+    LeptonPt_RD = r->TheLepton.RD.Pt();
+    LeptonEta = r->TheLepton.Eta();
 
     JetPt->clear();
     JetPt_SU->clear();
@@ -141,11 +141,11 @@ public:
     METPhi = r->Met.Phi();
 
     for (unsigned i = 0; i < 9; ++i) {
-      TLorentzVector vmT = r->Leptons[0].GetV(i) + r->Met.GetV(i);
+      TLorentzVector vmT = r->TheLepton.GetV(i) + r->Met.GetV(i);
       vmT.SetPz(0);
       mT->at(i) = vmT.M();
       TLorentzVector vWprimeFL = r->Jets[0].GetV(i) + r->Jets[1].GetV(i) + r->Jets[3].GetV(i) + r->Jets[4].GetV(i);
-      TLorentzVector vWprimeLL = r->Jets[0].GetV(i) + r->Jets[1].GetV(i) + r->Leptons[0].GetV(i) + r->Met.GetV(i);
+      TLorentzVector vWprimeLL = r->Jets[0].GetV(i) + r->Jets[1].GetV(i) + r->TheLepton.GetV(i) + r->Met.GetV(i);
       WPrimeMassSimpleFL->at(i) = vWprimeFL.M();
       WPrimeMassSimpleLL->at(i) = vWprimeLL.M();
     }

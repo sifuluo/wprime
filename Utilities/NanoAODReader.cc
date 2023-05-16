@@ -524,12 +524,12 @@ public:
     isolated_muon_trigger = evts->isolated_muon_trigger;
     isolated_muon_track_trigger = evts->isolated_muon_track_trigger;
     for (unsigned i = 0; i < evts->nTrigObj; ++i) {
-      if (evts->TrigObj_id == 13 || evts->TrigObj_id == 11) {
+      if (evts->TrigObj_id[i] == 13 || evts->TrigObj_id[i] == 11) {
         Trigger tmp;
-        tmp.SetPtEtaPhiM(evts->TrigObj_pt, evts->TrigObj_eta, evts->TrigObj_phi,0);
+        tmp.SetPtEtaPhiM(evts->TrigObj_pt[i], evts->TrigObj_eta[i], evts->TrigObj_phi[i],0);
         tmp.index = i;
-        tmp.id = evts->TrigObj_id;
-        tmp.filterBits = evts->TrigObj_filterBits;
+        tmp.id = evts->TrigObj_id[i];
+        tmp.filterBits = evts->TrigObj_filterBits[i];
         Triggers.push_back(tmp);
       }
     }
@@ -637,6 +637,7 @@ public:
           rids.Regions[i] = -3;
           continue;
         }
+        TheLepton = Electrons[iChosenLep];
       }
       else if (RegionNumber/1000 == 1) {
         bool matchedtype = (isolated_muon_trigger || isolated_muon_track_trigger);
@@ -652,6 +653,7 @@ public:
           rids.Regions[i] = -3;
           continue;
         }
+        TheLepton = Muons[iChosenLep];
       }
 
       //check jet multiplicity
@@ -676,7 +678,7 @@ public:
       RegionNumber += nj*10;
       RegionNumber += nb;
       rids.Regions[i]=RegionNumber;
-      if (RegionNumber < 1100 || true) cout << Form("nmup=%i,nep=%i,nmul=%i,nel=%i,nmuv=%i,nev=%i,nj=%i,nb=%i",nmup,nep,nmul,nel,nmuv,nev,nj,nb) << endl;
+      if (RegionNumber < 1100) cout << Form("nmup=%i,nep=%i,nmul=%i,nel=%i,nmuv=%i,nev=%i,nj=%i,nb=%i",nmup,nep,nmul,nel,nmuv,nev,nj,nb) << endl;
       else if (Leptons[0].Pt() < 30) {
         cout << Form("LepPt = %f nmup=%i,nep=%i,nmul=%i,nel=%i,nmuv=%i,nev=%i,nj=%i,nb=%i",Leptons[0].Pt(),nmup,nep,nmul,nel,nmuv,nev,nj,nb) << endl;
         if (Muons[0].IsPrimary) cout << "MuonPt = " << Muons[0].Pt() <<endl; 
