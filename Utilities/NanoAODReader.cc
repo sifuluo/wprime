@@ -336,14 +336,14 @@ public:
       bool passVeto = (evts->Electron_cutBased[i] >= 2) && passCommon;
       passCommon &= (maxPt >= 40.); //change pT cut for non-veto electrons to be on trigger plateau
       bool passLoose = (evts->Electron_cutBased[i] >= 3) && passCommon;
-      bool passPrimary = evts->Electron_cutBased_HEEP[i] && passLoose && passCommon;
+      bool passPrimary = evts->Electron_cutBased_HEEP[i] && passCommon;
 
-      if ((!passVeto && passLoose) || (!passVeto && passPrimary) || (!passLoose && passPrimary)) {
-        cout << "Electron " << (passVeto?"T ":"F ") << (passLoose?"T ":"F ") << (passPrimary?"T ":"F ");
-        cout << "max pT = " << maxPt << " ";
-        cout << "cutBased = " << evts->Electron_cutBased[i] << " ";
-        cout << "HEEP " <<(evts->Electron_cutBased_HEEP[i]? "T":"F") <<endl;
-      }
+      // if ((!passVeto && passLoose) || (!passVeto && passPrimary) || (!passLoose && passPrimary)) {
+      //   cout << "Electron " << (passVeto?"T ":"F ") << (passLoose?"T ":"F ") << (passPrimary?"T ":"F ");
+      //   cout << "max pT = " << maxPt << " ";
+      //   cout << "cutBased = " << evts->Electron_cutBased[i] << " ";
+      //   cout << "HEEP " <<(evts->Electron_cutBased_HEEP[i]? "T":"F") <<endl;
+      // }
 
       tmp.IsPrimary = passPrimary;
       tmp.IsLoose = passLoose;
@@ -439,20 +439,19 @@ public:
       passCommon &= (tmp.Pt() > 35.); //change pT cut for non-veto muons to be on trigger plateau
       bool passLoose = (evts->Muon_tightId[i]) && passCommon;
       passCommon &= (evts->Muon_pfRelIso04_all[i] < 0.15); //change isolation cut for primary muons
-      // bool passPrimary = (evts->Muon_highPtId[i] == 2) && passCommon;
       bool passPrimary = (evts->Muon_tightId[i]) && passCommon;
 
       tmp.IsPrimary = passPrimary;
       tmp.IsLoose = passLoose;
       tmp.IsVeto = passVeto;
-      // if (!evts->Muon_looseId[i] && evts->Muon_tightId[i]) cout << "Muon is wrong" <<endl;
-      if ((!passVeto && passLoose) || (!passVeto && passPrimary) || (!passLoose && passPrimary)) {
-        cout << "Muon " << (passVeto?"T ":"F ") << (passLoose?"T ":"F ") << (passPrimary?"T ":"F ");
-        cout << "pT = " << tmp.Pt() << " ";
-        cout << "Iso = " << evts->Muon_pfRelIso04_all[i] << " ";
-        cout << "LooseId " << (evts->Muon_looseId[i]? "T":"F") << " ";
-        cout << "TightId " << (evts->Muon_tightId[i]? "T":"F") << " "<<endl;
-      }
+
+      // if ((!passVeto && passLoose) || (!passVeto && passPrimary) || (!passLoose && passPrimary)) {
+      //   cout << "Muon " << (passVeto?"T ":"F ") << (passLoose?"T ":"F ") << (passPrimary?"T ":"F ");
+      //   cout << "pT = " << tmp.Pt() << " ";
+      //   cout << "Iso = " << evts->Muon_pfRelIso04_all[i] << " ";
+      //   cout << "LooseId " << (evts->Muon_looseId[i]? "T":"F") << " ";
+      //   cout << "TightId " << (evts->Muon_tightId[i]? "T":"F") << " "<<endl;
+      // }
 
       if(!passVeto && !passLoose && !passPrimary) continue;
 
@@ -631,7 +630,7 @@ public:
       }
 
       //Region Formats key is in DataFormat.cc
-      if(nmuv + nev != 1) { // No more than 1 lepton
+      if((nmuv || nmul || nmup) + (nev + nel + nep) != 1) { // No more than 1 lepton
         rids.Regions[i] = -2; // Lepton failed
         continue;
       }
@@ -770,7 +769,7 @@ public:
       // Before giving a general definition of all percentiles, we will define the 80th percentile of a collection of values to be the smallest value in the collection that is at least as large as 80% of all of the values.
       // The lowest element is only the 0th percentile, and cannot be anything else.
       vector<float> lhepdfws;
-      for (int i = 0; i < evts->nLHEPdfWeight; ++i) {
+      for (unsigned i = 0; i < evts->nLHEPdfWeight; ++i) {
         lhepdfws.push_back(evts->LHEPdfWeight[i]);
       }
       sort(lhepdfws.begin(), lhepdfws.end());
@@ -783,7 +782,7 @@ public:
 
       // LHEScale
       vector<float> lhescalews;
-      for (int i = 0; i < evts->nLHEScaleWeight; ++i) {
+      for (unsigned i = 0; i < evts->nLHEScaleWeight; ++i) {
         lhescalews.push_back(evts->LHEScaleWeight[i]);
       }
       sort(lhescalews.begin(), lhescalews.end());
@@ -822,17 +821,18 @@ public:
   }
   
   void BranchSizeCheck() {
+    if (!IsMC) return;
     vector<TString> varnames{"GenPart_pt","GenJet_pt","Jet_pt","Electron_pt","Muon_pt",
       "TrigObj_pt","Electron_scaleFactor","LHEPdfWeight","LHEScaleWeight"};
     vector<unsigned> cursizes{evts->nGenPartMax, evts->nGenJetMax, evts->nJetMax, evts->nElectronMax, evts->nMuonMax,
       evts->nTrigObjMax, evts->nSFMax, evts->nLHEPdfWeightMax, evts->nLHEScaleWeightMax};
-    vector<unsigned> evtsize{evts->nGenPart, evts->nGenJet, evts->nJet, evts->nElectron, evts->nMuon,
-      evts->nTrigObj, 10, (unsigned)evts->nLHEPdfWeight, (unsigned)evts->nLHEScaleWeight};
+    vector<unsigned> evtsizes{evts->nGenPart, evts->nGenJet, evts->nJet, evts->nElectron, evts->nMuon,
+      evts->nTrigObj, 10, evts->nLHEPdfWeight, evts->nLHEScaleWeight};
     if (varnames.size() != cursizes.size()) cout << "Please double check the varnames and cursizes container contents. Lenghth is differnet" << endl;
     for (unsigned i = 0; i < varnames.size(); ++i) {
-      int newsize = chain->GetLeaf(varnames[i])->GetLen();
+      unsigned newsize = chain->GetLeaf(varnames[i])->GetLen();
       if (newsize > cursizes[i]) cout << endl << varnames[i] << " has size = " << newsize << " exceeded current fixed size = " << cursizes[i] << endl;
-      if (evtsize[i] > cursizes[i]) cout << endl << varnames[i] << "has nsize = " << evtsize[i] << "exceeded current fixed size = " << cursizes[i] <<endl;
+      if (evtsizes[i] > cursizes[i]) cout << endl << varnames[i] << "has nsize = " << evtsizes[i] << "exceeded current fixed size = " << cursizes[i] <<endl;
     }
   }
 

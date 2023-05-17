@@ -1,7 +1,7 @@
 #include "TFile.h"
 #include "Utilities/HistManager.cc"
 
-void DrawPlotValidation(int isampleyear = 3, int iobs = 2, int nobs = -1) {
+void DrawPlotValidation(int isampleyear = 3, int iobs = 0, int nobs = 0) {
   vector<string> obs{"LeptonPt","LeptonEta","LeadingJetPt","LeadingJetEta","METPt","METPhi","mT","WPrimeMassSimpleFL","WPrimeMassSimpleLL"};
   vector<string> ObservablesXTitle{"Lepton p_{T}","Lepton #eta","Leading Jet p_{T}","Leading Jet #eta","MET p_{T}","MET #phi","m_{T}","Simple m(W'_{FL})"," Simple m(W'_{LL})"};
   string SampleYear = dlib.SampleYears[isampleyear];

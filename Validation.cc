@@ -162,14 +162,14 @@ void Validation(int isampleyear = 3, int isampletype = 24, int ifile = 0) {
   Configs *conf = new Configs(isampleyear, isampletype, ifile);
   conf->LocalOutput = false;
   conf->PrintProgress = true;
-  conf->ProgressInterval = 2000;
+  // conf->ProgressInterval = 2000;
   // conf->EntryMax = 1000;
 
   ThisAnalysis *a = new ThisAnalysis(conf);
   a->SetOutput("Validation");
   for (Long64_t iEvent = 0; iEvent < a->GetEntryMax(); ++iEvent) {
     if (!a->ReadEvent(iEvent)) continue;
-    a->r->BranchSizeCheck();
+    // a->r->BranchSizeCheck();
     a->FillBranchContent();
     a->FillTree();
   }

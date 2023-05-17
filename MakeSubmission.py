@@ -29,7 +29,7 @@ for iy, year in enumerate(SampleYears):
   if iy < 3: continue
 
   for isa, sampletype in enumerate(SampleTypes):
-    print(str(iy) + "| " + str(isa) + ":" + sampletype)
+    print(SampleYears[iy] + "| " + str(isa) + ":" + sampletype)
     filenamesfolder = "filenames/"
     filenamesfile = (sampletype + "_" + year + ".txt")
     runname = year + "_" + sampletype
