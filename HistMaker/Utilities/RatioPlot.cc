@@ -73,10 +73,11 @@ public:
 
   void AddMC(TString n_, TH1F* h_, int iv) {
     if (iv == 0) {
-      h_->SetLineStyle(1);
-      MCHists.push_back(h_); // Saved into vector, since THStack class doesn't own the histograms.
+      TH1F* h = (TH1F*) h_->Clone();
+      h->SetLineStyle(1);
+      MCHists.push_back(h); // Saved into vector, since THStack class doesn't own the histograms.
       MCNames.push_back(n_);
-      MCStack->Add(h_);
+      MCStack->Add(h);
       HasMC = true;
     }
     if (MCSummed[iv] == nullptr) {
@@ -88,9 +89,10 @@ public:
   }
 
   void AddSig(TString n_, TH1F* h_, int iv) {
+    TH1F* h = (TH1F*) h_->Clone();
     if (iv == 0) {
-      h_->SetLineStyle(2);
-      h_->SetLineWidth(2);
+      h->SetLineStyle(2);
+      h->SetLineWidth(2);
       HasSig = true;
     }
     int idx = -1;
@@ -104,8 +106,8 @@ public:
     }
     // Signal index in RatioPlot is dynamically incremented,
     // thus is not always the same as it is in Dataset.cc
-    SigHists[idx][iv] = h_;
-    if (h_->GetMaximum() > TrueMaximum) TrueMaximum = h_->GetMaximum();
+    SigHists[idx][iv] = h;
+    if (h->GetMaximum() > TrueMaximum) TrueMaximum = h->GetMaximum();
   }
 
   void AddHist(TString n_, TH1F* h_, int type_, int iv) {
@@ -473,6 +475,7 @@ public:
   TH1F* DataOverMC = nullptr;
 
   vector<vector<TH1F*> > SigHists; // [iSig][iVariation]
+  vector<TH1F*> SigHistsHolder; // Container for SigHists so this class own it's own Signal Hists
   vector<TString> SigNames;
   vector<TH1F*> ExpOverMC; // [iSig];
 

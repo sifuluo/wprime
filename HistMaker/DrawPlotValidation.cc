@@ -7,7 +7,7 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0, int nobs = 0) {
   string SampleYear = dlib.SampleYears[isampleyear];
   vector<string> SampleTypes = dlib.DatasetNames;
   // SampleTypes = {"FL500"};
-  vector<string> StringRanges = rm.StringRanges;
+  // vector<string> StringRanges = rm.StringRanges;
   
   
   if (iobs != 0 || nobs != 0) {
@@ -33,14 +33,14 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0, int nobs = 0) {
   TFile* f = new TFile(filename, "READ");
   HistManager* AllPlots = new HistManager();
   AllPlots->SetSampleTypes(SampleTypes);
-  AllPlots->SetRegions(StringRanges);
+  // AllPlots->SetRegions(StringRanges);
   AllPlots->SetTitles(ObservablesXTitle);
-  AllPlots->ReadHistograms(obs, f);
   AllPlots->SetPrefix("2018");
-  AllPlots->SortHists();
-  AllPlots->PrepHists();
+  AllPlots->ReadHistograms(obs, f);
+  // AllPlots->SortHists();
+  // AllPlots->PrepHists();
 
-  for (unsigned ir = 0; ir < StringRanges.size(); ++ir) {
+  for (unsigned ir = 0; ir < rm.StringRanges.size(); ++ir) {
     for (unsigned io = 0; io < obs.size(); ++io) {
       TCanvas* c1 = new TCanvas("c1","c1",800,800);
       AllPlots->CreateAuxiliaryPlots(ir,io);

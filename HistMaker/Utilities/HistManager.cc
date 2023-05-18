@@ -55,33 +55,111 @@ public:
   // Reading Histograms
   void ReadHistograms(vector<string> obss, TFile *f) {
     Observables = obss;
-    Hists.clear();
-    Hists.resize(SampleTypes.size());
-    nbins.clear();
-    xlow.clear();
-    xup.clear();
-    nbins.resize(Observables.size());
-    xlow.resize(Observables.size());
-    xup.resize(Observables.size());
-    for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
-      Hists[ist].resize(Variations.size());
+    // Hists.clear();
+    // Hists.resize(SampleTypes.size());
+    GroupHists.clear();
+    GroupHists.resize(GroupNames.size());
+    for (unsigned ig = 0; ig < GroupNames.size(); ++ig) {
+      GroupHists[ig].resize(Variations.size());
       for (unsigned iv = 0; iv < Variations.size(); ++iv) {
-        Hists[ist][iv].resize(Regions.size());
+        GroupHists[ig][iv].resize(Regions.size());
         for (unsigned ir = 0; ir < Regions.size(); ++ir) {
-          Hists[ist][iv][ir].resize(Observables.size());
-          for (unsigned io = 0; io < Observables.size(); ++io) {
-            TString histname = GetHistName(ist, iv, ir, io);
-            Hists[ist][iv][ir][io] = (TH1F*) f->Get(histname);
-            if (Hists[ist][iv][ir][io] != nullptr && nbins[io] == 0) {
-              nbins[io] = Hists[ist][iv][ir][io]->GetNbinsX();
-              xlow[io] = Hists[ist][iv][ir][io]->GetXaxis()->GetXmin();
-              xup[io] = Hists[ist][iv][ir][io]->GetXaxis()->GetXmax();
-            }
-          }
+          GroupHists[ig][iv][ir].resize(Observables.size());
         }
       }
-      cout << "Finished reading from dataset " << SampleTypes[ist] <<endl;
     }
+
+    Plots.clear();
+    Plots.resize(Regions.size());
+    for (unsigned ir = 0; ir < Regions.size(); ++ir) {
+      bool IsSR = rm.Ranges[ir].IsSR;
+      Plots[ir].resize(Observables.size());
+      for (unsigned io = 0; io < Observables.size(); ++io) {
+        TString PlotName = PlotNamePrefix + "_" + Observables[io] + "_" + rm.StringRanges[ir];
+        Plots[ir][io] = new RatioPlot(PlotName,IsSR, XTitles[io], YTitles[io]);
+        Plots[ir][io]->SetVariationTypes(Variations);
+
+        vector<vector<TH1F*> > PlotGroupHists;
+        PlotGroupHists.resize(GroupNames.size());
+        for (unsigned ig = 0; ig < GroupNames.size(); ++ig) {
+          PlotGroupHists[ig].resize(Variations.size());
+        }
+
+        for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
+          string gp = dlib.GetGroup(SampleTypes[ist]);
+          int ig = dlib.GetGroupIndexFromGroupName(gp);
+          if (ig < 0) continue;
+          for (unsigned iv = 0; iv < Variations.size(); ++iv){
+            TH1F* h = (TH1F*) f->Get(GetHistName(ist,iv,ir,io));
+            if (h == nullptr) continue;
+            if (PlotGroupHists[ig][iv] == nullptr) { // First hist for the group
+              PlotGroupHists[ig][iv] = (TH1F*) h->Clone();
+              int col = dlib.Groups[gp].Color;
+              if (dlib.Groups[gp].Type == 1) PlotGroupHists[ig][iv]->SetFillColor(col);
+              PlotGroupHists[ig][iv]->SetLineColor(col);
+            }
+            else PlotGroupHists[ig][iv]->Add(h);
+            delete h;
+          }
+        }
+
+        for (unsigned ig = 0; ig < GroupNames.size(); ++ig) {
+          for (unsigned iv = 0; iv < Variations.size(); ++iv) {
+            string gn = GroupNames[ig];
+            Plots[ir][io]->AddHist(gn, PlotGroupHists[ig][iv], dlib.Groups[gn].Type,iv);
+          }
+        }
+        Plots[ir][io]->SetLogy(true);
+        Plots[ir][io]->Legend(LegendPos);
+        dlib.AddLegend(Plots[ir][io]->leg,IsSR);
+        cout << "Observable " << Observables[io] << " is read"<<endl;
+      }
+    }
+
+    // for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
+    //   string gp = dlib.GetGroup(SampleTypes[ist]);
+    //   int ig = dlib.GetGroupIndexFromGroupName(gp);
+    //   if (ig < 0) continue;
+    //   for (unsigned iv = 0; iv < Variations.size(); ++iv) {
+    //     for (unsigned ir = 0; ir < Regions.size(); ++ir) {
+    //       for (unsigned io = 0; io < Observables.size(); ++io) {
+    //         TH1F* h = (TH1F*) f->Get(GetHistName(ist,iv,ir,io));
+    //         if (h == nullptr) continue;
+    //         if (GroupHists[ig][iv][ir][io] == nullptr) { // First hist for the group
+    //           GroupHists[ig][iv][ir][io] = (TH1F*) h->Clone();
+    //           int col = dlib.Groups[gp].Color;
+    //           if (dlib.Groups[gp].Type == 1) GroupHists[ig][iv][ir][io]->SetFillColor(col);
+    //           GroupHists[ig][iv][ir][io]->SetLineColor(col);
+    //         }
+    //         else
+    //           GroupHists[ig][iv][ir][io]->Add(h);
+    //         delete h;
+    //       }
+    //     }
+    //     cout << "Variation " << Variations[iv] << "is done" <<endl;
+    //   }
+    //   cout << "Sorted dataset " << SampleTypes[ist] << " into group " << gp << endl;
+    // }
+
+    // for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
+    //   Hists[ist].resize(Variations.size());
+    //   for (unsigned iv = 0; iv < Variations.size(); ++iv) {
+    //     Hists[ist][iv].resize(Regions.size());
+    //     for (unsigned ir = 0; ir < Regions.size(); ++ir) {
+    //       Hists[ist][iv][ir].resize(Observables.size());
+    //       for (unsigned io = 0; io < Observables.size(); ++io) {
+    //         TString histname = GetHistName(ist, iv, ir, io);
+    //         Hists[ist][iv][ir][io] = (TH1F*) f->Get(histname);
+    //         // if (Hists[ist][iv][ir][io] != nullptr && nbins[io] == 0) {
+    //         //   nbins[io] = Hists[ist][iv][ir][io]->GetNbinsX();
+    //         //   xlow[io] = Hists[ist][iv][ir][io]->GetXaxis()->GetXmin();
+    //         //   xup[io] = Hists[ist][iv][ir][io]->GetXaxis()->GetXmax();
+    //         // }
+    //       }
+    //     }
+    //   }
+    //   cout << "Finished reading from dataset " << SampleTypes[ist] <<endl;
+    // }
   }
 
   void SortHists() {
