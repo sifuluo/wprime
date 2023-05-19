@@ -19,7 +19,6 @@ struct Configs {
     SampleYear = dlib.SampleYears[isy_];
     SampleType = dlib.DatasetNames[ist_];
     IsMC = iSampleType > 1;
-    EntryMax = 0;
   };
 
   ~Configs() {
@@ -40,7 +39,7 @@ struct Configs {
   TString InputFile = "";
 
   //Number of entry to process
-  Long64_t EntryMax;
+  Long64_t EntryMax = 0;
   //Number of files to process
   int FilesPerJob = 1;
 
@@ -65,9 +64,10 @@ struct Configs {
   bool DASInput = false;
 
   bool bTagEffCreation = false;
-  string bTagEffBasepath = "outputs/";
+  string bTagEffBasepath = "outputs/"; // To change to "AUXFiles/outputs" when running on DAS files
   bool JetScaleCreation = false;
-  string JetScaleBasepath = "outputs/";
+  string JetScaleBasepath = "outputs/"; // To change to "AUXFiles/outputs" when running on DAS files
+  string JetScaleDataSubstitution = "ttbar";
 
   void SetSwitch(string sw, bool b) {
     Switches[sw] = b;

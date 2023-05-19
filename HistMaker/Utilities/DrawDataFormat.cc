@@ -105,12 +105,12 @@ public:
   vector<TString> LatexRanges;
   // Variations is not very comfortable to be placed inside RegionManager.
   // But rest here at the momemt, as RegionManager is assured to be widely included.
-  vector<string> Variations = {"central"
-  , "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown"
-  , "EleSFup", "EleSFdown", "MuonSFup", "MuonSFdown", "BjetTagSFup", "BjetTagSFdown"
-  , "PUIDSFup", "PUIDSFdown", "L1PreFiringSFup", "L1PreFiringSFdown", "PUreweightSFup","PUreweightSFdown"
+  vector<string> Variations = {"central" // 0
+  , "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown" // 1-8
+  , "EleSFup", "EleSFdown", "MuonTriggerWup", "MuonTriggerWdown", "MuonIdWup", "MuonIdWdown", "MuonIsoWup", "MuonIsoWdown" // 9-16
+  , "BjetTagSFup", "BjetTagSFdown", "PUIDSFup", "PUIDSFdown", "L1PreFiringSFup", "L1PreFiringSFdown" // 17-22
+  , "PUreweightSFup", "PUreweightSFdown", "PDFWup", "PDFWdown", "LHEScaleWup", "LHEScaleWdown" // 23 - 28
   };
-  // // Indices for each line: 0-8; 9-14; 15-20;
 
   // Temperary working version below Take the version above next time. FIXME
   // Variations have to be ordered as central followed by Up variations and Down variations.
@@ -247,7 +247,7 @@ public:
     }
   }
 
-  int Fill(int ist, int iv, int rid, string ob, double x, double w) {
+  int Fill(int ist, int iv, int rid, string ob, float x, float w) {
     if (x !=x ) {
       cout << Form("Skipping filling nan value to ob %s, ist %i, iv %i, region %i",ob.c_str(), ist, iv, rid) <<endl;
       return 1;
@@ -274,11 +274,25 @@ public:
     return 0;
   }
 
+  void SetCurrentFill(int ist, int iv, int rid, float w) {
+    tmp_ist = ist;
+    tmp_iv = iv;
+    tmp_rid = rid;
+    tmp_w = w;
+  }
+
+  int Fill(string ob, float x) {
+    return Fill(tmp_ist, tmp_iv, tmp_rid, ob, x, tmp_w);
+  }
+
   vector< vector< vector< vector<TH1F*> > > > Hists; // Hists[isampletype][ivariation][irange][iobservable]
   vector<string> SampleTypes, Variations, Regions, Observables;
   vector<int> nbins; // [nObservables]
   vector<double> xlow, xup; // [nObservables]
   TString NameFormat;
+
+  int tmp_ist, tmp_iv, tmp_rid;
+  float tmp_w;
 };
 
 #endif

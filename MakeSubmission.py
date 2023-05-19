@@ -1,13 +1,13 @@
 import os
-import GetLocalFileNames
+from GetLocalFileNames import GetSampleTypes
 
 SampleYears = ["2016apv","2016","2017","2018"]
-SampleTypes = ["SingleElectron","SingleMuon"]
+# SampleTypes = ["SingleElectron","SingleMuon"]
 # SampleTypes.extend(["ttbar"])
 # SampleTypes.extend(["wjets_HT_70_100", "wjets_HT_100_200", "wjets_HT_200_400", "wjets_HT_400_600","wjets_HT_600_800", "wjets_HT_800_1200", "wjets_HT_1200_2500", "wjets_HT_2500_inf"])
 # SampleTypes.extend(["single_antitop_tchan","single_antitop_tw","single_top_schan","single_top_tchan","single_top_tw"])
 # SampleTypes.extend(["Private_FL_M500"])
-SampleTypes = GetLocalFileNames.GetSampleTypes()
+SampleTypes = GetSampleTypes()
 print(SampleTypes)
 
 EOSPath = "/eos/user/s/siluo/WPrimeAnalysis/"
@@ -26,7 +26,10 @@ if not os.path.exists("Submits"):
 
 
 for iy, year in enumerate(SampleYears):
+  if iy < 3: continue
+
   for isa, sampletype in enumerate(SampleTypes):
+    print(SampleYears[iy] + "| " + str(isa) + ":" + sampletype)
     filenamesfolder = "filenames/"
     filenamesfile = (sampletype + "_" + year + ".txt")
     runname = year + "_" + sampletype

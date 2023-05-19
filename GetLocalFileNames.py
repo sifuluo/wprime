@@ -6,13 +6,15 @@ def GetLocalDataset(names, iy):
   if len(names) == 2:
     inname = names[1]
   # basepath = "/eos/user/d/doverton/skimmed_samples"
-  basepath = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/"
-  # basepath = "/eos/user/e/eusebi/andrewsdata/skimmed_samples/"
+  pbasepath = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/"
+  ebasepath = "/eos/user/e/eusebi/andrewsdata/skimmed_samples/"
   inyears = ["2016","2016_APV","2017","2018"]
   outyears = ["2016","2016apv","2017","2018"]
   if inname == "SingleElectron" and iy == 3: inname = "EGamma/"
   else: inname = inname + "/"
 
+  if iy == 3: basepath = pbasepath
+  else: basepath = ebasepath
   infile = basepath + inname + inyears[iy] + "/*"
   if not os.path.exists("filenames/"):
     os.makedirs("filenames")
@@ -43,20 +45,27 @@ def GetDatasetNames():
   datasets.append(["wjets_HT_800_1200"]) # 8
   datasets.append(["wjets_HT_1200_2500"]) # 9
   datasets.append(["wjets_HT_2500_inf"]) # 10
-  datasets.append(["wjets_inclusive"]) # 11
+  # datasets.append(["wjets_inclusive"]) # 11
 
-  datasets.append(["single_antitop_tchan"]) # 12
-  datasets.append(["single_antitop_tw"]) # 13
-  datasets.append(["single_top_schan"]) # 14
-  datasets.append(["single_top_tchan"]) # 15
-  datasets.append(["single_top_tw"]) # 16
+  datasets.append(["single_top_schan"]) # 11
+  datasets.append(["single_top_tchan"]) # 12
+  datasets.append(["single_antitop_tchan"]) # 13
+  datasets.append(["single_top_tw"]) # 14
+  datasets.append(["single_antitop_tw"]) # 15
 
-  for im in ["300","400","500","600","700","800","900","1000","1100"]: # 17 18 19 20 21 22 23 24 25
+  datasets.append(["WW"]) # 16
+  datasets.append(["ZZ"]) # 17
+  datasets.append(["WZTo1L1Nu2Q"]) # 18
+  datasets.append(["WZTo1L3Nu"]) # 19
+  datasets.append(["WZTo2Q2L"]) # 20
+  datasets.append(["WZTo3LNu"]) # 21
+
+  for im in ["300","400","500","600","700","800","900","1000","1100"]: # 22 23 24 25 26 27 28 29 30
     inname = "wprime_" + im + "_former_leptonic"
     outname = "FL" + im
     datasets.append([outname, inname])
     
-  for im in ["300","400","500","600","700","800","900","1000","1100"]: # 26 27 28 29 30 31 32 33 34
+  for im in ["300","400","500","600","700","800","900","1000","1100"]: # 31 32 33 34 35 36 37 38 39
     inname = "wprime_" + im + "_latter_leptonic"
     outname = "LL" + im
     datasets.append([outname, inname])

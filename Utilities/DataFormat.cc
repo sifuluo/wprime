@@ -78,6 +78,12 @@ struct Jet : VarPO {
   vector<float> bTagEffs = {0.9, 0.7, 0.5};
 };
 
+struct Trigger : PO {
+  Trigger(TLorentzVector v_ = TLorentzVector()) : PO(v_) {};
+  int id;
+  int filterBits;
+};
+
 struct Lepton : VarPO {
   Lepton(TLorentzVector v_ = TLorentzVector()) : VarPO(v_) {};
   TLorentzVector& v(int ir = 0) { return GetV(ir);} // Ele variations index is 1 to 4

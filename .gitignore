@@ -2,6 +2,7 @@ Submits/*.sub
 SuccessFlags/
 filenames/
 outputs/*.root
+AUXFiles/outputs/
 ObsoleteCodes/
 Utilities/UserSpecifics.cc
 HistMaker/plots/

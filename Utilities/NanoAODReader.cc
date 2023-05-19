@@ -9,6 +9,7 @@
 
 #include "TChain.h"
 #include "TFile.h"
+#include "TLeaf.h"
 
 #include "DataFormat.cc"
 #include "BranchReader.cc"
@@ -167,7 +168,7 @@ public:
   void ReadJets() {
     Jets.clear();
     int emptysequence = 0;
-    if (evts->nJet > 27) cout << "Error: nJet = " << evts->nJet << " at iEvent = " << iEvent << endl;
+    if (evts->nJet > evts->nJetMax) cout << "Error: nJet = " << evts->nJet << " at iEvent = " << iEvent << endl;
     for (unsigned i = 0; i < evts->nJet; ++i) {
       if (emptysequence >= 3) break; // 3 empty jets in a row, skip the rest
       if (evts->Jet_pt_nom[i] == 0) emptysequence++;
@@ -204,7 +205,9 @@ public:
       tmp.JERdown() = PtVars;
 
       //set PUID flags
-      tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], conf->SampleYear);
+      // tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], conf->SampleYear);
+      if (tmp.Pt() >= 50) tmp.PUIDpasses = {true, true, true};
+      else tmp.PUIDpasses = {(evts->Jet_puId[i]>= 4), (evts->Jet_puId[i]>=6), (evts->Jet_puId[i]==7)};
 
       //set PUID SFs
       if((IsMC || conf->Compare_PUIDSF) && evts->Jet_pt_nom[i] < 50. && evts->Jet_genJetIdx[i] >= 0){ //unlike other SFs, PU Jets and jets failing ID are not supposed to contribute to event weights
@@ -267,12 +270,11 @@ public:
         
         if (IsMC) {
           vector<float> bTag_Eff = bTE->GetEff(tmp);
-          // vector<float> bTag_Eff = {0.9,0.7,0.5};
           for (unsigned iv = 0; iv < 3; ++iv) {
             for (unsigned iwp = 0; iwp < 3; ++iwp) {
               if (tmp.bTagPasses[iwp]) tmp.bJetSFweights[iv][iwp] = bTSFs[iv][iwp];
               else tmp.bJetSFweights[iv][iwp] = (1. - bTag_Eff[iwp] * bTSFs[iv][iwp]) / (1. - bTag_Eff[iwp]);
-              if (tmp.Pt() < 20 || tmp.Pt() > 1000 || fabs(tmp.Eta()) >= 2.5) {
+              if (tmp.Pt() < 20 || tmp.Pt() > 1000 || fabs(tmp.Eta()) >= 2.4999) {
                 tmp.bJetSFweights[iv][iwp] = 1.0;
                 continue;
               }
@@ -283,6 +285,7 @@ public:
                 else cout << " Non-bTagged ";
                 cout << Form("Jet %i (pT = %f, eta = %f) has unexpected bJetSFweight. Eff = %f, SF = %f", i, tmp.Pt(), tmp.Eta(), bTag_Eff[iwp], bTSFs[iv][iwp]) << endl;
               }
+              if (tmp.bJetSFweights[iv][iwp] == 0) tmp.bJetSFweights[iv][iwp] = 1.0; // Final safeguard
             }
           }
         }
@@ -295,8 +298,6 @@ public:
     Leptons.clear();
     Electrons.clear();
     Muons.clear();
-    if (evts->nElectron > 9) cout << "Error: nElectron = " << evts->nElectron << " at iEvent = " << iEvent << endl;
-    if (evts->nMuon > 9) cout << "Error: nMuon = " << evts->nMuon << " at iEvent = " << iEvent << endl;
     int emptysequence = 0;
     for (unsigned i = 0; i < evts->nElectron; ++i) {
       if (emptysequence >= 3) break;
@@ -311,7 +312,7 @@ public:
       //set resolution variations (only matter in MC, will be ineffective in data)
       tmp.ResUp() = ((TLorentzVector) tmp) * ((tmp.E() - evts->Electron_dEsigmaUp[i]) / tmp.E());
       tmp.ResDown() = ((TLorentzVector) tmp) * ((tmp.E() - evts->Electron_dEsigmaDown[i]) / tmp.E());
-      //set scale variations (only filled in data, should be applied to MC, for now FIXME inactive)
+      // set scale variations (only filled in data, should be applied to MC, for now FIXME inactive)
       // tmp.ScaleUp() = ((TLorentzVector) tmp) * (tmp.E() - evts->Electron_dEscaleUp[i]) / tmp.E();
       // tmp.ScaleDown() = ((TLorentzVector) tmp) * (tmp.E() - evts->Electron_dEscaleDown[i]) / tmp.E();
       tmp.ScaleUp() = tmp;
@@ -336,6 +337,13 @@ public:
       passCommon &= (maxPt >= 40.); //change pT cut for non-veto electrons to be on trigger plateau
       bool passLoose = (evts->Electron_cutBased[i] >= 3) && passCommon;
       bool passPrimary = evts->Electron_cutBased_HEEP[i] && passCommon;
+
+      // if ((!passVeto && passLoose) || (!passVeto && passPrimary) || (!passLoose && passPrimary)) {
+      //   cout << "Electron " << (passVeto?"T ":"F ") << (passLoose?"T ":"F ") << (passPrimary?"T ":"F ");
+      //   cout << "max pT = " << maxPt << " ";
+      //   cout << "cutBased = " << evts->Electron_cutBased[i] << " ";
+      //   cout << "HEEP " <<(evts->Electron_cutBased_HEEP[i]? "T":"F") <<endl;
+      // }
 
       tmp.IsPrimary = passPrimary;
       tmp.IsLoose = passLoose;
@@ -431,12 +439,19 @@ public:
       passCommon &= (tmp.Pt() > 35.); //change pT cut for non-veto muons to be on trigger plateau
       bool passLoose = (evts->Muon_tightId[i]) && passCommon;
       passCommon &= (evts->Muon_pfRelIso04_all[i] < 0.15); //change isolation cut for primary muons
-      // bool passPrimary = (evts->Muon_highPtId[i] == 2) && passCommon;
       bool passPrimary = (evts->Muon_tightId[i]) && passCommon;
 
       tmp.IsPrimary = passPrimary;
       tmp.IsLoose = passLoose;
       tmp.IsVeto = passVeto;
+
+      // if ((!passVeto && passLoose) || (!passVeto && passPrimary) || (!passLoose && passPrimary)) {
+      //   cout << "Muon " << (passVeto?"T ":"F ") << (passLoose?"T ":"F ") << (passPrimary?"T ":"F ");
+      //   cout << "pT = " << tmp.Pt() << " ";
+      //   cout << "Iso = " << evts->Muon_pfRelIso04_all[i] << " ";
+      //   cout << "LooseId " << (evts->Muon_looseId[i]? "T":"F") << " ";
+      //   cout << "TightId " << (evts->Muon_tightId[i]? "T":"F") << " "<<endl;
+      // }
 
       if(!passVeto && !passLoose && !passPrimary) continue;
 
@@ -464,6 +479,8 @@ public:
       Muons.push_back(tmp);
       Leptons.push_back(tmp);
     }
+    if (evts->nElectron > evts->nElectronMax) cout << "Error: nElectron = " << evts->nElectron << " at iEvent = " << iEvent << endl;
+    if (evts->nMuon > evts->nMuonMax) cout << "Error: nMuon = " << evts->nMuon << " at iEvent = " << iEvent << endl;
   }
 
   void ReadMET() {
@@ -518,9 +535,20 @@ public:
   }
 
   void ReadTriggers() {
+    Triggers.clear();
     isolated_electron_trigger = evts->isolated_electron_trigger;
     isolated_muon_trigger = evts->isolated_muon_trigger;
     isolated_muon_track_trigger = evts->isolated_muon_track_trigger;
+    for (unsigned i = 0; i < evts->nTrigObj; ++i) {
+      if (evts->TrigObj_id[i] == 13 || evts->TrigObj_id[i] == 11) {
+        Trigger tmp;
+        tmp.SetPtEtaPhiM(evts->TrigObj_pt[i], evts->TrigObj_eta[i], evts->TrigObj_phi[i],0);
+        tmp.index = i;
+        tmp.id = evts->TrigObj_id[i];
+        tmp.filterBits = evts->TrigObj_filterBits[i];
+        Triggers.push_back(tmp);
+      }
+    }
   }
 
   void ReadPileup() {
@@ -550,50 +578,104 @@ public:
 
   //function to determine all regions an event belongs to as a function of all object pT variations
   RegionID RegionReader(){
-    RegionID Regions;
+    RegionID rids;
 
     //loop over variations: nominal, e-scale up, e-scale down, e-res up, e-res down, JES up, JES down, JER up, JER down
-    for(unsigned i = 0; i < Regions.RegionCount; ++i){
+    for(unsigned i = 0; i < rids.RegionCount; ++i){
       int RegionNumber = -1; //-1 no region
+      int iChosenLep = -1; // note the index of the loose/primary lepton.
       //check lepton multiplicity
       int nev = 0;
       int nel = 0;
       int nep = 0;
       for(unsigned j = 0; j<Electrons.size(); ++j){
-        if (Electrons[j].v(i).Pt() >= 40.) {
-          nev += Leptons[j].IsVeto;
-          nel += Leptons[j].IsLoose;
-          nep += Leptons[j].IsPrimary;
+        if (Electrons[j].IsVeto && Electrons[j].v(i).Pt() > 10.) nev++;
+        if (Electrons[j].IsLoose && Electrons[j].v(i).Pt() > 40.) {
+          nel++;
+          iChosenLep = j;
         }
+        if (Electrons[j].IsPrimary && Electrons[j].v(i).Pt() > 40.) {
+          nep++;
+          iChosenLep = j;
+        }
+        // if (nel > nev || nep > nel || nep > nev) {
+        //   cout << "Electron pT = " << Electrons[j].v(i).Pt() << ", ";
+        //   cout << " " << (Electrons[j].IsVeto ? "T": "F") << ", ";
+        //   cout << " " << (Electrons[j].IsLoose ? "T": "F") << ", ";
+        //   cout << " " << (Electrons[j].IsPrimary ? "T": "F") << " ";
+        //   cout << endl;
+        // }
       }
 
       int nmuv = 0;
       int nmul = 0;
       int nmup = 0;
       for(unsigned j = 0; j<Muons.size(); ++j){//no scale variations foreseen as of yet, due to not applying Rochester corrections
-        nmuv += Muons[j].IsVeto;
-        nmul += Muons[j].IsLoose;
-        nmup += Muons[j].IsPrimary;
+        if (Muons[j].IsVeto && Muons[j].Pt() > 10.) nmuv++;
+        if (Muons[j].IsLoose && Muons[j].Pt() > 35.) {
+          nmul++;
+          iChosenLep = j;
+        }
+        if (Muons[j].IsPrimary && Muons[j].Pt() > 35.) {
+          nmup++;
+          iChosenLep = j;
+        }
+        // if (nmul > nmuv || nmup > nmul || nmup > nmuv) {
+        //   cout << "Muon pT = " << Muons[j].Pt() << ", ";
+        //   cout << " " << (Muons[j].IsVeto ? "T": "F") << ", ";
+        //   cout << " " << (Muons[j].IsLoose ? "T": "F") << ", ";
+        //   cout << " " << (Muons[j].IsPrimary ? "T": "F") << " ";
+        //   cout << endl;
+        // }
       }
 
       //Region Formats key is in DataFormat.cc
-      if(nmuv + nev != 1) {
-        Regions.Regions[i] = -2; // Lepton failed
+      if((nmuv || nmul || nmup) + (nev + nel + nep) != 1) { // No more than 1 lepton
+        rids.Regions[i] = -2; // Lepton failed
         continue;
       }
       if(nmup == 1) RegionNumber = 1100;
       else if(nep == 1) RegionNumber = 2100;
       else if(nmul == 1) RegionNumber = 1200;
       else if(nel ==1) RegionNumber = 2200;
+      else { // Accepted event must have a primary or loose lepton
+        rids.Regions[i] = -2;
+        continue;
+      }
 
       //check trigger matching lepton flavour
-      if(RegionNumber/1000 == 2 && !isolated_electron_trigger ) {
-        Regions.Regions[i] = -3;
-        continue; //FIXME: Needs lepton trigger matching for veracity
+      if (RegionNumber/1000 == 2) {
+        bool matchedtype = isolated_electron_trigger;
+        bool matched = false;
+        for (unsigned i = 0; i < Triggers.size(); ++i) {
+          if (Triggers[i].id != 11) continue;
+          if (Triggers[i].DeltaR(Electrons[iChosenLep]) > 0.4) continue;
+          if (conf->SampleYear == "2017") matchedtype = matchedtype && (1024 & Triggers[i].filterBits);
+          matched = true;
+          break;
+        }
+        matched = matched && matchedtype;
+        if (!matched) {
+          rids.Regions[i] = -3;
+          continue;
+        }
+        TheLepton = Electrons[iChosenLep];
       }
-      else if(RegionNumber/1000 == 1 && !(isolated_muon_trigger || isolated_muon_track_trigger)) {
-        Regions.Regions[i] = -3;
-        continue; //FIXME: Needs lepton trigger matching for veracity
+      else if (RegionNumber/1000 == 1) {
+        bool matchedtype = (isolated_muon_trigger || isolated_muon_track_trigger);
+        bool matched = false;
+        for (unsigned i = 0; i < Triggers.size(); ++i) {
+          if (Triggers[i].id != 13) continue;
+          if (Triggers[i].DeltaR(Muons[iChosenLep]) > 0.4) continue;
+          matched = true;
+          break;
+        }
+        matched = matched && matchedtype;
+        if (!matched) {
+          rids.Regions[i] = -3;
+          continue;
+        }
+        TheLepton = Muons[iChosenLep];
       }
 
       //check jet multiplicity
@@ -612,15 +694,24 @@ public:
         if(Jets[j].bTagPasses[bTagWP]) nb++;//select working point for b-tagging by bTagPasses[0] = loose, 1 medium and 2 tight
       }
       if(nj<5 || nj>6) {
-        Regions.Regions[i] = -4;
+        rids.Regions[i] = -4;
         continue; //in no region we're interested in
       }
       RegionNumber += nj*10;
       RegionNumber += nb;
-      Regions.Regions[i]=RegionNumber;
+      rids.Regions[i]=RegionNumber;
+      // if (RegionNumber < 1100) cout << Form("nmup=%i,nep=%i,nmul=%i,nel=%i,nmuv=%i,nev=%i,nj=%i,nb=%i",nmup,nep,nmul,nel,nmuv,nev,nj,nb) << endl;
+      // else if (TheLepton.Pt() < 30) {
+      //   cout << Form("TheLepPt = %f nmup=%i,nep=%i,nmul=%i,nel=%i,nmuv=%i,nev=%i,nj=%i,nb=%i",TheLepton.Pt(),nmup,nep,nmul,nel,nmuv,nev,nj,nb) << endl;
+      //   if (Muons[0].IsPrimary) cout << "MuonPt = " << Muons[0].Pt() <<endl; 
+      // }
+      // if ((RegionNumber > 2000 && Muons.size() > 0) || (RegionNumber < 2000 && Electrons.size() > 0)) {
+      //   cout << Form("RegionNumber = %i, Muon Pt = %f, ",RegionNumber, Muons[0].Pt());
+      //   cout << Form("nmup=%i,nep=%i,nmul=%i,nel=%i,nmuv=%i,nev=%i,nj=%i,nb=%i",nmup,nep,nmul,nel,nmuv,nev,nj,nb) << endl;
+      // }
     }
 
-    return Regions;
+    return rids;
   }
 
   //function to derive event weights from SFs on objects
@@ -678,7 +769,7 @@ public:
       // Before giving a general definition of all percentiles, we will define the 80th percentile of a collection of values to be the smallest value in the collection that is at least as large as 80% of all of the values.
       // The lowest element is only the 0th percentile, and cannot be anything else.
       vector<float> lhepdfws;
-      for (int i = 0; i < evts->nLHEPdfWeight; ++i) {
+      for (unsigned i = 0; i < evts->nLHEPdfWeight; ++i) {
         lhepdfws.push_back(evts->LHEPdfWeight[i]);
       }
       sort(lhepdfws.begin(), lhepdfws.end());
@@ -691,22 +782,19 @@ public:
 
       // LHEScale
       vector<float> lhescalews;
-      if (evts->nLHEScaleWeight != 9) cout << "nLHEScaleWeight != 9" << endl;
       for (unsigned i = 0; i < evts->nLHEScaleWeight; ++i) {
         lhescalews.push_back(evts->LHEScaleWeight[i]);
       }
       sort(lhescalews.begin(), lhescalews.end());
-      LHEScaleW.variations[0] = lhescalews[4];
-      LHEScaleW.variations[1] = lhescalews[8];
-      LHEScaleW.variations[2] = lhescalews[0];
+      LHEScaleW.variations[0] = 1.0;
+      LHEScaleW.variations[1] = lhescalews.back();
+      LHEScaleW.variations[2] = lhescalews.front();
     }
 
     SFweights.push_back(electronW);
-    SFweights.push_back({
-      muonTriggerW.variations[i] *= Muons[j].triggerSFs[i];
-      muonIdW.variations[i] *= Muons[j].idSFs[i];
-      );
-    }
+    SFweights.push_back(muonTriggerW);
+    SFweights.push_back(muonIdW);
+    SFweights.push_back(muonIsoW);
     SFweights.push_back(BjetW);
     SFweights.push_back(PUIDW);
     SFweights.push_back(L1PreFiringW);
@@ -731,6 +819,22 @@ public:
     }
     return EventWeight_out;
   }
+  
+  void BranchSizeCheck() {
+    if (!IsMC) return;
+    vector<TString> varnames{"GenPart_pt","GenJet_pt","Jet_pt","Electron_pt","Muon_pt",
+      "TrigObj_pt","Electron_scaleFactor","LHEPdfWeight","LHEScaleWeight"};
+    vector<unsigned> cursizes{evts->nGenPartMax, evts->nGenJetMax, evts->nJetMax, evts->nElectronMax, evts->nMuonMax,
+      evts->nTrigObjMax, evts->nSFMax, evts->nLHEPdfWeightMax, evts->nLHEScaleWeightMax};
+    vector<unsigned> evtsizes{evts->nGenPart, evts->nGenJet, evts->nJet, evts->nElectron, evts->nMuon,
+      evts->nTrigObj, 10, evts->nLHEPdfWeight, evts->nLHEScaleWeight};
+    if (varnames.size() != cursizes.size()) cout << "Please double check the varnames and cursizes container contents. Lenghth is differnet" << endl;
+    for (unsigned i = 0; i < varnames.size(); ++i) {
+      unsigned newsize = chain->GetLeaf(varnames[i])->GetLen();
+      if (newsize > cursizes[i]) cout << endl << varnames[i] << " has size = " << newsize << " exceeded current fixed size = " << cursizes[i] << endl;
+      if (evtsizes[i] > cursizes[i]) cout << endl << varnames[i] << "has nsize = " << evtsizes[i] << "exceeded current fixed size = " << cursizes[i] <<endl;
+    }
+  }
 
   Configs *conf;
 
@@ -748,7 +852,9 @@ public:
   vector<GenPart> GenParts;
   vector<GenJet> GenJets;
   vector<Jet> Jets;
+  vector<Trigger> Triggers;
   vector<Lepton> Leptons;
+  Lepton TheLepton;
   vector<Electron> Electrons;
   vector<Muon> Muons;
   MET Met;

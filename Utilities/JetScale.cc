@@ -23,7 +23,7 @@ public:
   JetScale(Configs* conf_) {
     conf = conf_;
     GetFileName();
-    if (conf->JetScaleCreation) CreateScaleHists();
+    if (conf->JetScaleCreation && conf->IsMC) CreateScaleHists();
     else {
       ReadScaleHists();
       SetUpMassFunctions();
@@ -40,7 +40,9 @@ public:
   };
 
   void GetFileName() {
-    string filename = "Scale_" + conf->SampleYear + "_" + conf->SampleType + ".root";
+    string sampletype = conf->SampleType;
+    if (!conf->IsMC) sampletype = conf->JetScaleDataSubstitution;
+    string filename = "Scale_" + conf->SampleYear + "_" + sampletype + ".root";
     FileName = conf->JetScaleBasepath + filename;
   }
 

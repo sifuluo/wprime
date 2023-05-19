@@ -110,7 +110,7 @@ public:
 
   void AddHist(TString n_, TH1F* h_, int type_, int iv) {
     if (h_ == nullptr) return;
-    if (type_ == 0) AddData(h_);
+    if (type_ == 0 && iv == 0) AddData(h_);
     else if (type_ == 1) AddMC(n_, h_, iv);
     else if (type_ == 2) AddSig(n_, h_, iv);
     if (nbins == 0) {
@@ -118,7 +118,7 @@ public:
       xlow = h_->GetXaxis()->GetXmin();
       xup = h_->GetXaxis()->GetXmax();
     }
-    else if (h_->GetNbinsX() != nbins) cout << "Inconsistent histogram nbins for " << n_ <<endl;
+    else if ((unsigned) h_->GetNbinsX() != nbins) cout << "Inconsistent histogram nbins for " << n_ <<endl;
     else if (h_->GetXaxis()->GetXmin() != xlow) cout << "Inconsistent histogram xlow for " << n_ <<endl;
     else if (h_->GetXaxis()->GetXmax() != xup) cout << "Inconsistent histogram xup for " << n_ <<endl;
     // cout << "Adding Histogram " << n_  << " of variation " << iv <<endl;
@@ -452,8 +452,8 @@ public:
   TString PlotName, UTitle, LTitle;
 
   vector<string> Variations;
-  int VarSize = 0;
-  int nbins = 0;
+  unsigned VarSize = 0;
+  unsigned nbins = 0;
   double xlow, xup;
   double MinY = 0;
   double CanvasMaximum = 0;

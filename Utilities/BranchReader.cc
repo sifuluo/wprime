@@ -16,77 +16,87 @@ public:
   string          SampleYear;
   Bool_t          IsMC;
 
+  static const unsigned nGenPartMax = 250;
+  static const unsigned nGenJetMax = 35;
+  static const unsigned nJetMax = 35;
+  static const unsigned nElectronMax = 20;
+  static const unsigned nMuonMax = 23;
+  static const unsigned nTrigObjMax = 61;
+  static const unsigned nSFMax = 64;
+  static const unsigned nLHEPdfWeightMax = 200;
+  static const unsigned nLHEScaleWeightMax = 9;
+
   // GenPart
   UInt_t          nGenPart;
-  Float_t         GenPart_pt[180];   //[nGenPart]
-  Float_t         GenPart_eta[180];   //[nGenPart]
-  Float_t         GenPart_phi[180];   //[nGenPart]
-  Float_t         GenPart_mass[180];   //[nGenPart]
-  Int_t           GenPart_pdgId[180];   //[nGenPart]
-  Int_t           GenPart_genPartIdxMother[180];   //[nGenPart]
-  Int_t           GenPart_status[180];   //[nGenPart]
-  // Int_t           GenPart_statusFlags[149];   //[nGenPart]
+  Float_t         GenPart_pt[nGenPartMax];   //[nGenPart]
+  Float_t         GenPart_eta[nGenPartMax];   //[nGenPart]
+  Float_t         GenPart_phi[nGenPartMax];   //[nGenPart]
+  Float_t         GenPart_mass[nGenPartMax];   //[nGenPart]
+  Int_t           GenPart_pdgId[nGenPartMax];   //[nGenPart]
+  Int_t           GenPart_genPartIdxMother[nGenPartMax];   //[nGenPart]
+  Int_t           GenPart_status[nGenPartMax];   //[nGenPart]
+  // Int_t           GenPart_statusFlags[nGenPartMax];   //[nGenPart]
 
   // GenJet
   UInt_t          nGenJet;
-  Float_t         GenJet_eta[26];   //[nGenJet]
-  Float_t         GenJet_mass[26];   //[nGenJet]
-  Float_t         GenJet_phi[26];   //[nGenJet]
-  Float_t         GenJet_pt[26];   //[nGenJet]
-  Int_t           GenJet_partonFlavour[26];   //[nGenJet]
-  UChar_t         GenJet_hadronFlavour[26];   //[nGenJet]
+  Float_t         GenJet_eta[nGenJetMax];   //[nGenJet]
+  Float_t         GenJet_mass[nGenJetMax];   //[nGenJet]
+  Float_t         GenJet_phi[nGenJetMax];   //[nGenJet]
+  Float_t         GenJet_pt[nGenJetMax];   //[nGenJet]
+  Int_t           GenJet_partonFlavour[nGenJetMax];   //[nGenJet]
+  UChar_t         GenJet_hadronFlavour[nGenJetMax];   //[nGenJet]
 
   // Jet
   UInt_t          nJet;
-  Float_t         Jet_pt[27];   //[nJet]
-  Float_t         Jet_eta[27];   //[nJet]
-  Float_t         Jet_phi[27];   //[nJet]
-  Float_t         Jet_mass[27];   //[nJet]
-  Int_t           Jet_jetId[27];   //[nJet]
-  Int_t           Jet_puId[27];   //[nJet]
-  Int_t           Jet_genJetIdx[27];   //[nJet]
+  Float_t         Jet_pt[nJetMax];   //[nJet]
+  Float_t         Jet_eta[nJetMax];   //[nJet]
+  Float_t         Jet_phi[nJetMax];   //[nJet]
+  Float_t         Jet_mass[nJetMax];   //[nJet]
+  Int_t           Jet_jetId[nJetMax];   //[nJet]
+  Int_t           Jet_puId[nJetMax];   //[nJet]
+  Int_t           Jet_genJetIdx[nJetMax];   //[nJet]
   // Float_t         Jet_btagDeepB[25];   //[nJet]
-  Float_t         Jet_btagDeepFlavB[27];   //[nJet]
-  Int_t           Jet_hadronFlavour[27];   //[nJet]
-  Int_t           Jet_partonFlavour[27];   //[nJet]
-  Float_t	  Jet_pt_nom[27];   //[nJet]
-  Float_t         Jet_pt_jesTotalUp[27];   //[nJet]
-  Float_t         Jet_pt_jesTotalDown[27];   //[nJet]
-  Float_t         Jet_pt_jerUp[27];   //[nJet]
-  Float_t         Jet_pt_jerDown[27];   //[nJet]
-  Float_t         Jet_mass_nom[27];   //[nJet]
-  Float_t         Jet_mass_jesTotalUp[27];   //[nJet]
-  Float_t         Jet_mass_jesTotalDown[27];   //[nJet]
-  Float_t         Jet_mass_jerUp[27];   //[nJet]
-  Float_t         Jet_mass_jerDown[27];   //[nJet]
-  Float_t	  Jet_bRegCorr[27];   //[nJet]
-  Float_t	  Jet_bRegRes[27];  //[nJet]
+  Float_t         Jet_btagDeepFlavB[nJetMax];   //[nJet]
+  Int_t           Jet_hadronFlavour[nJetMax];   //[nJet]
+  Int_t           Jet_partonFlavour[nJetMax];   //[nJet]
+  Float_t	  Jet_pt_nom[nJetMax];   //[nJet]
+  Float_t         Jet_pt_jesTotalUp[nJetMax];   //[nJet]
+  Float_t         Jet_pt_jesTotalDown[nJetMax];   //[nJet]
+  Float_t         Jet_pt_jerUp[nJetMax];   //[nJet]
+  Float_t         Jet_pt_jerDown[nJetMax];   //[nJet]
+  Float_t         Jet_mass_nom[nJetMax];   //[nJet]
+  Float_t         Jet_mass_jesTotalUp[nJetMax];   //[nJet]
+  Float_t         Jet_mass_jesTotalDown[nJetMax];   //[nJet]
+  Float_t         Jet_mass_jerUp[nJetMax];   //[nJet]
+  Float_t         Jet_mass_jerDown[nJetMax];   //[nJet]
+  Float_t	  Jet_bRegCorr[nJetMax];   //[nJet]
+  Float_t	  Jet_bRegRes[nJetMax];  //[nJet]
 
   // Electron
   UInt_t          nElectron;
-  Float_t         Electron_pt[9];   //[nElectron]
-  Float_t         Electron_eta[9];   //[nElectron]
-  Float_t         Electron_phi[9];   //[nElectron]
-  Float_t         Electron_mass[9];   //[nElectron]
-  Int_t           Electron_charge[9];   //[nElectron]
-  Int_t           Electron_cutBased[9];   //[nElectron]
-  Bool_t          Electron_cutBased_HEEP[9];   //[nElectron]
-  Float_t	  Electron_dEsigmaDown[9];    //[nElectron]
-  Float_t	  Electron_dEsigmaUp[9];    //[nElectron]
+  Float_t         Electron_pt[nElectronMax];   //[nElectron]
+  Float_t         Electron_eta[nElectronMax];   //[nElectron]
+  Float_t         Electron_phi[nElectronMax];   //[nElectron]
+  Float_t         Electron_mass[nElectronMax];   //[nElectron]
+  Int_t           Electron_charge[nElectronMax];   //[nElectron]
+  Int_t           Electron_cutBased[nElectronMax];   //[nElectron]
+  Bool_t          Electron_cutBased_HEEP[nElectronMax];   //[nElectron]
+  Float_t	  Electron_dEsigmaDown[nElectronMax];    //[nElectron]
+  Float_t	  Electron_dEsigmaUp[nElectronMax];    //[nElectron]
   // Int_t           Electron_genPartIdx[9];   //[nElectron]
 
   //Muon
   UInt_t          nMuon;
-  Float_t         Muon_pt[23];   //[nMuon]
-  Float_t         Muon_eta[23];   //[nMuon]
-  Float_t         Muon_phi[23];   //[nMuon]
-  Float_t         Muon_mass[23];   //[nMuon]
-  Int_t           Muon_charge[23];   //[nMuon]
-  // Int_t           Muon_genPartIdx[23];   //[nMuon]
-  Int_t           Muon_tightId[23];   //[nMuon]
-  Bool_t          Muon_looseId[23];   //[nMuon]
-  UChar_t	  Muon_highPtId[23];  //[nMuon]
-  Float_t         Muon_pfRelIso04_all[23];   //[nMuon]
+  Float_t         Muon_pt[nMuonMax];   //[nMuon]
+  Float_t         Muon_eta[nMuonMax];   //[nMuon]
+  Float_t         Muon_phi[nMuonMax];   //[nMuon]
+  Float_t         Muon_mass[nMuonMax];   //[nMuon]
+  Int_t           Muon_charge[nMuonMax];   //[nMuon]
+  // Int_t           Muon_genPartIdx[nMuonMax];   //[nMuon]
+  Bool_t          Muon_tightId[nMuonMax];   //[nMuon]
+  Bool_t          Muon_looseId[nMuonMax];   //[nMuon]
+  // UChar_t	  Muon_highPtId[nMuonMax];  //[nMuon]
+  Float_t         Muon_pfRelIso04_all[nMuonMax];   //[nMuon]
 
   //MET
   Float_t         MET_phi;
@@ -110,46 +120,47 @@ public:
 
   //TrigObj
   UInt_t          nTrigObj;
-  Float_t         TrigObj_pt[61];   //[nTrigObj]
-  Float_t         TrigObj_eta[61];   //[nTrigObj]
-  Float_t         TrigObj_phi[61];   //[nTrigObj]
-  Int_t           TrigObj_id[61];   //[nTrigObj]
+  Float_t         TrigObj_pt[nTrigObjMax];   //[nTrigObj]
+  Float_t         TrigObj_eta[nTrigObjMax];   //[nTrigObj]
+  Float_t         TrigObj_phi[nTrigObjMax];   //[nTrigObj]
+  Int_t           TrigObj_id[nTrigObjMax];   //[nTrigObj]
+  Int_t           TrigObj_filterBits[nTrigObjMax];   //[nTrigObj]
 
   //SFs
-  Float_t	  Electron_scaleFactor[64]; //nElectron
-  Float_t	  Electron_scaleFactorUp[64]; //[nElectron]
-  Float_t	  Electron_scaleFactorDown[64]; //[nElectron]
-  Float_t   Muon_triggerScaleFactor[64]; // [nMuon]
-  Float_t   Muon_triggerScaleFactorSystUp[64]; // [nMuon]
-  Float_t   Muon_triggerScaleFactorSystDown[64]; // [nMuon]
-  Float_t   Muon_idScaleFactor[64]; // [nMuon]
-  Float_t   Muon_idScaleFactorSystUp[64]; // [nMuon]
-  Float_t   Muon_idScaleFactorSystDown[64]; // [nMuon]
-  Float_t   Muon_isoScaleFactor[64]; // [nMuon]
-  Float_t   Muon_isoScaleFactorSystUp[64]; // [nMuon]
-  Float_t   Muon_isoScaleFactorSystDown[64]; // [nMuon]
-  Float_t	  Jet_bTagScaleFactorTight[64]; //[nJet]
-  Float_t	  Jet_bTagScaleFactorTightUp[64]; //[nJet]
-  Float_t	  Jet_bTagScaleFactorTightDown[64]; //[nJet]
-  Float_t         Jet_bTagScaleFactorMedium[64]; //[nJet]
-  Float_t         Jet_bTagScaleFactorMediumUp[64]; //[nJet]
-  Float_t         Jet_bTagScaleFactorMediumDown[64]; //[nJet]
-  Float_t         Jet_bTagScaleFactorLoose[64]; //[nJet]
-  Float_t         Jet_bTagScaleFactorLooseUp[64]; //[nJet]
-  Float_t         Jet_bTagScaleFactorLooseDown[64]; //[nJet]
-  Float_t	  Jet_puIdScaleFactorTight[64]; //[nJet]
-  Float_t	  Jet_puIdScaleFactorTightUp[64]; //nJet]
-  Float_t	  Jet_puIdScaleFactorTightDown[64]; //[nJet]
-  Float_t         Jet_puIdScaleFactorMedium[64]; //[nJet]
-  Float_t         Jet_puIdScaleFactorMediumUp[64]; //nJet]
-  Float_t         Jet_puIdScaleFactorMediumDown[64]; //[nJet]
-  Float_t         Jet_puIdScaleFactorLoose[64]; //[nJet]
-  Float_t         Jet_puIdScaleFactorLooseUp[64]; //nJet]
-  Float_t         Jet_puIdScaleFactorLooseDown[64]; //[nJet]
+  Float_t	  Electron_scaleFactor[nSFMax]; //nElectron
+  Float_t	  Electron_scaleFactorUp[nSFMax]; //[nElectron]
+  Float_t	  Electron_scaleFactorDown[nSFMax]; //[nElectron]
+  Float_t   Muon_triggerScaleFactor[nSFMax]; // [nMuon]
+  Float_t   Muon_triggerScaleFactorSystUp[nSFMax]; // [nMuon]
+  Float_t   Muon_triggerScaleFactorSystDown[nSFMax]; // [nMuon]
+  Float_t   Muon_idScaleFactor[nSFMax]; // [nMuon]
+  Float_t   Muon_idScaleFactorSystUp[nSFMax]; // [nMuon]
+  Float_t   Muon_idScaleFactorSystDown[nSFMax]; // [nMuon]
+  Float_t   Muon_isoScaleFactor[nSFMax]; // [nMuon]
+  Float_t   Muon_isoScaleFactorSystUp[nSFMax]; // [nMuon]
+  Float_t   Muon_isoScaleFactorSystDown[nSFMax]; // [nMuon]
+  Float_t	  Jet_bTagScaleFactorTight[nSFMax]; //[nJet]
+  Float_t	  Jet_bTagScaleFactorTightUp[nSFMax]; //[nJet]
+  Float_t	  Jet_bTagScaleFactorTightDown[nSFMax]; //[nJet]
+  Float_t         Jet_bTagScaleFactorMedium[nSFMax]; //[nJet]
+  Float_t         Jet_bTagScaleFactorMediumUp[nSFMax]; //[nJet]
+  Float_t         Jet_bTagScaleFactorMediumDown[nSFMax]; //[nJet]
+  Float_t         Jet_bTagScaleFactorLoose[nSFMax]; //[nJet]
+  Float_t         Jet_bTagScaleFactorLooseUp[nSFMax]; //[nJet]
+  Float_t         Jet_bTagScaleFactorLooseDown[nSFMax]; //[nJet]
+  Float_t	  Jet_puIdScaleFactorTight[nSFMax]; //[nJet]
+  Float_t	  Jet_puIdScaleFactorTightUp[nSFMax]; //nJet]
+  Float_t	  Jet_puIdScaleFactorTightDown[nSFMax]; //[nJet]
+  Float_t         Jet_puIdScaleFactorMedium[nSFMax]; //[nJet]
+  Float_t         Jet_puIdScaleFactorMediumUp[nSFMax]; //nJet]
+  Float_t         Jet_puIdScaleFactorMediumDown[nSFMax]; //[nJet]
+  Float_t         Jet_puIdScaleFactorLoose[nSFMax]; //[nJet]
+  Float_t         Jet_puIdScaleFactorLooseUp[nSFMax]; //nJet]
+  Float_t         Jet_puIdScaleFactorLooseDown[nSFMax]; //[nJet]
 
-  Int_t      nLHEPdfWeight;
+  UInt_t      nLHEPdfWeight;
   Float_t    LHEPdfWeight[200];
-  Int_t      nLHEScaleWeight;
+  UInt_t      nLHEScaleWeight;
   Float_t    LHEScaleWeight[9];
 
   //Trigger
@@ -262,6 +273,7 @@ public:
     chain->SetBranchAddress("TrigObj_eta", TrigObj_eta);
     chain->SetBranchAddress("TrigObj_phi", TrigObj_phi);
     chain->SetBranchAddress("TrigObj_id", TrigObj_id);
+    chain->SetBranchAddress("TrigObj_filterBits", TrigObj_filterBits);
 
     chain->SetBranchAddress("run", &run);
     chain->SetBranchAddress("luminosityBlock", &luminosityBlock);
@@ -317,6 +329,10 @@ public:
       chain->SetBranchAddress("Pileup_pudensity", &Pileup_pudensity, &b_Pileup_pudensity);
       chain->SetBranchAddress("Pileup_sumEOOT", &Pileup_sumEOOT, &b_Pileup_sumEOOT);
       chain->SetBranchAddress("Pileup_sumLOOT", &Pileup_sumLOOT, &b_Pileup_sumLOOT);
+
+      if (nSFMax < nJetMax) cout << "nSFMax < nJetMax" <<endl;
+      if (nSFMax < nElectronMax) cout << "nSFMax < nElectronMax" <<endl;
+      if (nSFMax < nMuonMax) cout << "nSFMax < nMuonMax" <<endl;
 
       chain->SetBranchAddress("Electron_scaleFactor", Electron_scaleFactor);
       chain->SetBranchAddress("Electron_scaleFactorUp", Electron_scaleFactorUp);

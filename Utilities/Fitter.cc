@@ -29,9 +29,9 @@ public:
   void SetJetScale(JetScale* JS_) {
     JS = JS_;
   }
-  void SetbTag(bTagEff* bt_) {
-    bTE = bt_;
-  }
+  // void SetbTag(bTagEff* bt_) {
+  //   bTE = bt_;
+  // }
 
   void SetJets(vector<Jet> ajs, int iregion = 0) {
     AllJets.clear();
@@ -149,7 +149,8 @@ public:
     for (unsigned ip = 0; ip < Perms.size(); ++ip) {
       BaseHypo.ResetJets();
       BaseHypo.SetJetsFromPerm(AllJets, Perms[ip]);
-      double PbTag = bTE->GetLikelihood(AllJets, AllbTags, Perms[ip]);
+      // double PbTag = bTE->GetLikelihood(AllJets, AllbTags, Perms[ip]);
+      double PbTag = 1.0; // FIXME
       double PPerm = MinimizeP();
       double ThisP = PbTag * PPerm;
       if (ThisP > BestP) {
@@ -164,7 +165,8 @@ public:
       BaseHypo.SetJetsFromPerm(AllJets, BestPerm);
       MinimizePFunc(BestScales);
       BestHypo = ScaledHypo;
-      BestHypo.PbTag = bTE->GetLikelihood(AllJets, AllbTags, BestPerm);
+      // BestHypo.PbTag = bTE->GetLikelihood(AllJets, AllbTags, BestPerm);
+      BestHypo.PbTag = 1.0; // FIXME
       // if (BestP > 1.0) {
       //   cout << "Event BestP = " << BestP << ", Recalculated P = " << BestHypo.PbTag * BestHypo.GetPFitter() <<endl;
       //   cout << Form("PScale = %f, PLep = %f, PHadW = %f, PHadT = %f, PbTag = %f", BestHypo.PScale, BestHypo.PLep, BestHypo.PHadW, BestHypo.PHadT, BestHypo.PbTag) <<endl;
@@ -208,7 +210,7 @@ public:
   bool PUIDWP;
   bool bTagWP;
 
-  bTagEff* bTE;
+  // bTagEff* bTE;
   vector<TLorentzVector> AllJets;
   vector<bool> AllbTags;
   vector< vector<unsigned> > Perms;
