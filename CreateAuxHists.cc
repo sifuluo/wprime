@@ -9,7 +9,7 @@
 #include "Utilities/NanoAODReader.cc"
 #include "Utilities/JetScale.cc"
 
-void CreateAuxHists(int sampleyear = 3, int sampletype = 16, int ifile = 0, string infile = "All") {
+void CreateAuxHists(int sampleyear = 3, int sampletype = 2, int ifile = 0, string infile = "All") {
   // infile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/wprime_500/2017/003C756A-BC7B-5A48-8F2E-A61D3CDC7C32.root";
   // sampletype = dlib.AddDataset_NGTCXS("WP500");
   if (sampletype < 0) {
@@ -20,8 +20,7 @@ void CreateAuxHists(int sampleyear = 3, int sampletype = 16, int ifile = 0, stri
   Configs* conf = new Configs(sampleyear, sampletype, ifile);
   conf->Debug = false;
   conf->DASInput = false;
-  conf->bTagEffCreation = true;
-  conf->JetScaleCreation = true;
+  conf->AuxHistCreation = true;
   // conf->ProgressInterval = 1;
   conf->InputFile = infile;
   conf->EntryMax = 2000000;

@@ -23,7 +23,7 @@ public:
   JetScale(Configs* conf_) {
     conf = conf_;
     GetFileName();
-    if (conf->JetScaleCreation && conf->IsMC) CreateScaleHists();
+    if (conf->AuxHistCreation && conf->IsMC) CreateScaleHists();
     else {
       ReadScaleHists();
       SetUpMassFunctions();
@@ -41,9 +41,9 @@ public:
 
   void GetFileName() {
     string sampletype = conf->SampleType;
-    if (!conf->IsMC) sampletype = conf->JetScaleDataSubstitution;
+    if ((!conf->AuxHistCreation && conf->UseMergedAuxHist) || !conf->IsMC) sampletype = "Merged";
     string filename = "Scale_" + conf->SampleYear + "_" + sampletype + ".root";
-    FileName = conf->JetScaleBasepath + filename;
+    FileName = conf->AuxHistBasePath + filename;
   }
 
   pair<int,int> FindBin(double et,double pt) {
@@ -53,7 +53,7 @@ public:
       if (fabs(et) >= etabins[ie] && fabs(et) < etabins[ie+1]) ieta = ie;
     }
     if (ieta == -1) {
-      if (!conf->JetScaleCreation)cout << "Encountered eta = " << et << ", Using last eta bin 3.0 - 5.2 " << endl;
+      if (!conf->AuxHistCreation)cout << "Encountered eta = " << et << ", Using last eta bin 3.0 - 5.2 " << endl;
       ieta = etabins.size() - 2; // Using last bin.
     }
     // if (ieta == -1) ieta = etabins.size() - 2; // if not found in bins, use the last bin.
@@ -62,14 +62,14 @@ public:
       if (pt >= ptbins[ieta][ip] && pt < ptbins[ieta][ip+1]) ipt = ip;
     }
     // if (ipt == -1) ipt = ptbins[ieta].size() - 2; // if not found in bins, use the last bin.
-    if (pt < 30 && !conf->JetScaleCreation) {
+    if (pt < 30 && !conf->AuxHistCreation) {
       cout << "Encountered pt = " << pt << ", Should have been filtered out already" <<endl;
     }
     else if (pt > ptbins[ieta].back()) {
-      if (!conf->JetScaleCreation) cout << "Encountered pt = " << pt << ", Using last pt bin of pt up to 10000" <<endl;
+      if (!conf->AuxHistCreation) cout << "Encountered pt = " << pt << ", Using last pt bin of pt up to 10000" <<endl;
       ipt = ptbins[ieta].size() - 2;
     }
-    else if (ipt == -1 && !conf->JetScaleCreation) cout << "Unknown pt break : pt = " << pt << endl;
+    else if (ipt == -1 && !conf->AuxHistCreation) cout << "Unknown pt break : pt = " << pt << endl;
     return pair<int,int>(ieta, ipt);
   }
 
@@ -104,7 +104,7 @@ public:
   }
 
   void PostProcess() {
-    if (!conf->JetScaleCreation) return;
+    if (!conf->AuxHistCreation) return;
     ScaleFile->Write();
     ScaleFile->Save();
   }

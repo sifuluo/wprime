@@ -61,11 +61,14 @@ struct Configs {
 
   bool DASInput = false;
 
-  bool bTagEffCreation = false;
-  string bTagEffBasepath = "outputs/"; // To change to "AUXFiles/outputs" when running on DAS files
-  bool JetScaleCreation = false;
-  string JetScaleBasepath = "outputs/"; // To change to "AUXFiles/outputs" when running on DAS files
-  string JetScaleDataSubstitution = "ttbar";
+  bool AuxHistCreation = false;
+  string AuxHistBasePath = UserSpecifics::EOSBasePath + "AuxHists/outputs/";
+  bool UseMergedAuxHist = false;
+
+  // bool bTagEffCreation = false;
+  // bool JetScaleCreation = false;
+  // string bTagEffBasepath = UserSpecifics::EOSBasePath + "AuxHists/outputs/";
+  // string JetScaleBasepath = UserSpecifics::EOSBasePath + "AuxHists/outputs/";
 
   vector<string> DebugList; // Look for "conf->Debug()" in modules to see candidates.
   bool Debug(string n) {

@@ -129,8 +129,7 @@ public:
       ReadPileup();
     }
     ReadJets();
-    if (conf->bTagEffCreation || conf->JetScaleCreation) return 1;
-    ReadTriggers();
+    if (conf->AuxHistCreation) return 1;
     ReadLeptons();
     ReadMET();
     ReadVertices();
@@ -266,7 +265,7 @@ public:
                 tmp.bJetSFweights[iv][iwp] = 1.0;
                 continue;
               }
-              if (conf->bTagEffCreation) continue;
+              if (conf->AuxHistCreation) continue;
               if (tmp.bJetSFweights[iv][iwp] <= 0 || tmp.bJetSFweights[iv][iwp] != tmp.bJetSFweights[iv][iwp]) {
                 cout << "In bTag WP " << iwp << " , " << iv << " variation, ";
                 if (tmp.bTagPasses[iwp]) cout << " bTagged ";

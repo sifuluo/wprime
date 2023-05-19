@@ -39,23 +39,28 @@ public:
     bTagWP = conf->bTagWP;
     if (!conf->IsMC) return;
     GetFileName();
-    if (conf->bTagEffCreation) CreateEffFile();
+    if (conf->AuxHistCreation) CreateEffFile();
     else ReadEffFile();
   };
   
 
   void GetFileName() {
+    string sampletype = conf->SampleType;
+    if ((!conf->AuxHistCreation && conf->UseMergedAuxHist) || !conf->IsMC) sampletype = "Merged";
     string filename = "bTagEff_" + conf->SampleYear + "_" + conf->SampleType + ".root";
-    FileName = conf->bTagEffBasepath + filename;
+    FileName = conf->AuxHistBasePath + filename;
   }
 
   void CreateEffFile() {
     f_eff = new TFile(FileName,"RECREATE");
-    h_eff.resize(3);
+    h_eff.resize(6);
     const double HistPtBins[12] = {20,30,50,70,100,140,200,300,600,1000,3000,10000}; // 12 digits, 11 bins
-    h_eff[0] = new TH2F("BtagPass_L","BtagPass_L",8,-2.5,5.5, 11,HistPtBins);
-    h_eff[1] = new TH2F("BtagPass_M","BtagPass_M",8,-2.5,5.5, 11,HistPtBins);
-    h_eff[2] = new TH2F("BtagPass_T","BtagPass_T",8,-2.5,5.5, 11,HistPtBins);
+    h_eff[0] = new TH2F("BtagEff_L","BtagEff_L",8,-2.5,5.5, 11,HistPtBins);
+    h_eff[1] = new TH2F("BtagEff_M","BtagEff_M",8,-2.5,5.5, 11,HistPtBins);
+    h_eff[2] = new TH2F("BtagEff_T","BtagEff_T",8,-2.5,5.5, 11,HistPtBins);
+    h_eff[3] = new TH2F("BtagPass_L","BtagPass_L",8,-2.5,5.5, 11,HistPtBins);
+    h_eff[4] = new TH2F("BtagPass_M","BtagPass_M",8,-2.5,5.5, 11,HistPtBins);
+    h_eff[5] = new TH2F("BtagPass_T","BtagPass_T",8,-2.5,5.5, 11,HistPtBins);
     TotalEvts = new TH2F("TotalEvts","TotalEvts",8,-2.5,5.5, 11,HistPtBins);
     // x axis:
     // -2: all lights(0,1,2,3,4);
@@ -72,15 +77,16 @@ public:
     if (had >= 0 && had < 5) TotalEvts->Fill(-2,j.Pt());
     for (unsigned i = 0; i < 3; ++i) {
       if (j.bTagPasses[i]) {
-        h_eff[i]->Fill(had,j.Pt());
-        if (had >= 0 && had < 5) h_eff[i]->Fill(-2,j.Pt());
+        h_eff[i + 3]->Fill(had,j.Pt());
+        if (had >= 0 && had < 5) h_eff[i + 3]->Fill(-2,j.Pt());
       }
     }
   }
 
   void PostProcess() {
-    if (!conf->bTagEffCreation || !conf->IsMC) return;
+    if (!conf->AuxHistCreation || !conf->IsMC) return;
     for (unsigned i = 0; i < 3; ++i) {
+      h_eff[i] = (TH2F*) h_eff[i + 3]->Clone();
       h_eff[i]->Divide(TotalEvts);
     }
     // delete TotalEvts;
@@ -89,17 +95,17 @@ public:
   }
 
   void ReadEffFile() {
-    if (conf->bTagEffCreation || !conf->IsMC) return;
+    if (conf->AuxHistCreation || !conf->IsMC) return;
     f_eff = new TFile(FileName,"READ");
     cout << "Reading from bTagEff file " << FileName << endl;
     if (f_eff->IsZombie()) {
       cout << "Faild to read bTagEff file." <<endl;
       return;
     }
-    h_eff.resize(3);
-    h_eff[0] = (TH2F*) f_eff->Get("BtagPass_L");
-    h_eff[1] = (TH2F*) f_eff->Get("BtagPass_M");
-    h_eff[2] = (TH2F*) f_eff->Get("BtagPass_T");
+    h_eff.resize(6);
+    h_eff[0] = (TH2F*) f_eff->Get("BtagEff_L");
+    h_eff[1] = (TH2F*) f_eff->Get("BtagEff_M");
+    h_eff[2] = (TH2F*) f_eff->Get("BtagEff_T");
     TotalEvts = (TH2F*) f_eff->Get("TotalEvts");
     h_eff[0]->SetDirectory(0);
     h_eff[1]->SetDirectory(0);
@@ -112,7 +118,7 @@ public:
 
   vector<float> GetEff(Jet& j) { // This function is intented to be used by NanoAODReader 
     vector<float> out = {0.9,0.7,0.5};
-    if (conf->bTagEffCreation || !conf->IsMC) {
+    if (conf->AuxHistCreation || !conf->IsMC) {
       return out;
     }
     for (unsigned iwp = 0; iwp < 3; ++iwp) {
