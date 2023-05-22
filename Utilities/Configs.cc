@@ -62,7 +62,7 @@ struct Configs {
   bool DASInput = false;
 
   bool AuxHistCreation = false;
-  string AuxHistBasePath = UserSpecifics::EOSBasePath + "AuxHists/outputs/";
+  string AuxHistBasePath = UserSpecifics::EOSBasePath + "AuxHists/";
   bool UseMergedAuxHist = false;
 
   // bool bTagEffCreation = false;

@@ -85,11 +85,11 @@ public:
 
   void PostProcess() {
     if (!conf->AuxHistCreation || !conf->IsMC) return;
+    f_eff->cd();
     for (unsigned i = 0; i < 3; ++i) {
-      h_eff[i] = (TH2F*) h_eff[i + 3]->Clone();
+      h_eff[i]->Add(h_eff[i+3]);
       h_eff[i]->Divide(TotalEvts);
     }
-    // delete TotalEvts;
     f_eff->Write();
     f_eff->Save();
   }

@@ -38,9 +38,20 @@ void CreateAuxHists(int sampleyear = 3, int sampletype = 2, int ifile = 0, strin
     if (!(r->ReadEvent(ievt))) break;
     r->BranchSizeCheck();
     if (conf->EntryMax > 0 && ievt == conf->EntryMax) break;
+    //check jet multiplicity
+    int nj = 0;
+    int nb = 0;
+    for(unsigned j = 0; j<r->Jets.size(); ++j){
+      if(r->Jets[j].Pt() < 30.) continue;
+      if(!r->Jets[j].PUIDpasses[conf->PUIDWP]) continue;//select working point for PUID to none by commenting this line out, loose by PUIDpasses 0, medium by 1, tight by 2
+      nj++;
+      if(r->Jets[j].bTagPasses[conf->bTagWP]) nb++;//select working point for b-tagging by bTagPasses[0] = loose, 1 medium and 2 tight
+    }
     for (unsigned ij = 0; ij < r->Jets.size(); ++ij) {
       bTE->FillJet(r->Jets[ij]);
-      if (r->Jets[ij].genJetIdx != -1) JS->FillJet(r->Jets[ij],r->GenJets[r->Jets[ij].genJetIdx]);
+      if (r->Jets[ij].genJetIdx != -1 && ((nj >= 5 && nb >= 2) || (nj >= 6 && nb >= 3))) { // Fitter takes SR inputs
+        JS->FillJet(r->Jets[ij],r->GenJets[r->Jets[ij].genJetIdx]);
+      }
     }
   }
   bTE->PostProcess();

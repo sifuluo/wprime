@@ -38,7 +38,7 @@ public:
     R_PUIDSF = new PUIDSFReader(conf);
     R_PUIDSF->ReadPUIDSF();
 
-    if (conf->iFile >= 0 || conf->InputFile == "All") { // batch mode
+    if (conf->iFile >= 0 || (conf->InputFile == "All" && conf->iFile < 0)) { // batch mode
 
       vector<string> rootfiles = GetFileNames();
       // rootfiles = {"/eos/user/p/pflanaga/andrewsdata/skimmed_samples/ttbar/2018/B047029C-C11B-A54B-A5F3-91981AB3D5DC.root"};
@@ -82,7 +82,7 @@ public:
     while (getline(infile, rootf)) {
       ++counter;
       if (counter < startfile) continue;
-      if (counter > endfile && conf->InputFile != "All") break;
+      if (counter > endfile && !(conf->InputFile == "All" && conf->iFile < 0)) break;
       if (rootf.find("/store/") == 0) rootf = "root://cms-xrd-global.cern.ch/" + rootf;
       cout << "Loading root file " << rootf << endl;
       out.push_back(rootf);
