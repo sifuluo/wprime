@@ -104,7 +104,7 @@ public:
 
   //function to determine lepton-jet overlaps, gives answer depending on PUID passing or not
   vector<bool> OverlapCheck(Lepton ell_){
-    vector<bool> out = {true, true, true};
+    vector<bool> out = {false, false, false};
     for(unsigned j = 0; j < Jets.size(); ++j) if(fabs(Jets[j].DeltaR(ell_)) < 0.4) out = Jets[j].PUIDpasses;//this solution presumes there is only 1 possible jet to match
     return out;
   }
@@ -326,11 +326,15 @@ public:
       maxPt = max(maxPt, tmp.ScaleUp().Pt());
       maxPt = max(maxPt, tmp.ScaleDown().Pt());
 
+      //check for jet overlaps
+      tmp.OverlapsJet = OverlapCheck(tmp);
+
       //CommonSelectionBlock
       float absEta = fabs(tmp.Eta());
       bool passCommon = (absEta < 2.4);
       passCommon &= (absEta < 1.44 || absEta > 1.57);
       passCommon &= (maxPt >= 10.);
+      passCommon &= !(tmp.OverlapsJet[conf->PUIDWP]);
 
       //TripleSelectionsBlock
       bool passVeto = (evts->Electron_cutBased[i] >= 2) && passCommon;
@@ -351,8 +355,7 @@ public:
 
       if(!passVeto && !passLoose && !passPrimary) continue;
 
-      //check for jet overlaps
-      tmp.OverlapsJet = OverlapCheck(tmp);
+      
 
       //set SF and variation for primary only, HEEP as in https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaRunIIRecommendations#HEEPV7_0
       tmp.SFs = {1., 1., 1.};
@@ -428,11 +431,15 @@ public:
       tmp.ScaleUp() = dummy;
       tmp.ScaleDown() = dummy;
 
+      //check for jet overlaps
+      tmp.OverlapsJet = OverlapCheck(tmp);
+
       //CommonSelectionBlock
       float absEta = fabs(tmp.Eta());
       bool passCommon = (fabs(tmp.Eta()) < 2.4);
       passCommon &= (tmp.Pt() > 10.);
       passCommon &= (evts->Muon_pfRelIso04_all[i] < 0.25);
+      passCommon &= !(tmp.OverlapsJet[conf->PUIDWP]);
 
       //TripleSelectionBlock
       bool passVeto = (evts->Muon_looseId[i]) && passCommon;
@@ -455,8 +462,7 @@ public:
 
       if(!passVeto && !passLoose && !passPrimary) continue;
 
-      //check for jet overlaps
-      tmp.OverlapsJet = OverlapCheck(tmp);
+      
 
       //set SF and variation for primary only
       if(passPrimary && IsMC){
