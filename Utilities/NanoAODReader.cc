@@ -808,6 +808,10 @@ public:
     SFweights.push_back(PDFWeight);
     SFweights.push_back(LHEScaleW);
 
+    // for (unsigned i = 0; i < SFweights.size(); ++i) {
+    //   SFweights[i].NanCheck();
+    // }
+
     //determine nominal event weight
     vector<pair<double, string> > EventWeight_out;
     float CentralWeight = 1.;
@@ -820,8 +824,22 @@ public:
     for(unsigned i = 0; i < SFweights.size(); ++i){
 
       //create variations with strings for later combine histograms
-      EventWeight_out.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[1], SFweights[i].source + "_up"));
-      EventWeight_out.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[2], SFweights[i].source + "_down"));
+      float weightup = 1.;
+      float weightdown = 1.;
+      for(unsigned j = 0; j < SFweights.size(); ++j){
+        if (i == j) {
+          weightup *= SFweights[j].variations[1];
+          weightdown *= SFweights[j].variations[2];
+        }
+        else {
+          weightup *= SFweights[j].variations[0];
+          weightdown *= SFweights[j].variations[0];
+        }
+      }
+      EventWeight_out.push_back(make_pair(weightup, SFweights[i].source + "_up"));
+      EventWeight_out.push_back(make_pair(weightdown, SFweights[i].source + "_down"));
+      // EventWeight_out.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[1], SFweights[i].source + "_up"));
+      // EventWeight_out.push_back(make_pair(CentralWeight / SFweights[i].variations[0] * SFweights[i].variations[2], SFweights[i].source + "_down"));
     }
     return EventWeight_out;
   }

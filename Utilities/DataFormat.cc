@@ -130,6 +130,18 @@ struct EventWeight{
   string source;
   // bool IsActive;
   vector<float> variations = {1.,1.,1.}; // {nominal, up, down}
+  int NanCheck() {
+    if (variations[0] == 0.) {
+      cout << "Event Weight from source of " << source << " is 0. , which can lead to nan in the total weight." <<endl;
+      return 1;
+    }
+    for (unsigned i = 0; i < 3; ++i) {
+      if (variations[i] != variations[i]) {
+        cout << "Event Weight from source of " << source << ", variation " << i << ", is nan." <<endl;
+      return 2+i;
+      }
+    }
+  }
 };
 
 struct RegionID{
