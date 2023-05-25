@@ -130,9 +130,9 @@ public:
     }
     ReadJets();
     if (conf->bTagEffCreation || conf->JetScaleCreation) return 1;
+    ReadTriggers();
     ReadLeptons();
     ReadMET();
-    ReadTriggers();
     ReadVertices();
     RegionAssociations = RegionReader();
     KeepEvent = RegionAssociations.KeepEvent();
@@ -173,36 +173,16 @@ public:
       if (emptysequence >= 3) break; // 3 empty jets in a row, skip the rest
       if (evts->Jet_pt_nom[i] == 0) emptysequence++;
       else emptysequence = 0;
-
-      //determine maximum pT of all jet variations
-      float maxPt = max(evts->Jet_pt_nom[i], evts->Jet_pt_jesTotalUp[i]);
-      maxPt = max(maxPt, evts->Jet_pt_jesTotalDown[i]);
-      maxPt = max(maxPt, evts->Jet_pt_jerUp[i]);
-      maxPt = max(maxPt, evts->Jet_pt_jerDown[i]);
-
-      //baseline jet selections
-      if(maxPt < 30.) continue;
-      if(evts->Jet_jetId[i] < 4) continue;
-      if(fabs(evts->Jet_eta[i]) >= 5.0) continue;//added to accommodate PU ID limits
-
-      //storing jet variations vectors and nominal -> all the same for data
-
       Jet tmp;
-      tmp.SetPtEtaPhiM(evts->Jet_pt_nom[i],evts->Jet_eta[i],evts->Jet_phi[i],evts->Jet_mass_nom[i]); //the nominal here in MC contains JER while nanoAOD default does not
       tmp.index = i;
+      tmp.SetPtEtaPhiM(evts->Jet_pt_nom[i],evts->Jet_eta[i],evts->Jet_phi[i],evts->Jet_mass_nom[i]); //the nominal here in MC contains JER while nanoAOD default does not
+      tmp.JESup().SetPtEtaPhiM(evts->Jet_pt_jesTotalUp[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jesTotalUp[i]);
+      tmp.JESdown().SetPtEtaPhiM(evts->Jet_pt_jesTotalDown[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jesTotalDown[i]);
+      tmp.JERup().SetPtEtaPhiM(evts->Jet_pt_jerUp[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jerUp[i]);
+      tmp.JERdown().SetPtEtaPhiM(evts->Jet_pt_jerDown[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jerDown[i]);
+      tmp.JetId = evts->Jet_jetId[i];
 
-      TLorentzVector PtVars;
-      PtVars.SetPtEtaPhiM(evts->Jet_pt_jesTotalUp[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jesTotalUp[i]);
-      tmp.JESup() = PtVars;
-
-      PtVars.SetPtEtaPhiM(evts->Jet_pt_jesTotalDown[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jesTotalDown[i]);
-      tmp.JESdown() = PtVars;
-
-      PtVars.SetPtEtaPhiM(evts->Jet_pt_jerUp[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jerUp[i]);
-      tmp.JERup() = PtVars;
-
-      PtVars.SetPtEtaPhiM(evts->Jet_pt_jerDown[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jerDown[i]);
-      tmp.JERdown() = PtVars;
+      if (!(tmp.PassCommon())) continue;
 
       //set PUID flags
       // tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], conf->SampleYear);
@@ -294,6 +274,23 @@ public:
     }
   }
 
+  void ReadTriggers() {
+    Triggers.clear();
+    isolated_electron_trigger = evts->isolated_electron_trigger;
+    isolated_muon_trigger = evts->isolated_muon_trigger;
+    isolated_muon_track_trigger = evts->isolated_muon_track_trigger;
+    for (unsigned i = 0; i < evts->nTrigObj; ++i) {
+      if (evts->TrigObj_id[i] == 13 || evts->TrigObj_id[i] == 11) {
+        Trigger tmp;
+        tmp.SetPtEtaPhiM(evts->TrigObj_pt[i], evts->TrigObj_eta[i], evts->TrigObj_phi[i],0);
+        tmp.index = i;
+        tmp.id = evts->TrigObj_id[i];
+        tmp.filterBits = evts->TrigObj_filterBits[i];
+        Triggers.push_back(tmp);
+      }
+    }
+  }
+
   void ReadLeptons() {
     Leptons.clear();
     Electrons.clear();
@@ -319,66 +316,32 @@ public:
       tmp.ScaleDown() = tmp;
       tmp.index = i;
       tmp.charge = evts->Electron_charge[i];
+      tmp.cutBased = evts->Electron_cutBased[i];
+      tmp.cutBasedHEEP = evts->Electron_cutBased_HEEP[i];
 
-      //find maxmimum pT of any variation
-      double maxPt = max(tmp.Pt(), tmp.ResUp().Pt());
-      maxPt = max(maxPt, tmp.ResDown().Pt());
-      maxPt = max(maxPt, tmp.ScaleUp().Pt());
-      maxPt = max(maxPt, tmp.ScaleDown().Pt());
+      if (!(tmp.PassCommon())) continue;
 
       //check for jet overlaps
       tmp.OverlapsJet = OverlapCheck(tmp);
-
-      //CommonSelectionBlock
-      float absEta = fabs(tmp.Eta());
-      bool passCommon = (absEta < 2.4);
-      passCommon &= (absEta < 1.44 || absEta > 1.57);
-      passCommon &= (maxPt >= 10.);
-      passCommon &= !(tmp.OverlapsJet[conf->PUIDWP]);
-
-      //TripleSelectionsBlock
-      bool passVeto = (evts->Electron_cutBased[i] >= 2) && passCommon;
-      passCommon &= (maxPt >= 40.); //change pT cut for non-veto electrons to be on trigger plateau
-      bool passLoose = (evts->Electron_cutBased[i] >= 3) && passCommon;
-      bool passPrimary = evts->Electron_cutBased_HEEP[i] && passCommon;
-
-      // if ((!passVeto && passLoose) || (!passVeto && passPrimary) || (!passLoose && passPrimary)) {
-      //   cout << "Electron " << (passVeto?"T ":"F ") << (passLoose?"T ":"F ") << (passPrimary?"T ":"F ");
-      //   cout << "max pT = " << maxPt << " ";
-      //   cout << "cutBased = " << evts->Electron_cutBased[i] << " ";
-      //   cout << "HEEP " <<(evts->Electron_cutBased_HEEP[i]? "T":"F") <<endl;
-      // }
-
-      tmp.IsPrimary = passPrimary;
-      tmp.IsLoose = passLoose;
-      tmp.IsVeto = passVeto;
-
-      if(!passVeto && !passLoose && !passPrimary) continue;
-
-      
+      tmp.TriggerMatched = tmp.TriggerMatch(evts->isolated_electron_trigger, Triggers, conf->SampleYear == "2017");      
 
       //set SF and variation for primary only, HEEP as in https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaRunIIRecommendations#HEEPV7_0
       tmp.SFs = {1., 1., 1.};
-      if(passPrimary && IsMC){
-        TString sampleyear;
-        string sy = conf->SampleYear;
-        if (sy == "2016" || sy == "2016apv") sampleyear = "2016";
-        else sampleyear = sy;
-
+      if(tmp.PassPrimary(0) && IsMC){
         if(absEta < 1.4442){
-          if(sampleyear == "2016"){
+          if(conf->SampleYear == "2016" || conf->SampleYear == "2016apv"){
             tmp.SFs[0] = 0.983;
             float unc = tmp.Et() < 90 ? 0.01 : min(1 + (tmp.Et() - 90) * 0.0022, 0.03);
             tmp.SFs[1] = 0.983 + unc;
             tmp.SFs[2] = 0.983 - unc;
           }
-          else if(sampleyear == "2017"){
+          else if(conf->SampleYear == "2017"){
             tmp.SFs[0] = 0.968;
             float unc = tmp.Et() < 90 ? 0.01 : min(1 + (tmp.Et() - 90) * 0.0022, 0.03);
             tmp.SFs[1] = 0.968 + unc;
             tmp.SFs[2] = 0.968 - unc;
           }
-          else if(sampleyear == "2018"){
+          else if(conf->SampleYear == "2018"){
             tmp.SFs[0] = 0.969;
             float unc = tmp.Et() < 90 ? 0.01 : min(1 + (tmp.Et() - 90) * 0.0022, 0.03);
             tmp.SFs[1] = 0.969 + unc;
@@ -386,19 +349,19 @@ public:
           }
         }
         else{
-          if(sampleyear == "2016"){
+          if(conf->SampleYear == "2016" || conf->SampleYear == "2016apv"){
             tmp.SFs[0] = 0.991;
             float unc = tmp.Et() < 90 ? 0.01 : min(1 + (tmp.Et() - 90) * 0.0143, 0.04);
             tmp.SFs[1] = 0.991 + unc;
             tmp.SFs[2] = 0.991 - unc;
           }
-          else if(sampleyear == "2017"){
+          else if(conf->SampleYear == "2017"){
             tmp.SFs[0] = 0.973;
             float unc = tmp.Et() < 90 ? 0.02 : min(1 + (tmp.Et() - 90) * 0.0143, 0.05);
             tmp.SFs[1] = 0.973 + unc;
             tmp.SFs[2] = 0.973 - unc;
           }
-          else if(sampleyear == "2018"){
+          else if(conf->SampleYear == "2018"){
             tmp.SFs[0] = 0.984;
             float unc = tmp.Et() < 90 ? 0.02 : min(1 + (tmp.Et() - 90) * 0.0143, 0.05);
             tmp.SFs[1] = 0.984 + unc;
@@ -422,6 +385,9 @@ public:
       tmp.SetPtEtaPhiM(evts->Muon_pt[i],evts->Muon_eta[i],evts->Muon_phi[i],evts->Muon_mass[i]);
       tmp.index = i;
       tmp.charge = evts->Muon_charge[i];
+      tmp.tightId = evts->Muon_tightId[i];
+      tmp.looseId = evts->Muon_looseId[i];
+      tmp.relIso = evts->Muon_pfRelIso04_all[i];
 
       //Dummy for scale variations, not to be used without Rochester corrections (not compulsory)
       TLorentzVector dummy;
@@ -431,41 +397,33 @@ public:
       tmp.ScaleUp() = dummy;
       tmp.ScaleDown() = dummy;
 
+      if (!tmp.PassCommon()) continue;
+
       //check for jet overlaps
       tmp.OverlapsJet = OverlapCheck(tmp);
 
-      //CommonSelectionBlock
-      float absEta = fabs(tmp.Eta());
-      bool passCommon = (fabs(tmp.Eta()) < 2.4);
-      passCommon &= (tmp.Pt() > 10.);
-      passCommon &= (evts->Muon_pfRelIso04_all[i] < 0.25);
-      passCommon &= !(tmp.OverlapsJet[conf->PUIDWP]);
+      // //CommonSelectionBlock
+      // float absEta = fabs(tmp.Eta());
+      // bool passCommon = (fabs(tmp.Eta()) < 2.4);
+      // passCommon &= (tmp.Pt() > 10.);
+      // passCommon &= (evts->Muon_pfRelIso04_all[i] < 0.25);
+      // passCommon &= !(tmp.OverlapsJet[conf->PUIDWP]);
 
-      //TripleSelectionBlock
-      bool passVeto = (evts->Muon_looseId[i]) && passCommon;
-      passCommon &= (tmp.Pt() > 35.); //change pT cut for non-veto muons to be on trigger plateau
-      bool passLoose = (evts->Muon_tightId[i]) && passCommon;
-      passCommon &= (evts->Muon_pfRelIso04_all[i] < 0.15); //change isolation cut for primary muons
-      bool passPrimary = (evts->Muon_tightId[i]) && passCommon;
+      // //TripleSelectionBlock
+      // bool passVeto = (evts->Muon_looseId[i]) && passCommon;
+      // passCommon &= (tmp.Pt() > 35.); //change pT cut for non-veto muons to be on trigger plateau
+      // bool passLoose = (evts->Muon_tightId[i]) && passCommon;
+      // passCommon &= (evts->Muon_pfRelIso04_all[i] < 0.15); //change isolation cut for primary muons
+      // bool passPrimary = (evts->Muon_tightId[i]) && passCommon;
 
-      tmp.IsPrimary = passPrimary;
-      tmp.IsLoose = passLoose;
-      tmp.IsVeto = passVeto;
+      // tmp.IsPrimary = passPrimary;
+      // tmp.IsLoose = passLoose;
+      // tmp.IsVeto = passVeto;
 
-      // if ((!passVeto && passLoose) || (!passVeto && passPrimary) || (!passLoose && passPrimary)) {
-      //   cout << "Muon " << (passVeto?"T ":"F ") << (passLoose?"T ":"F ") << (passPrimary?"T ":"F ");
-      //   cout << "pT = " << tmp.Pt() << " ";
-      //   cout << "Iso = " << evts->Muon_pfRelIso04_all[i] << " ";
-      //   cout << "LooseId " << (evts->Muon_looseId[i]? "T":"F") << " ";
-      //   cout << "TightId " << (evts->Muon_tightId[i]? "T":"F") << " "<<endl;
-      // }
-
-      if(!passVeto && !passLoose && !passPrimary) continue;
-
-      
+      // if(!passVeto && !passLoose && !passPrimary) continue;
 
       //set SF and variation for primary only
-      if(passPrimary && IsMC){
+      if(tmp.PassPrimary(0) && IsMC){
         if (evts->Muon_triggerScaleFactor[i] * evts->Muon_idScaleFactor[i] * evts->Muon_isoScaleFactor[i] == 0) {
           cout << "Zero muon SF" <<endl;
         }
@@ -540,23 +498,6 @@ public:
     GenMet.SetPtEtaPhiM(evts->GenMET_pt, 0, evts->GenMET_phi, 0);
   }
 
-  void ReadTriggers() {
-    Triggers.clear();
-    isolated_electron_trigger = evts->isolated_electron_trigger;
-    isolated_muon_trigger = evts->isolated_muon_trigger;
-    isolated_muon_track_trigger = evts->isolated_muon_track_trigger;
-    for (unsigned i = 0; i < evts->nTrigObj; ++i) {
-      if (evts->TrigObj_id[i] == 13 || evts->TrigObj_id[i] == 11) {
-        Trigger tmp;
-        tmp.SetPtEtaPhiM(evts->TrigObj_pt[i], evts->TrigObj_eta[i], evts->TrigObj_phi[i],0);
-        tmp.index = i;
-        tmp.id = evts->TrigObj_id[i];
-        tmp.filterBits = evts->TrigObj_filterBits[i];
-        Triggers.push_back(tmp);
-      }
-    }
-  }
-
   void ReadPileup() {
     Pileup_nPU = evts->Pileup_nPU;
     Pileup_nTrueInt = evts->Pileup_nTrueInt;
@@ -604,13 +545,6 @@ public:
           nep++;
           iChosenLep = j;
         }
-        // if (nel > nev || nep > nel || nep > nev) {
-        //   cout << "Electron pT = " << Electrons[j].v(i).Pt() << ", ";
-        //   cout << " " << (Electrons[j].IsVeto ? "T": "F") << ", ";
-        //   cout << " " << (Electrons[j].IsLoose ? "T": "F") << ", ";
-        //   cout << " " << (Electrons[j].IsPrimary ? "T": "F") << " ";
-        //   cout << endl;
-        // }
       }
 
       int nmuv = 0;
@@ -626,13 +560,6 @@ public:
           nmup++;
           iChosenLep = j;
         }
-        // if (nmul > nmuv || nmup > nmul || nmup > nmuv) {
-        //   cout << "Muon pT = " << Muons[j].Pt() << ", ";
-        //   cout << " " << (Muons[j].IsVeto ? "T": "F") << ", ";
-        //   cout << " " << (Muons[j].IsLoose ? "T": "F") << ", ";
-        //   cout << " " << (Muons[j].IsPrimary ? "T": "F") << " ";
-        //   cout << endl;
-        // }
       }
 
       //Region Formats key is in DataFormat.cc
