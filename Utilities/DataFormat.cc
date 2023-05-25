@@ -86,14 +86,6 @@ struct Jet : VarPO {
   vector<bool> bTagPasses = {false, false, false}; // {loose, medium, tight}
   vector<vector<float> > bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; // {nominal, up, down} x {loose, medium, tight}
   vector<float> bTagEffs = {0.9, 0.7, 0.5};
-
-  bool PassCommon() {
-    bool pass = true;
-    pass &= (MaxPt() >= 30.);
-    pass &= (JetId >= 4);
-    pass &= (Eta() < 5.0) //added to accommodate PU ID limits
-    return pass;
-  }
 };
 
 struct Trigger : PO {
@@ -118,59 +110,6 @@ struct Electron : Lepton {
   vector<float> SFs = {1.,1.,1.}; // {nominal, up, down}
   int cutBased;
   bool cutBasedHEEP;
-
-  bool TriggerMatch(bool trg, vector<Trigger>& tobs, bool Is2017 = false) {
-    if (!trg) return false;
-    for (unsigned i = 0; i < tobs.size(); ++i) {
-      if (tobs[i].id != 11) continue;
-      if (DeltaR(tobs[i]) > 0.4) continue;
-      if (Is2017 && !(1024 & tobs[i].filterBits)) continue;  
-      return true;
-    }
-    return false;
-  }
-
-  bool PassCommon() {
-    bool pass = true;
-    float absEta = fabs(Eta());
-    pass &= (absEta < 2.4);
-    pass &= (absEta < 1.44 || absEta > 1.57);
-    pass &= (MaxPt() >= 10.);
-    return pass;
-  }
-
-  bool PassPrimary(int iv = -1) {
-    bool pass = true;
-    pass &= TriggerMatched;
-    if (iv < 0) pass &= (MaxPt() > 30.);
-    else pass &= (GetV(iv).Pt() > 30.);
-    pass &= cutBasedHEEP;
-    return pass
-  }
-
-  bool PassVeto(int iv = -1) {
-    bool pass = true;
-    if (iv < 0) pass &= (MaxPt() > 10.);
-    else pass &= (GetV(iv).Pt() > 10.);
-    pass &= (cutBased >= 2);
-    return pass;
-  }
-
-  bool PassLoose(int iv = -1) {
-    bool pass = true;
-    pass &= Triggermatched;
-    if (iv < 0) pass &= (MaxPt() > 30.);
-    else pass &= (GetV(iv).Pt() > 30.);
-    pass &= (cutBased >= 1);
-    return pass;
-  }
-
-  int GetCategory(int iv = -1) {
-    if (!PassCommon(iv)) return 0;
-    if (PassPrimary(iv)) return 1;
-    if (PassVeto(iv)) return 2;
-    if (PassLoose(iv)) return 3;
-  }
 };
 
 struct Muon: Lepton {
@@ -181,57 +120,6 @@ struct Muon: Lepton {
   bool tightId;
   bool looseId;
   float relIso;
-
-  bool TriggerMatch(bool trg, vector<Trigger>& tobs, bool Is2017 = false) {
-    if (!trg) return false;
-    for (unsigned i = 0; i < tobs.size(); ++i) {
-      if (tobs[i].id != 13) continue;
-      if (DeltaR(tobs[i]) > 0.4) continue;
-      return true;
-    }
-    return false;
-  }
-
-  bool PassCommon() {
-    bool pass = true;
-    float absEta = fabs(Eta());
-    pass &= (absEta < 2.4);
-    pass &= (MaxPt() >= 10.);
-    return pass;
-  }
-
-  bool PassPrimary(int iv = -1) {
-    bool pass = true;
-    pass &= TriggerMatched;
-    pass &= (Pt() > 27.);
-    pass &= (relIso < 0.15);
-    pass &= tightId;
-    return pass
-  }
-
-  bool PassVeto(int iv = -1) {
-    bool pass = true;
-    pass &= (Pt() > 10.);
-    pass &= (relIso < 0.25);
-    pass &= looseId;
-    return pass;
-  }
-
-  bool PassLoose(int iv = -1) {
-    bool pass = true;
-    pass &= Triggermatched;
-    pass &= (Pt() > 27.);
-    pass &= (relIso < 1.5 && relIso > 0.15);
-    pass &= looseId;
-    return pass;
-  }
-
-  int GetCategory(int iv = -1) {
-    if (!PassCommon()) return 0;
-    if (PassPrimary()) return 1;
-    if (PassVeto()) return 2;
-    if (PassLoose()) return 3;
-  }
 };
 
 struct MET : VarPO {

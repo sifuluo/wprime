@@ -165,6 +165,14 @@ public:
     }
   }
 
+  bool PassCommon(Jet& j) {
+    bool pass = true;
+    pass &= (j.MaxPt() >= 30.);
+    pass &= (j.JetId >= 4);
+    pass &= (j.Eta() < 5.0) //added to accommodate PU ID limits
+    return pass;
+  }
+
   void ReadJets() {
     Jets.clear();
     int emptysequence = 0;
@@ -182,7 +190,7 @@ public:
       tmp.JERdown().SetPtEtaPhiM(evts->Jet_pt_jerDown[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jerDown[i]);
       tmp.JetId = evts->Jet_jetId[i];
 
-      if (!(tmp.PassCommon())) continue;
+      if (!PassCommon(tmp)) continue;
 
       //set PUID flags
       // tmp.PUIDpasses = PUID(tmp.Pt(), fabs(tmp.Eta()), evts->Jet_puId[i], conf->SampleYear);
@@ -291,6 +299,110 @@ public:
     }
   }
 
+  bool TriggerMatch(Electron e) {
+    if (!evts->isolated_electron_trigger) return false;
+    for (unsigned i = 0; i < Triggers.size(); ++i) {
+      if (Triggers[i].id != 11) continue;
+      if (DeltaR(Triggers[i]) > 0.4) continue;
+      if (conf->SampleYear == "2017" && !(1024 & Triggers[i].filterBits)) continue;  
+      return true;
+    }
+    return false;
+  }
+
+  bool TriggerMatch(Muon m) {
+    if (!isolated_muon_trigger && !isolated_muon_track_trigger) return false;
+    for (unsigned i = 0; i < Triggers.size(); ++i) {
+      if (Triggers[i].id != 13) continue;
+      if (DeltaR(Triggers[i]) > 0.4) continue;
+      return true;
+    }
+    return false;
+  }
+
+  bool PassCommon(Electron e) {
+    bool pass = true;
+    float absEta = fabs(e.Eta());
+    pass &= (absEta < 2.4);
+    pass &= (absEta < 1.44 || absEta > 1.57);
+    pass &= (e.MaxPt() >= 10.);
+    return pass;
+  }
+
+  bool PassPrimary(Electron e, int iv = -1) {
+    bool pass = true;
+    pass &= e.TriggerMatched;
+    if (iv < 0) pass &= (e.MaxPt() > 30.);
+    else pass &= (e.v(iv).Pt() > 30.);
+    pass &= cutBasedHEEP;
+    return pass
+  }
+
+  bool PassVeto(Electron e, int iv = -1) {
+    bool pass = true;
+    if (iv < 0) pass &= (e.MaxPt() > 10.);
+    else pass &= (e.v(iv).Pt() > 10.);
+    pass &= (cutBased >= 2);
+    return pass;
+  }
+
+  bool PassLoose(Electron e, int iv = -1) {
+    bool pass = true;
+    pass &= e.Triggermatched;
+    if (iv < 0) pass &= (e.MaxPt() > 30.);
+    else pass &= (e.v(iv).Pt() > 30.);
+    pass &= (cutBased >= 1);
+    return pass;
+  }
+
+  int GetCategory(Electron e, int iv = -1) {
+    if (!PassCommon(e,iv)) return 0;
+    if (PassPrimary(e,iv)) return 1;
+    if (PassVeto(e,iv)) return 2;
+    if (PassLoose(e,iv)) return 3;
+  }
+
+  bool PassCommon(Muon m) {
+    bool pass = true;
+    float absEta = fabs(m.Eta());
+    pass &= (absEta < 2.4);
+    pass &= (m.MaxPt() >= 10.);
+    return pass;
+  }
+
+  bool PassPrimary(Muon m) {
+    bool pass = true;
+    pass &= e.TriggerMatched;
+    pass &= (m.Pt() > 27.);
+    pass &= (m.relIso < 0.15);
+    pass &= m.tightId;
+    return pass
+  }
+
+  bool PassVeto(Muon m) {
+    bool pass = true;
+    pass &= (m.Pt() > 10.);
+    pass &= (m.relIso < 0.25);
+    pass &= m.looseId;
+    return pass;
+  }
+
+  bool PassLoose(Muon m) {
+    bool pass = true;
+    pass &= e.Triggermatched;
+    pass &= (m.Pt() > 27.);
+    pass &= (m.relIso < 1.5 && m.relIso > 0.15);
+    pass &= m.looseId;
+    return pass;
+  }
+
+  int GetCategory(Muon m) {
+    if (!PassCommon(m)) return 0;
+    if (PassPrimary(m)) return 1;
+    if (PassVeto(m)) return 2;
+    if (PassLoose(m)) return 3;
+  }
+
   void ReadLeptons() {
     Leptons.clear();
     Electrons.clear();
@@ -323,7 +435,7 @@ public:
 
       //check for jet overlaps
       tmp.OverlapsJet = OverlapCheck(tmp);
-      tmp.TriggerMatched = tmp.TriggerMatch(evts->isolated_electron_trigger, Triggers, conf->SampleYear == "2017");      
+      tmp.TriggerMatched = TriggerMatch(tmp);      
 
       //set SF and variation for primary only, HEEP as in https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaRunIIRecommendations#HEEPV7_0
       tmp.SFs = {1., 1., 1.};
