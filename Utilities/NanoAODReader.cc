@@ -309,6 +309,43 @@ public:
     }
     return false;
   }
+  bool PassCommon(Electron e) {
+    bool pass = true;
+    float absEta = fabs(e.Eta());
+    pass &= (absEta < 2.4);
+    pass &= (absEta < 1.44 || absEta > 1.57);
+    pass &= (e.MaxPt() >= 10.);
+    return pass;
+  }
+  bool PassPrimary(Electron e, int iv = -1) {
+    bool pass = true;
+    pass &= e.TriggerMatched;
+    if (iv < 0) pass &= (e.MaxPt() > 30.);
+    else pass &= (e.v(iv).Pt() > 30.);
+    pass &= cutBasedHEEP;
+    return pass
+  }
+  bool PassVeto(Electron e, int iv = -1) {
+    bool pass = true;
+    if (iv < 0) pass &= (e.MaxPt() > 10.);
+    else pass &= (e.v(iv).Pt() > 10.);
+    pass &= (cutBased >= 2);
+    return pass;
+  }
+  bool PassLoose(Electron e, int iv = -1) {
+    bool pass = true;
+    pass &= e.Triggermatched;
+    if (iv < 0) pass &= (e.MaxPt() > 30.);
+    else pass &= (e.v(iv).Pt() > 30.);
+    pass &= (cutBased >= 1);
+    return pass;
+  }
+  int GetCategory(Electron e, int iv = -1) {
+    if (!PassCommon(e,iv)) return 0;
+    if (PassPrimary(e,iv)) return 1;
+    if (PassVeto(e,iv)) return 2;
+    if (PassLoose(e,iv)) return 3;
+  }
 
   bool TriggerMatch(Muon m) {
     if (!isolated_muon_trigger && !isolated_muon_track_trigger) return false;
@@ -319,49 +356,6 @@ public:
     }
     return false;
   }
-
-  bool PassCommon(Electron e) {
-    bool pass = true;
-    float absEta = fabs(e.Eta());
-    pass &= (absEta < 2.4);
-    pass &= (absEta < 1.44 || absEta > 1.57);
-    pass &= (e.MaxPt() >= 10.);
-    return pass;
-  }
-
-  bool PassPrimary(Electron e, int iv = -1) {
-    bool pass = true;
-    pass &= e.TriggerMatched;
-    if (iv < 0) pass &= (e.MaxPt() > 30.);
-    else pass &= (e.v(iv).Pt() > 30.);
-    pass &= cutBasedHEEP;
-    return pass
-  }
-
-  bool PassVeto(Electron e, int iv = -1) {
-    bool pass = true;
-    if (iv < 0) pass &= (e.MaxPt() > 10.);
-    else pass &= (e.v(iv).Pt() > 10.);
-    pass &= (cutBased >= 2);
-    return pass;
-  }
-
-  bool PassLoose(Electron e, int iv = -1) {
-    bool pass = true;
-    pass &= e.Triggermatched;
-    if (iv < 0) pass &= (e.MaxPt() > 30.);
-    else pass &= (e.v(iv).Pt() > 30.);
-    pass &= (cutBased >= 1);
-    return pass;
-  }
-
-  int GetCategory(Electron e, int iv = -1) {
-    if (!PassCommon(e,iv)) return 0;
-    if (PassPrimary(e,iv)) return 1;
-    if (PassVeto(e,iv)) return 2;
-    if (PassLoose(e,iv)) return 3;
-  }
-
   bool PassCommon(Muon m) {
     bool pass = true;
     float absEta = fabs(m.Eta());
@@ -369,7 +363,6 @@ public:
     pass &= (m.MaxPt() >= 10.);
     return pass;
   }
-
   bool PassPrimary(Muon m) {
     bool pass = true;
     pass &= e.TriggerMatched;
@@ -378,7 +371,6 @@ public:
     pass &= m.tightId;
     return pass
   }
-
   bool PassVeto(Muon m) {
     bool pass = true;
     pass &= (m.Pt() > 10.);
@@ -386,7 +378,6 @@ public:
     pass &= m.looseId;
     return pass;
   }
-
   bool PassLoose(Muon m) {
     bool pass = true;
     pass &= e.Triggermatched;
@@ -395,7 +386,6 @@ public:
     pass &= m.looseId;
     return pass;
   }
-
   int GetCategory(Muon m) {
     if (!PassCommon(m)) return 0;
     if (PassPrimary(m)) return 1;
@@ -431,7 +421,7 @@ public:
       tmp.cutBased = evts->Electron_cutBased[i];
       tmp.cutBasedHEEP = evts->Electron_cutBased_HEEP[i];
 
-      if (!(tmp.PassCommon())) continue;
+      if (!PassCommon(tmp)) continue;
 
       //check for jet overlaps
       tmp.OverlapsJet = OverlapCheck(tmp);
@@ -439,7 +429,10 @@ public:
 
       //set SF and variation for primary only, HEEP as in https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaRunIIRecommendations#HEEPV7_0
       tmp.SFs = {1., 1., 1.};
-      if(tmp.PassPrimary(0) && IsMC){
+      if(PassPrimary(tmp,0) && IsMC){
+        // FIXME!!!:
+        // If nominal is not primary, the lepton will not have scale factors?
+        // As we are accepting single veto lepton event and primary alone with random number of loose leptons.
         if(absEta < 1.4442){
           if(conf->SampleYear == "2016" || conf->SampleYear == "2016apv"){
             tmp.SFs[0] = 0.983;
