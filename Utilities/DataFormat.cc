@@ -50,7 +50,7 @@ struct VarPO : PO {
   }
 
   float MaxPt() {
-    float mp = Pt();
+    double mp = Pt();
     mp = max(mp,SU.Pt());
     mp = max(mp,SD.Pt());
     mp = max(mp,RU.Pt());
@@ -147,6 +147,7 @@ struct EventWeight{
       return 2+i;
       }
     }
+    return 0;
   }
 };
 

@@ -169,7 +169,7 @@ public:
     bool pass = true;
     pass &= (j.MaxPt() >= 30.);
     pass &= (j.JetId >= 4);
-    pass &= (j.Eta() < 5.0) //added to accommodate PU ID limits
+    pass &= (j.Eta() < 5.0); //added to accommodate PU ID limits
     return pass;
   }
 
@@ -303,7 +303,7 @@ public:
     if (!evts->isolated_electron_trigger) return false;
     for (unsigned i = 0; i < Triggers.size(); ++i) {
       if (Triggers[i].id != 11) continue;
-      if (DeltaR(Triggers[i]) > 0.4) continue;
+      if (e.DeltaR(Triggers[i]) > 0.4) continue;
       if (conf->SampleYear == "2017" && !(1024 & Triggers[i].filterBits)) continue;  
       return true;
     }
@@ -322,36 +322,37 @@ public:
     pass &= e.TriggerMatched;
     if (iv < 0) pass &= (e.MaxPt() > 30.);
     else pass &= (e.v(iv).Pt() > 30.);
-    pass &= cutBasedHEEP;
-    return pass
+    pass &= e.cutBasedHEEP;
+    return pass;
   }
   bool PassVeto(Electron e, int iv = -1) {
     bool pass = true;
     if (iv < 0) pass &= (e.MaxPt() > 10.);
     else pass &= (e.v(iv).Pt() > 10.);
-    pass &= (cutBased >= 2);
+    pass &= (e.cutBased >= 2);
     return pass;
   }
   bool PassLoose(Electron e, int iv = -1) {
     bool pass = true;
-    pass &= e.Triggermatched;
+    pass &= e.TriggerMatched;
     if (iv < 0) pass &= (e.MaxPt() > 30.);
     else pass &= (e.v(iv).Pt() > 30.);
-    pass &= (cutBased >= 1);
+    pass &= (e.cutBased >= 1);
     return pass;
   }
   int GetCategory(Electron e, int iv = -1) {
-    if (!PassCommon(e,iv)) return 0;
+    if (!PassCommon(e)) return 0;
     if (PassPrimary(e,iv)) return 1;
     if (PassVeto(e,iv)) return 2;
     if (PassLoose(e,iv)) return 3;
+    return 0;
   }
 
   bool TriggerMatch(Muon m) {
     if (!isolated_muon_trigger && !isolated_muon_track_trigger) return false;
     for (unsigned i = 0; i < Triggers.size(); ++i) {
       if (Triggers[i].id != 13) continue;
-      if (DeltaR(Triggers[i]) > 0.4) continue;
+      if (m.DeltaR(Triggers[i]) > 0.4) continue;
       return true;
     }
     return false;
@@ -365,11 +366,11 @@ public:
   }
   bool PassPrimary(Muon m) {
     bool pass = true;
-    pass &= e.TriggerMatched;
+    pass &= m.TriggerMatched;
     pass &= (m.Pt() > 27.);
     pass &= (m.relIso < 0.15);
     pass &= m.tightId;
-    return pass
+    return pass;
   }
   bool PassVeto(Muon m) {
     bool pass = true;
@@ -380,7 +381,7 @@ public:
   }
   bool PassLoose(Muon m) {
     bool pass = true;
-    pass &= e.Triggermatched;
+    pass &= m.TriggerMatched;
     pass &= (m.Pt() > 27.);
     pass &= (m.relIso < 1.5 && m.relIso > 0.15);
     pass &= m.looseId;
@@ -391,6 +392,7 @@ public:
     if (PassPrimary(m)) return 1;
     if (PassVeto(m)) return 2;
     if (PassLoose(m)) return 3;
+    return 0;
   }
 
   void ReadLeptons() {
@@ -433,7 +435,7 @@ public:
         // FIXME!!!:
         // If nominal is not primary, the lepton will not have scale factors?
         // As we are accepting single veto lepton event and primary alone with random number of loose leptons.
-        if(absEta < 1.4442){
+        if(fabs(tmp.Eta()) < 1.4442){
           if(conf->SampleYear == "2016" || conf->SampleYear == "2016apv"){
             tmp.SFs[0] = 0.983;
             float unc = tmp.Et() < 90 ? 0.01 : min(1 + (tmp.Et() - 90) * 0.0022, 0.03);
@@ -502,10 +504,11 @@ public:
       tmp.ScaleUp() = dummy;
       tmp.ScaleDown() = dummy;
 
-      if (!tmp.PassCommon()) continue;
+      if (!PassCommon(tmp)) continue;
 
       //check for jet overlaps
       tmp.OverlapsJet = OverlapCheck(tmp);
+      tmp.TriggerMatched = TriggerMatch(tmp);    
 
       // //CommonSelectionBlock
       // float absEta = fabs(tmp.Eta());
@@ -528,7 +531,7 @@ public:
       // if(!passVeto && !passLoose && !passPrimary) continue;
 
       //set SF and variation for primary only
-      if(tmp.PassPrimary(0) && IsMC){
+      if(PassPrimary(tmp) && IsMC){
         if (evts->Muon_triggerScaleFactor[i] * evts->Muon_idScaleFactor[i] * evts->Muon_isoScaleFactor[i] == 0) {
           cout << "Zero muon SF" <<endl;
         }
