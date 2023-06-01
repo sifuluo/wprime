@@ -53,8 +53,6 @@ struct Configs {
   // Idealy the container for all bool configs, practically only the ones not used extensively should rest in here.
   map<string,bool> Switches;
 
-  bool Debug = false;
-
   bool LocalOutput = false;
 
   // In batch mode, it is suggested to turn off, or will result in a large log file.
@@ -69,21 +67,12 @@ struct Configs {
   string JetScaleBasepath = "outputs/"; // To change to "AUXFiles/outputs" when running on DAS files
   string JetScaleDataSubstitution = "ttbar";
 
-  void SetSwitch(string sw, bool b) {
-    Switches[sw] = b;
-  }
-
-  bool GetSwitch(string sw) {
-    return Switches[sw];
-  }
-
-  void TestSwitch() {
-    bool out = false;
-    for (unsigned i = 0; i < 100; ++i) {
-      string ss = Form("%d",i);
-      out = out || GetSwitch(ss);
+  vector<string> DebugList; // Look for "conf->Debug()" in modules to see candidates.
+  bool Debug(string n) {
+    for (string nl : DebugList) {
+      if (n == nl) return true;
     }
-    if (out) throw runtime_error("Switch initialized as true");
+    return false;
   }
 
 };

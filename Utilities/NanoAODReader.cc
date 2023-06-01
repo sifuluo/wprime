@@ -304,7 +304,7 @@ public:
     for (unsigned i = 0; i < Triggers.size(); ++i) {
       if (Triggers[i].id != 11) continue;
       if (e.DeltaR(Triggers[i]) > 0.4) continue;
-      if (conf->SampleYear == "2017" && !(1024 & Triggers[i].filterBits)) continue;  
+      if (conf->SampleYear == "2017" && !(1024 & Triggers[i].filterBits)) continue;
       return true;
     }
     return false;
@@ -317,7 +317,7 @@ public:
     pass &= (e.MaxPt() >= 10.);
     return pass;
   }
-  bool PassPrimary(Electron e, int iv = -1) {
+  bool PassPrimary(Electron e, int iv = -1) { // iv: Variation. -1: MaxPt, 0-4, nominal and variations
     bool pass = true;
     pass &= e.TriggerMatched;
     if (iv < 0) pass &= (e.MaxPt() > 30.);
@@ -325,27 +325,28 @@ public:
     pass &= e.cutBasedHEEP;
     return pass;
   }
-  bool PassVeto(Electron e, int iv = -1) {
+  bool PassVeto(Electron e, int iv = -1) { // iv: Variation. -1: MaxPt, 0-4, nominal and variations
     bool pass = true;
     if (iv < 0) pass &= (e.MaxPt() > 10.);
     else pass &= (e.v(iv).Pt() > 10.);
     pass &= (e.cutBased >= 2);
     return pass;
   }
-  bool PassLoose(Electron e, int iv = -1) {
+  bool PassVetoPick(Electron e, int iv = -1) { // iv: Variation. -1: MaxPt, 0-4, nominal and variations
+    bool pass = true;
+    pass &= e.TriggerMatched;
+    if (iv < 0) pass &= (e.MaxPt() > 27.);
+    else pass &= (e.v(iv).Pt() > 27.);
+    pass &= (e.cutBased >= 2);
+    return pass;
+  }
+  bool PassLoose(Electron e, int iv = -1) { // iv: Variation. -1: MaxPt, 0-4, nominal and variations
     bool pass = true;
     pass &= e.TriggerMatched;
     if (iv < 0) pass &= (e.MaxPt() > 30.);
     else pass &= (e.v(iv).Pt() > 30.);
     pass &= (e.cutBased >= 1);
     return pass;
-  }
-  int GetCategory(Electron e, int iv = -1) {
-    if (!PassCommon(e)) return 0;
-    if (PassPrimary(e,iv)) return 1;
-    if (PassVeto(e,iv)) return 2;
-    if (PassLoose(e,iv)) return 3;
-    return 0;
   }
 
   bool TriggerMatch(Muon m) {
@@ -386,13 +387,6 @@ public:
     pass &= (m.relIso < 1.5 && m.relIso > 0.15);
     pass &= m.looseId;
     return pass;
-  }
-  int GetCategory(Muon m) {
-    if (!PassCommon(m)) return 0;
-    if (PassPrimary(m)) return 1;
-    if (PassVeto(m)) return 2;
-    if (PassLoose(m)) return 3;
-    return 0;
   }
 
   void ReadLeptons() {
@@ -638,120 +632,94 @@ public:
     //loop over variations: nominal, e-scale up, e-scale down, e-res up, e-res down, JES up, JES down, JER up, JER down
     for(unsigned i = 0; i < rids.RegionCount; ++i){
       int RegionNumber = -1; //-1 no region
-      int iChosenLep = -1; // note the index of the loose/primary lepton.
+      int iPrimaryLep(-1), iLooseLep(-1), iVetoLep(-1);
       //check lepton multiplicity
-      int nev = 0;
-      int nel = 0;
-      int nep = 0;
+      int nev(0), nel(0), nep(0);
       for(unsigned j = 0; j<Electrons.size(); ++j){
-        if (Electrons[j].IsVeto && Electrons[j].v(i).Pt() > 10.) nev++;
-        if (Electrons[j].IsLoose && Electrons[j].v(i).Pt() > 40.) {
-          nel++;
-          iChosenLep = j;
-        }
-        if (Electrons[j].IsPrimary && Electrons[j].v(i).Pt() > 40.) {
+        if (PassPrimary(Electrons[j], i)) {
           nep++;
-          iChosenLep = j;
+          iPrimaryLep = j;
+        }
+        else if (PassVeto(Electrons[j], i)) {
+          nev++;
+          if (PassVetoPick(Electrons[j], i)) iVetoLep = j;
+        }
+        else if (PassLoose(Electrons[j], i)) {
+          nel++;
+          iLooseLep = j;
         }
       }
 
-      int nmuv = 0;
-      int nmul = 0;
-      int nmup = 0;
+      int nmuv(0), nmul(0), nmup(0);
       for(unsigned j = 0; j<Muons.size(); ++j){//no scale variations foreseen as of yet, due to not applying Rochester corrections
-        if (Muons[j].IsVeto && Muons[j].Pt() > 10.) nmuv++;
-        if (Muons[j].IsLoose && Muons[j].Pt() > 35.) {
-          nmul++;
-          iChosenLep = j;
-        }
-        if (Muons[j].IsPrimary && Muons[j].Pt() > 35.) {
+        if (PassPrimary(Muons[j])) {
           nmup++;
-          iChosenLep = j;
+          iPrimaryLep = j;
+        }
+        else if (PassVeto(Muons[j])) {
+          nmuv++;
+          if (PassVetoPick(Muons[j])) iVetoLep = j;
+        }
+        else if (PassLoose(Muons[j])) {
+          nmul++;
+          iLooseLep = j;
         }
       }
 
-      //Region Formats key is in DataFormat.cc
-      if((nmuv || nmul || nmup) + (nev + nel + nep) != 1) { // No more than 1 lepton
-        rids.Regions[i] = -2; // Lepton failed
+      if ( (nep + nmup == 1) && (nev + nmuv == 0)) { // Signal Region
+        if (nep == 1) {
+          RegionNumber = 2100;
+          TheLepton = Electrons[iPrimaryLep];
+        }
+        else {
+          RegionNumber = 1100;
+          TheLepton = Muons[iPrimaryLep];
+        }
+      }
+      else if ((nep + nmup == 0) && (nev + nmuv == 0) && (nel + nmul == 1)) { // Background Estimation Region 1
+        if (nel == 1) {
+          RegionNumber = 2200;
+          TheLepton = Electrons[iLooseLep];
+        }
+        else {
+          RegionNumber = 1200;
+          TheLepton = Muons[iLooseLep];
+        }
+      }
+      // else if ((nep + nmup == 0) && (nev + nmuv == 1) && (iVetoLep != -1) && (nel + nmul == 0)) { // Backup Background Estimation Region
+      //   if (nev == 1) {
+      //     RegionNumber = 2300;
+      //     TheLepton = Electrons[iVetoLep];
+      //   }
+      //   else {
+      //     RegionNumber = 1300;
+      //     TheLepton = Muons[iVetoLep];
+      //   }
+      // }
+      else {
+        if (conf->Debug("LeptonRegion") && i == 0) cout << Form("In Event %i, Variation %i, Electron (Primary, Veto, Loose) = (%i, %i, %i), Muon (Primary, Veto, Loose) = (%i, %i, %i)"
+          , (int)iEvent, i, nep, nev, nel, nmup, nmuv, nmul) << endl;
+        rids.Regions[i] = -2; // Lepton failed to fall into any region
         continue;
-      }
-      if(nmup == 1) RegionNumber = 1100;
-      else if(nep == 1) RegionNumber = 2100;
-      else if(nmul == 1) RegionNumber = 1200;
-      else if(nel ==1) RegionNumber = 2200;
-      else { // Accepted event must have a primary or loose lepton
-        rids.Regions[i] = -2;
-        continue;
-      }
-
-      //check trigger matching lepton flavour
-      if (RegionNumber/1000 == 2) {
-        bool matchedtype = isolated_electron_trigger;
-        bool matched = false;
-        for (unsigned i = 0; i < Triggers.size(); ++i) {
-          if (Triggers[i].id != 11) continue;
-          if (Triggers[i].DeltaR(Electrons[iChosenLep]) > 0.4) continue;
-          if (conf->SampleYear == "2017") matchedtype = matchedtype && (1024 & Triggers[i].filterBits);
-          matched = true;
-          break;
-        }
-        matched = matched && matchedtype;
-        if (!matched) {
-          rids.Regions[i] = -3;
-          continue;
-        }
-        TheLepton = Electrons[iChosenLep];
-      }
-      else if (RegionNumber/1000 == 1) {
-        bool matchedtype = (isolated_muon_trigger || isolated_muon_track_trigger);
-        bool matched = false;
-        for (unsigned i = 0; i < Triggers.size(); ++i) {
-          if (Triggers[i].id != 13) continue;
-          if (Triggers[i].DeltaR(Muons[iChosenLep]) > 0.4) continue;
-          matched = true;
-          break;
-        }
-        matched = matched && matchedtype;
-        if (!matched) {
-          rids.Regions[i] = -3;
-          continue;
-        }
-        TheLepton = Muons[iChosenLep];
       }
 
       //check jet multiplicity
       int nj = 0;
       int nb = 0;
       for(unsigned j = 0; j<Jets.size(); ++j){
-        float pT = Jets[j].v(i).Pt();
-        // float pT = Jets[j].Pt();
-        // if(i==5) pT = Jets[j].JESup.Pt();
-        // else if(i==6) pT = Jets[j].JESdown.Pt();
-        // else if(i==7) pT = Jets[j].JERup.Pt();
-        // else if(i==8) pT = Jets[j].JERdown.Pt();
-        if(pT < 30.) continue;
+        if(Jets[j].v(i).Pt() < 30.) continue;
         if(!Jets[j].PUIDpasses[PUIDWP]) continue;//select working point for PUID to none by commenting this line out, loose by PUIDpasses 0, medium by 1, tight by 2
         nj++;
         if(Jets[j].bTagPasses[bTagWP]) nb++;//select working point for b-tagging by bTagPasses[0] = loose, 1 medium and 2 tight
       }
       if(nj<5 || nj>6) {
-        rids.Regions[i] = -4;
+        rids.Regions[i] = -3;
         continue; //in no region we're interested in
       }
       RegionNumber += nj*10;
       RegionNumber += nb;
       rids.Regions[i]=RegionNumber;
-      // if (RegionNumber < 1100) cout << Form("nmup=%i,nep=%i,nmul=%i,nel=%i,nmuv=%i,nev=%i,nj=%i,nb=%i",nmup,nep,nmul,nel,nmuv,nev,nj,nb) << endl;
-      // else if (TheLepton.Pt() < 30) {
-      //   cout << Form("TheLepPt = %f nmup=%i,nep=%i,nmul=%i,nel=%i,nmuv=%i,nev=%i,nj=%i,nb=%i",TheLepton.Pt(),nmup,nep,nmul,nel,nmuv,nev,nj,nb) << endl;
-      //   if (Muons[0].IsPrimary) cout << "MuonPt = " << Muons[0].Pt() <<endl; 
-      // }
-      // if ((RegionNumber > 2000 && Muons.size() > 0) || (RegionNumber < 2000 && Electrons.size() > 0)) {
-      //   cout << Form("RegionNumber = %i, Muon Pt = %f, ",RegionNumber, Muons[0].Pt());
-      //   cout << Form("nmup=%i,nep=%i,nmul=%i,nel=%i,nmuv=%i,nev=%i,nj=%i,nb=%i",nmup,nep,nmul,nel,nmuv,nev,nj,nb) << endl;
-      // }
     }
-
     return rids;
   }
 
