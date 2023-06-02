@@ -130,6 +130,7 @@ public:
     }
     ReadJets();
     if (conf->AuxHistCreation) return 1;
+    ReadTriggers();
     ReadLeptons();
     ReadMET();
     ReadVertices();
