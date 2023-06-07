@@ -9,13 +9,13 @@ yearNumber = 2018
 binName = "Wprime" + str(binNumber)
 
 #First, generate the shape variation histograms
-#print("Starting processing of intermediate files")
-#if os.path.isdir("TestHistograms"):
-#  os.system("rm TestHistograms/*.root") #reset 
-#else:
-#  os.system("mkdir TestHistograms") #make directory, if it doesn't exist
-#os.system("root -l -b -q 'runCombineHistogramDumpster.C+(" + str(binNumber) + ", " + str(yearNumber) + ")'") #This does not yet provide a year, as only 2018 is processed
-#os.system("hadd -f SimpleShapes_" + binName + ".root TestHistograms/*.root") #hadd all histograms to a convenient combined file
+print("Starting processing of intermediate files")
+if os.path.isdir("TestHistograms"):
+  os.system("rm TestHistograms/*.root") #reset 
+else:
+  os.system("mkdir TestHistograms") #make directory, if it doesn't exist
+os.system("root -l -b -q 'runCombineHistogramDumpster.C+(" + str(binNumber) + ", " + str(yearNumber) + ")'") #This does not yet provide a year, as only 2018 is processed
+os.system("hadd -f SimpleShapes_" + binName + ".root TestHistograms/*.root") #hadd all histograms to a convenient combined file
 
 #define all the systematic names, types, and values
 systNames = ["lumi", "electron", "muonTrigger", "muonId", "muonIso", "BjetTag", "PUID", "L1PreFiring", "PUreweight", "PDF",  "LHEScale", "electronScale", "electronRes", "JES",  "JER"]
