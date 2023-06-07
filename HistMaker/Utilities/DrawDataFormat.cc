@@ -7,6 +7,7 @@
 
 #include "TString.h"
 #include "TH1.h"
+#include "TFile.h"
 
 #include "../../Utilities/DataFormat.cc"
 #include "../../Utilities/Dataset.cc"
@@ -212,7 +213,7 @@ public:
   void SetSampleTypes(vector<string> sts) {SampleTypes = sts;}
   void SetVariations(vector<string> vars) {Variations = vars;}
 
-  TString GetHistName(int ist, int iv, int ir, int io) {
+  TString GetHistName(int io, int ist, int iv, int ir) {
     TString histname = NameFormat;
     histname.ReplaceAll("=SampleType=", SampleTypes[ist]);
     histname.ReplaceAll("=Variation=", Variations[iv]);
@@ -229,25 +230,28 @@ public:
     xup.push_back(xup_);
   }
 
-  void CreateHistograms() {
+  void CreateHistograms(string path, string prefix) {
     Hists.clear();
-    Hists.resize(SampleTypes.size());
-    for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
-      Hists[ist].resize(Variations.size());
-      for (unsigned iv = 0; iv < Variations.size(); ++iv) {
-        Hists[ist][iv].resize(Regions.size());
-        for (unsigned ir = 0; ir < Regions.size(); ++ir) {
-          Hists[ist][iv][ir].resize(Observables.size());
-          for (unsigned io = 0; io < Observables.size(); ++io) {
-            TString histname = GetHistName(ist, iv, ir, io);
-            Hists[ist][iv][ir][io] = new TH1F(histname, histname, nbins[io], xlow[io], xup[io]);
+    Hists.resize(Observables.size());
+    for (unsigned io = 0; io < Observables.size(); ++io) {
+      Hists[io].resize(SampleTypes.size());
+      TString fn = path + "/" + prefix + "_" + Observables[io] + ".root";
+      fouts.push_back(new TFile(fn, "RECREATE"));
+      fouts[io]->cd();
+      for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
+        Hists[io][ist].resize(Variations.size());
+        for (unsigned iv = 0; iv < Variations.size(); ++iv) {
+          Hists[io][ist][iv].resize(Regions.size());
+          for (unsigned ir = 0; ir < Regions.size(); ++ir) {
+            TString histname = GetHistName(io, ist, iv, ir);
+            Hists[io][ist][iv][ir] = new TH1F(histname, histname, nbins[io], xlow[io], xup[io]);
           }
         }
       }
     }
   }
 
-  int Fill(int ist, int iv, int rid, string ob, float x, float w) {
+  int Fill(string ob, int ist, int iv, int rid, float x, float w) {
     if (x !=x ) {
       cout << Form("Skipping filling nan value to ob %s, ist %i, iv %i, region %i",ob.c_str(), ist, iv, rid) <<endl;
       return 1;
@@ -270,7 +274,7 @@ public:
     }
     int ir = rm.GetRangeIndex(rid);
     if (ir < 0) return 3;
-    Hists[ist][iv][ir][io]->Fill(x,w);
+    Hists[io][ist][iv][ir]->Fill(x,w);
     return 0;
   }
 
@@ -282,10 +286,18 @@ public:
   }
 
   int Fill(string ob, float x) {
-    return Fill(tmp_ist, tmp_iv, tmp_rid, ob, x, tmp_w);
+    return Fill(ob, tmp_ist, tmp_iv, tmp_rid, x, tmp_w);
   }
 
-  vector< vector< vector< vector<TH1F*> > > > Hists; // Hists[isampletype][ivariation][irange][iobservable]
+  void PostProcess() {
+    for (unsigned i = 0; i < Observables.size(); ++i) {
+      fouts[i]->Write();
+      fouts[i]->Save();
+    }
+  }
+
+  vector<TFile*> fouts;
+  vector< vector< vector< vector<TH1F*> > > > Hists; // Hists[iobservable][isampletype][ivariation][irange]
   vector<string> SampleTypes, Variations, Regions, Observables;
   vector<int> nbins; // [nObservables]
   vector<double> xlow, xup; // [nObservables]

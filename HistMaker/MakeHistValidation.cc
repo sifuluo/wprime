@@ -18,9 +18,8 @@ void MakeHistValidation(int isampleyear = 3) {
   string basepath = "/eos/user/s/siluo/WPrimeAnalysis/Validation/";
   string itpath = "";
   string SampleYear = dlib.SampleYears[isampleyear];
-  TString OutFilePath = "outputs/" + SampleYear + "_Validation.root";
-  TFile* fout = new TFile(OutFilePath,"RECREATE");
-  fout->cd();
+  string OutFilePath = "outputs/";
+  string OutFilePrefix = SampleYear + "_Validation";
   Histograms HistCol;
   vector<string> SampleTypes = dlib.DatasetNames;
   // SampleTypes = {"FL500"};
@@ -35,7 +34,7 @@ void MakeHistValidation(int isampleyear = 3) {
   HistCol.AddObservable("mT",200,0,2000);
   HistCol.AddObservable("WPrimeMassSimpleFL",200,0,2000);
   HistCol.AddObservable("WPrimeMassSimpleLL",200,0,2000);
-  HistCol.CreateHistograms();
+  HistCol.CreateHistograms(OutFilePath, OutFilePrefix);
   Progress* progress = new Progress(0,10000);
   
   for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
@@ -57,7 +56,6 @@ void MakeHistValidation(int isampleyear = 3) {
       continue;
     }
     InterTree *r = new InterTree(t);
-    fout->cd();
     progress->SetEntryMax(t->GetEntries());
     int n_nan_weight = 0;
     for (Long64_t ievt = 0; ievt < t->GetEntries(); ++ievt) {
@@ -122,6 +120,5 @@ void MakeHistValidation(int isampleyear = 3) {
     cout << "In SampleType: " << SampleTypes[ist];
     cout << ", Number of events with nan weight = " << n_nan_weight << endl;
   }
-  fout->Write();
-  fout->Save();
+  HistCol.PostProcess();
 }
