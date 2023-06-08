@@ -12,11 +12,6 @@
 #include "../../Utilities/DataFormat.cc"
 #include "../../Utilities/Dataset.cc"
 
-TString Replacement(TString in, TString tr, TString n) {
-  TString out = in.ReplaceAll(tr, n);
-  return out;
-}
-
 class RegionIdRange {
 public:
   RegionIdRange(int b1_, int b2_, bool IsSR_ = false) {
@@ -204,7 +199,7 @@ public:
 
   void Init() {
     Hists.clear();
-    NameFormat = "=SampleType=_=Observable=_=RegionRange=_=Variation=";
+    // NameFormat = "=SampleType=_=Observable=_=RegionRange=_=Variation=";
     SampleTypes = dlib.DatasetNames;
     Variations = rm.Variations;
     Regions = rm.StringRanges;
@@ -213,14 +208,14 @@ public:
   void SetSampleTypes(vector<string> sts) {SampleTypes = sts;}
   void SetVariations(vector<string> vars) {Variations = vars;}
 
-  TString GetHistName(int io, int ist, int iv, int ir) {
-    TString histname = NameFormat;
-    histname.ReplaceAll("=SampleType=", SampleTypes[ist]);
-    histname.ReplaceAll("=Variation=", Variations[iv]);
-    histname.ReplaceAll("=RegionRange=", Regions[ir]);
-    histname.ReplaceAll("=Observable=", Observables[io]);
-    return histname;
-  }
+  // TString GetHistName(int io, int ist, int iv, int ir) {
+  //   TString histname = StandardNames::HistName;
+  //   histname.ReplaceAll("=SampleType=", SampleTypes[ist]);
+  //   histname.ReplaceAll("=Variation=", Variations[iv]);
+  //   histname.ReplaceAll("=RegionRange=", Regions[ir]);
+  //   histname.ReplaceAll("=Observable=", Observables[io]);
+  //   return histname;
+  // }
 
   // Creating Histograms
   void AddObservable(string ob, int nbins_, double xlow_, double xup_) {
@@ -235,7 +230,7 @@ public:
     Hists.resize(Observables.size());
     for (unsigned io = 0; io < Observables.size(); ++io) {
       Hists[io].resize(SampleTypes.size());
-      TString fn = path + "/" + prefix + "_" + Observables[io] + ".root";
+      TString fn = StandardNames::HistFileName(path, prefix, Observables[io]);
       fouts.push_back(new TFile(fn, "RECREATE"));
       fouts[io]->cd();
       for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
@@ -243,7 +238,8 @@ public:
         for (unsigned iv = 0; iv < Variations.size(); ++iv) {
           Hists[io][ist][iv].resize(Regions.size());
           for (unsigned ir = 0; ir < Regions.size(); ++ir) {
-            TString histname = GetHistName(io, ist, iv, ir);
+            // TString histname = GetHistName(io, ist, iv, ir);
+            TString histname = StandardNames::HistName(SampleTypes[ist], Observables[io], Regions[ir], Variations[iv]);
             Hists[io][ist][iv][ir] = new TH1F(histname, histname, nbins[io], xlow[io], xup[io]);
           }
         }

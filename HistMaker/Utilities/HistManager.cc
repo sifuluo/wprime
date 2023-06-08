@@ -27,240 +27,120 @@
 #include "CMSStyle.cc"
 #include "RatioPlot.cc"
 
-class HistManager : public Histograms {
+class HistManager{
 public:
-  HistManager() : Histograms() {
-    Init();
+  HistManager() {
     GroupNames = dlib.GroupNames;
+    SampleTypes = dlib.DatasetNames;
+    Variations = rm.Variations;
+    Regions = rm.StringRanges;
   };
+
+  void SetObservable(string ob) {
+    Observable = ob;
+  }
   
   void SetPrefix(string prefix) {
     PlotNamePrefix = prefix;
   }
 
-  void SetTitles(vector<string> xt, vector<string> yt) {
-    XTitles = xt;
-    YTitles = yt;
-  }
-
-  void SetTitles(vector<string> xt, string yt = "Number of Entries") {
-    XTitles = xt;
-    YTitles = vector<string>(XTitles.size(), yt);
+  void SetTitles(string xt, string yt = "Number of Entries") {
+    XTitle = xt;
+    YTitle = yt;
   }
 
   void SetRegions(vector<string> rs) {
     Regions = rs;
   }
+
+  // TString GetHistName(int ist, int iv, int ir) {
+  //   TString histname = StandardNames::HistName;
+  //   histname.ReplaceAll("=SampleType=", SampleTypes[ist]);
+  //   histname.ReplaceAll("=Variation=", Variations[iv]);
+  //   histname.ReplaceAll("=RegionRange=", Regions[ir]);
+  //   histname.ReplaceAll("=Observable=", Observable);
+  //   return histname;
+  // }
   
   // Reading Histograms
-  void ReadHistograms(vector<string> obss, TFile *f) {
-    Observables = obss;
-    // Hists.clear();
-    // Hists.resize(SampleTypes.size());
-    GroupHists.clear();
-    GroupHists.resize(GroupNames.size());
-    for (unsigned ig = 0; ig < GroupNames.size(); ++ig) {
-      GroupHists[ig].resize(Variations.size());
-      for (unsigned iv = 0; iv < Variations.size(); ++iv) {
-        GroupHists[ig][iv].resize(Regions.size());
-        for (unsigned ir = 0; ir < Regions.size(); ++ir) {
-          GroupHists[ig][iv][ir].resize(Observables.size());
-        }
-      }
-    }
-
+  void ReadHistograms(TFile *f) {
     Plots.clear();
     Plots.resize(Regions.size());
     for (unsigned ir = 0; ir < Regions.size(); ++ir) {
       bool IsSR = rm.Ranges[ir].IsSR;
-      Plots[ir].resize(Observables.size());
-      for (unsigned io = 0; io < Observables.size(); ++io) {
-        TString PlotName = PlotNamePrefix + "_" + Observables[io] + "_" + rm.StringRanges[ir];
-        Plots[ir][io] = new RatioPlot(PlotName,IsSR, XTitles[io], YTitles[io]);
-        Plots[ir][io]->SetVariationTypes(Variations);
-
-        vector<vector<TH1F*> > PlotGroupHists;
-        PlotGroupHists.resize(GroupNames.size());
-        for (unsigned ig = 0; ig < GroupNames.size(); ++ig) {
-          PlotGroupHists[ig].resize(Variations.size());
-        }
-
-        for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
-          string gp = dlib.GetGroup(SampleTypes[ist]);
-          int ig = dlib.GetGroupIndexFromGroupName(gp);
-          if (ig < 0) continue;
-          for (unsigned iv = 0; iv < Variations.size(); ++iv){
-            TH1F* h = (TH1F*) f->Get(GetHistName(ist,iv,ir,io));
-            if (h == nullptr) continue;
-            if (PlotGroupHists[ig][iv] == nullptr) { // First hist for the group
-              PlotGroupHists[ig][iv] = (TH1F*) h->Clone();
-              int col = dlib.Groups[gp].Color;
-              if (dlib.Groups[gp].Type == 1) PlotGroupHists[ig][iv]->SetFillColor(col);
-              PlotGroupHists[ig][iv]->SetLineColor(col);
-            }
-            else PlotGroupHists[ig][iv]->Add(h);
-            delete h;
-          }
-        }
-
-        for (unsigned ig = 0; ig < GroupNames.size(); ++ig) {
-          for (unsigned iv = 0; iv < Variations.size(); ++iv) {
-            string gn = GroupNames[ig];
-            Plots[ir][io]->AddHist(gn, PlotGroupHists[ig][iv], dlib.Groups[gn].Type,iv);
-          }
-        }
-        Plots[ir][io]->SetLogy(true);
-        Plots[ir][io]->Legend(LegendPos);
-        dlib.AddLegend(Plots[ir][io]->leg,IsSR);
-        cout << "Observable " << Observables[io] << " is read"<<endl;
+      TString PlotName = PlotNamePrefix + "_" + Observable + "_" + rm.StringRanges[ir];
+      Plots[ir] = new RatioPlot(PlotName,IsSR, XTitle, YTitle);
+      Plots[ir]->SetVariationTypes(Variations);
+      // Continue work from here
+      vector<vector<TH1F*> > PlotGroupHists;
+      PlotGroupHists.resize(GroupNames.size());
+      for (unsigned ig = 0; ig < GroupNames.size(); ++ig) {
+        PlotGroupHists[ig].resize(Variations.size());
       }
-    }
-
-    // for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
-    //   string gp = dlib.GetGroup(SampleTypes[ist]);
-    //   int ig = dlib.GetGroupIndexFromGroupName(gp);
-    //   if (ig < 0) continue;
-    //   for (unsigned iv = 0; iv < Variations.size(); ++iv) {
-    //     for (unsigned ir = 0; ir < Regions.size(); ++ir) {
-    //       for (unsigned io = 0; io < Observables.size(); ++io) {
-    //         TH1F* h = (TH1F*) f->Get(GetHistName(ist,iv,ir,io));
-    //         if (h == nullptr) continue;
-    //         if (GroupHists[ig][iv][ir][io] == nullptr) { // First hist for the group
-    //           GroupHists[ig][iv][ir][io] = (TH1F*) h->Clone();
-    //           int col = dlib.Groups[gp].Color;
-    //           if (dlib.Groups[gp].Type == 1) GroupHists[ig][iv][ir][io]->SetFillColor(col);
-    //           GroupHists[ig][iv][ir][io]->SetLineColor(col);
-    //         }
-    //         else
-    //           GroupHists[ig][iv][ir][io]->Add(h);
-    //         delete h;
-    //       }
-    //     }
-    //     cout << "Variation " << Variations[iv] << "is done" <<endl;
-    //   }
-    //   cout << "Sorted dataset " << SampleTypes[ist] << " into group " << gp << endl;
-    // }
-
-    // for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
-    //   Hists[ist].resize(Variations.size());
-    //   for (unsigned iv = 0; iv < Variations.size(); ++iv) {
-    //     Hists[ist][iv].resize(Regions.size());
-    //     for (unsigned ir = 0; ir < Regions.size(); ++ir) {
-    //       Hists[ist][iv][ir].resize(Observables.size());
-    //       for (unsigned io = 0; io < Observables.size(); ++io) {
-    //         TString histname = GetHistName(ist, iv, ir, io);
-    //         Hists[ist][iv][ir][io] = (TH1F*) f->Get(histname);
-    //         // if (Hists[ist][iv][ir][io] != nullptr && nbins[io] == 0) {
-    //         //   nbins[io] = Hists[ist][iv][ir][io]->GetNbinsX();
-    //         //   xlow[io] = Hists[ist][iv][ir][io]->GetXaxis()->GetXmin();
-    //         //   xup[io] = Hists[ist][iv][ir][io]->GetXaxis()->GetXmax();
-    //         // }
-    //       }
-    //     }
-    //   }
-    //   cout << "Finished reading from dataset " << SampleTypes[ist] <<endl;
-    // }
-  }
-
-  void SortHists() {
-    GroupHists.clear();
-    GroupHists.resize(GroupNames.size());
-    for (unsigned ig = 0; ig < GroupNames.size(); ++ig) {
-      GroupHists[ig].resize(Variations.size());
-      for (unsigned iv = 0; iv < Variations.size(); ++iv) {
-        GroupHists[ig][iv].resize(Regions.size());
-        for (unsigned ir = 0; ir < Regions.size(); ++ir) {
-          GroupHists[ig][iv][ir].resize(Observables.size());
+      for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
+        string gp = dlib.GetGroup(SampleTypes[ist]);
+        int ig = dlib.GetGroupIndexFromGroupName(gp);
+        if (ig < 0) continue;
+        for (unsigned iv = 0; iv < Variations.size(); ++iv){
+          TString hn = StandardNames::HistName(SampleTypes[ist], Observable, Regions[ir], Variations[iv]);
+          TH1F* h = (TH1F*) f->Get(hn);
+          if (h == nullptr) continue;
+          if (PlotGroupHists[ig][iv] == nullptr) { // First hist for the group
+            PlotGroupHists[ig][iv] = (TH1F*) h->Clone();
+            int col = dlib.Groups[gp].Color;
+            if (dlib.Groups[gp].Type == 1) PlotGroupHists[ig][iv]->SetFillColor(col);
+            PlotGroupHists[ig][iv]->SetLineColor(col);
+          }
+          else PlotGroupHists[ig][iv]->Add(h);
+          delete h;
         }
       }
-    }
 
-    for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
-      string gp = dlib.GetGroup(SampleTypes[ist]);
-      int ig = dlib.GetGroupIndexFromGroupName(gp);
-      if (ig < 0) continue;
-      for (unsigned iv = 0; iv < Variations.size(); ++iv) {
-        for (unsigned ir = 0; ir < Regions.size(); ++ir) {
-          for (unsigned io = 0; io < Observables.size(); ++io) {
-            if (Hists[ist][iv][ir][io] == nullptr) continue;
-            if (GroupHists[ig][iv][ir][io] == nullptr) { // First hist for the group
-              GroupHists[ig][iv][ir][io] = (TH1F*) Hists[ist][iv][ir][io]->Clone();
-              int col = dlib.Groups[gp].Color;
-              if (dlib.Groups[gp].Type == 1) GroupHists[ig][iv][ir][io]->SetFillColor(col);
-              GroupHists[ig][iv][ir][io]->SetLineColor(col);
-            }
-            else
-              GroupHists[ig][iv][ir][io]->Add(Hists[ist][iv][ir][io]);
-          }
+      for (unsigned ig = 0; ig < GroupNames.size(); ++ig) {
+        for (unsigned iv = 0; iv < Variations.size(); ++iv) {
+          string gn = GroupNames[ig];
+          Plots[ir]->AddHist(gn, PlotGroupHists[ig][iv], dlib.Groups[gn].Type,iv);
+          delete PlotGroupHists[ig][iv];
         }
       }
-      // cout << "Sorted dataset " << SampleTypes[ist] << " into group " << gp << endl;
+      Plots[ir]->SetLogy(true);
+      Plots[ir]->Legend(LegendPos);
+      dlib.AddLegend(Plots[ir]->leg,IsSR);
     }
   }
 
-  void PrepHists() {
-    SortHists();
-    // PrepErrorGraphs();
-    Plots.clear();
-    Plots.resize(Regions.size());
-    for (unsigned ir = 0; ir < Regions.size(); ++ir) {
-      bool IsSR = rm.Ranges[ir].IsSR;
-      Plots[ir].resize(Observables.size());
-      for (unsigned io = 0; io < Observables.size(); ++io) {
-        TString PlotName = PlotNamePrefix + "_" + Observables[io] + "_" + rm.StringRanges[ir];
-        Plots[ir][io] = new RatioPlot(PlotName,IsSR, XTitles[io], YTitles[io]);
-        Plots[ir][io]->SetVariationTypes(Variations);
-        for (unsigned ig = 0; ig < GroupNames.size(); ++ig) {
-          for (unsigned iv = 0; iv < Variations.size(); ++iv) {
-            string gn = GroupNames[ig];
-            Plots[ir][io]->AddHist(gn, GroupHists[ig][iv][ir][io], dlib.Groups[gn].Type,iv);
-          }
-        }
-        Plots[ir][io]->SetLogy(true);
-        Plots[ir][io]->Legend(LegendPos);
-        dlib.AddLegend(Plots[ir][io]->leg,IsSR);
-      }
-    }
+  void CreateAuxiliaryPlots(int ir) {
+    Plots[ir]->CreateRatioPlots();
+    Plots[ir]->CreateErrorGraphs();
   }
 
-  void CreateAuxiliaryPlots(int ir, int io) {
-    Plots[ir][io]->CreateRatioPlots();
-    Plots[ir][io]->CreateErrorGraphs();
+  double GetMaximum(int ir) {
+    return Plots[ir]->GetMaximum();
   }
 
-  double GetMaximum(int ir, int io) {
-    return Plots[ir][io]->GetMaximum();
+  void SetMaximum(int ir, double max) {
+    Plots[ir]->SetMaximum(max);
   }
 
-  void SetMaximum(int ir, int io, double max) {
-    Plots[ir][io]->SetMaximum(max);
-  }
-
-  void DrawPlot(int ir, int io, TVirtualPad* p_, int year) {
-    Plots[ir][io]->SetPad(p_);
-    Plots[ir][io]->DrawPlot(year);
-    Plots[ir][io]->UPad->cd();
+  void DrawPlot(int ir, TVirtualPad* p_, int year) {
+    Plots[ir]->SetPad(p_);
+    Plots[ir]->DrawPlot(year);
+    Plots[ir]->UPad->cd();
     TLatex latex;
     latex.SetNDC();
     latex.SetTextSize(0.035);
     latex.SetTextAlign(23);
     latex.DrawLatex((LegendPos[0] + LegendPos[2])/2., LegendPos[1] - 0.025, rm.LatexRanges[ir]);
-    TString sens = Form("Sig/#sqrt{Sig + BG} = %f", Plots[ir][io]->GetSensitivity());
+    TString sens = Form("Sig/#sqrt{Sig + BG} = %f", Plots[ir]->GetSensitivity());
     latex.DrawLatex((LegendPos[0] + LegendPos[2])/2., LegendPos[1] - 0.065, sens);
   }
   vector<double> LegendPos = {0.65,0.65,0.9,0.9};
 
-  // Inherited members
-  // vector< vector< vector< vector<TH1F*> > > > Hists; // Hists[isampletype][ivariation][irange][iobservable]
-  // vector<string> SampleTypes, Variations, Regions, Observables;
-  // vector<int> nbins; // [nObservables]
-  // vector<double> xlow, xup; // [nObservables]
-  // TString NameFormat;
-
   vector<string> GroupNames;
   string PlotNamePrefix;
-  vector<string> XTitles, YTitles;// [Observable]
-  vector< vector< vector< vector<TH1F*> > > > GroupHists; // [Group][Variation][Region][Observable]
-  vector< vector<RatioPlot*> > Plots; // [Region][Observable]
+  string Observable;
+  vector<string> SampleTypes, Variations, Regions;
+  string XTitle, YTitle;// [Observable]
+  vector<RatioPlot*> Plots; // [Region]
 };
 #endif

@@ -18,8 +18,8 @@ void MakeHistValidation(int isampleyear = 3) {
   string basepath = "/eos/user/s/siluo/WPrimeAnalysis/Validation/";
   string itpath = "";
   string SampleYear = dlib.SampleYears[isampleyear];
-  string OutFilePath = "outputs/";
-  string OutFilePrefix = SampleYear + "_Validation";
+  string HistFilePath = "outputs/";
+  string HistFilePrefix = SampleYear + "_Validation";
   Histograms HistCol;
   vector<string> SampleTypes = dlib.DatasetNames;
   // SampleTypes = {"FL500"};
@@ -34,7 +34,7 @@ void MakeHistValidation(int isampleyear = 3) {
   HistCol.AddObservable("mT",200,0,2000);
   HistCol.AddObservable("WPrimeMassSimpleFL",200,0,2000);
   HistCol.AddObservable("WPrimeMassSimpleLL",200,0,2000);
-  HistCol.CreateHistograms(OutFilePath, OutFilePrefix);
+  HistCol.CreateHistograms(HistFilePath, HistFilePrefix);
   Progress* progress = new Progress(0,10000);
   
   for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
