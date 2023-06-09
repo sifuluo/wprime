@@ -181,6 +181,8 @@ public:
 
   int GetRangeIndex(int id) {
     if (id < 0) return -1;
+    if (id > 1300 && id < 1400) id -= 100;
+    if (id > 2300 && id < 2400) id -= 100; // Merging two background est region. Remove if needed.
     for (unsigned i = 0; i < Ranges.size(); ++i) {
       if (Ranges[i].Pass(id)) return i;
     }

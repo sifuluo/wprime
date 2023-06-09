@@ -694,16 +694,16 @@ public:
           TheLepton = Muons[iLooseLep];
         }
       }
-      // else if ((nep + nmup == 0) && (nev + nmuv == 1) && (iVetoLep != -1) && (nel + nmul == 0)) { // Backup Background Estimation Region
-      //   if (nev == 1) {
-      //     RegionNumber = 2300;
-      //     TheLepton = Electrons[iVetoLep];
-      //   }
-      //   else {
-      //     RegionNumber = 1300;
-      //     TheLepton = Muons[iVetoLep];
-      //   }
-      // }
+      else if ((nep + nmup == 0) && (nev + nmuv == 1) && (nel + nmul == 0) && (iVetoLep != -1)) { // Background Estimation Region
+        if (nev == 1) {
+          RegionNumber = 2300;
+          TheLepton = Electrons[iVetoLep];
+        }
+        else {
+          RegionNumber = 1300;
+          TheLepton = Muons[iVetoLep];
+        }
+      }
       else {
         if (conf->Debug("LeptonRegion") && i == 0) cout << Form("In Event %i, Variation %i, Electron (Primary, Veto, Loose) = (%i, %i, %i), Muon (Primary, Veto, Loose) = (%i, %i, %i)"
           , (int)iEvent, i, nep, nev, nel, nmup, nmuv, nmul) << endl;
