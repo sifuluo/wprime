@@ -26,9 +26,9 @@ void MakeHistValidation(int isampleyear = 3) {
 
   HistCol.SetSampleTypes(SampleTypes);
   HistCol.AddObservable("LeptonPt",100,0,500);
-  HistCol.AddObservable("LeptonEta",60,0,6.0);
+  HistCol.AddObservable("LeptonEta",90,-4.5,4.5);
   HistCol.AddObservable("LeadingJetPt",200,0,2000);
-  HistCol.AddObservable("LeadingJetEta",60,0,6.0);
+  HistCol.AddObservable("LeadingJetEta",90,-4.5,4.5);
   HistCol.AddObservable("METPt",200,0,2000);
   HistCol.AddObservable("METPhi",64,-3.2,3.2);
   HistCol.AddObservable("mT",200,0,2000);

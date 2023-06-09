@@ -102,7 +102,7 @@ struct Lepton : VarPO {
   bool IsLoose;
   bool IsVeto;
   bool TriggerMatched;
-  vector<bool> OverlapsJet = {false, false, false}; //{PUID: loose, medium, tight}
+  vector<bool> JetProximity = {false, false, false}; //{PUID: loose, medium, tight}
 };
 
 struct Electron : Lepton {

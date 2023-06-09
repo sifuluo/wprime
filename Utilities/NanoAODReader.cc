@@ -103,9 +103,13 @@ public:
   }
 
   //function to determine lepton-jet overlaps, gives answer depending on PUID passing or not
-  vector<bool> OverlapCheck(Lepton ell_){
+  vector<bool> JetProximityCheck(Lepton ell_){
     vector<bool> out = {false, false, false};
-    for(unsigned j = 0; j < Jets.size(); ++j) if(fabs(Jets[j].DeltaR(ell_)) < 0.4) out = Jets[j].PUIDpasses;//this solution presumes there is only 1 possible jet to match
+    for(unsigned j = 0; j < Jets.size(); ++j) if(fabs(Jets[j].DeltaR(ell_)) < 0.4) {
+      for (unsigned i = 0; i < 3; ++i) {
+        out[i] = out[i] || Jets[j].PUIDpasses[i];
+      }
+    }
     return out;
   }
 
@@ -420,7 +424,7 @@ public:
       if (!PassCommon(tmp)) continue;
 
       //check for jet overlaps
-      tmp.OverlapsJet = OverlapCheck(tmp);
+      tmp.JetProximity = JetProximityCheck(tmp);
       tmp.TriggerMatched = TriggerMatch(tmp);      
 
       //set SF and variation for primary only, HEEP as in https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaRunIIRecommendations#HEEPV7_0
@@ -501,7 +505,7 @@ public:
       if (!PassCommon(tmp)) continue;
 
       //check for jet overlaps
-      tmp.OverlapsJet = OverlapCheck(tmp);
+      tmp.JetProximity = JetProximityCheck(tmp);
       tmp.TriggerMatched = TriggerMatch(tmp);    
 
       // //CommonSelectionBlock
@@ -509,7 +513,7 @@ public:
       // bool passCommon = (fabs(tmp.Eta()) < 2.4);
       // passCommon &= (tmp.Pt() > 10.);
       // passCommon &= (evts->Muon_pfRelIso04_all[i] < 0.25);
-      // passCommon &= !(tmp.OverlapsJet[conf->PUIDWP]);
+      // passCommon &= !(tmp.JetProximity[conf->PUIDWP]);
 
       // //TripleSelectionBlock
       // bool passVeto = (evts->Muon_looseId[i]) && passCommon;
@@ -674,6 +678,10 @@ public:
         else {
           RegionNumber = 1100;
           TheLepton = Muons[iPrimaryLep];
+        }
+        if (TheLepton.JetProximity[conf->PUIDWP]) {
+          rids.Regions[i] = -2;
+          continue;
         }
       }
       else if ((nep + nmup == 0) && (nev + nmuv == 0) && (nel + nmul == 1)) { // Background Estimation Region 1
