@@ -22,12 +22,12 @@ void MakeHistValidation(int isampleyear = 3) {
   string HistFilePrefix = SampleYear + "_Validation";
   Histograms HistCol;
   vector<string> SampleTypes = dlib.DatasetNames;
-  // SampleTypes = {"FL500"};
+  SampleTypes = {"ttbar"};
 
   HistCol.SetSampleTypes(SampleTypes);
   HistCol.AddObservable("LeptonPt",100,0,500);
   HistCol.AddObservable("LeptonEta",90,-4.5,4.5);
-  HistCol.AddObservable("LeadingJetPt",200,0,2000);
+  HistCol.AddObservable("LeadingJetPt",200,0,100);
   HistCol.AddObservable("LeadingJetEta",90,-4.5,4.5);
   HistCol.AddObservable("METPt",200,0,2000);
   HistCol.AddObservable("METPhi",64,-3.2,3.2);
@@ -59,7 +59,7 @@ void MakeHistValidation(int isampleyear = 3) {
     progress->SetEntryMax(t->GetEntries());
     int n_nan_weight = 0;
     for (Long64_t ievt = 0; ievt < t->GetEntries(); ++ievt) {
-      // if (ievt > 1000) continue;
+      if (ievt > 1000000) continue;
       r->GetEntry(ievt);
       progress->Print(ievt);
 

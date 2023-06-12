@@ -1,4 +1,5 @@
 Submits/*.sub
+Submits/hadd/
 SuccessFlags/
 filenames/
 outputs/*.root

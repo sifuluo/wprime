@@ -163,7 +163,7 @@ void Validation(int isampleyear = 3, int isampletype = 1, int ifile = -1) {
   conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/SingleMuon/2018/2B07B4C0-852B-9B4F-83FA-CA6B047542D1.root";
   conf->LocalOutput = false;
   conf->PrintProgress = true;
-  conf->DebugList = {"LeptonRegion"};
+  // conf->DebugList = {"LeptonRegion"};
   // conf->ProgressInterval = 2000;
   // conf->EntryMax = 1000;
 

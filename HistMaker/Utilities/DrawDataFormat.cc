@@ -94,7 +94,8 @@ public:
 class RegionManager{
 public:
   RegionManager() {
-    SplitInit();
+    // SplitInit();
+    TestInit();
   };
   vector<RegionIdRange> Ranges;
   vector<string> StringRanges;
@@ -155,6 +156,11 @@ public:
     Add(1264,1264,true);
     Add(1265,1265,true);
     Add(1266,1266,true);
+  }
+
+  void TestInit() {
+    Reset();
+    Add(1121);
   }
 
   void Reset() {

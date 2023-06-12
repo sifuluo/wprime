@@ -720,10 +720,10 @@ public:
         nj++;
         if(Jets[j].bTagPasses[bTagWP]) nb++;//select working point for b-tagging by bTagPasses[0] = loose, 1 medium and 2 tight
       }
-      if(nj<5 || nj>6) {
-        rids.Regions[i] = -3;
-        continue; //in no region we're interested in
-      }
+      // if(nj<5 || nj>6) {
+      //   rids.Regions[i] = -3;
+      //   continue; //in no region we're interested in
+      // }
       RegionNumber += nj*10;
       RegionNumber += nb;
       rids.Regions[i]=RegionNumber;
