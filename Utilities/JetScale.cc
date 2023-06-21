@@ -1,5 +1,6 @@
 #ifndef JETSCALE_CC
 #define JETSCALE_CC
+// Creates and read jet resolution histograms for fitter to use to evaluate the likelihood of jet scaled to a certain energy
 
 #include <vector>
 #include <string>

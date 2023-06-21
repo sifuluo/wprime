@@ -1,6 +1,7 @@
 #ifndef BTAG_CC
 #define BTAG_CC
-
+// Create and read bTagging efficiency files
+// Can also calculate bTag Scale Factor (Also provided by skims)
 #include <vector>
 #include <string>
 #include <sstream>

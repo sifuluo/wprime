@@ -1,5 +1,7 @@
 #ifndef BRANCHREADER_CC
 #define BRANCHREADER_CC
+// The fundamental tree reader out of a skeleton of a MakeClass.
+// NanoAODReader is expected to read from the branches and put them into physics objects.
 
 #include <TROOT.h>
 #include <TChain.h>

@@ -1,5 +1,6 @@
 #ifndef DATAFORMAT_CC
 #define DATAFORMAT_CC
+// As title suggests, all data format for physics objects are defined here
 
 #include <vector>
 #include <map>

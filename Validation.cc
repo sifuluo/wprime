@@ -121,7 +121,8 @@ public:
     JetPt_RU->clear();
     JetPt_RD->clear();
     JetEta->clear();
-    for (Jet j : r->Jets) {
+    for (Jet& j : r->Jets) {
+      if (!j.PUIDpasses[conf->PUIDWP]) continue;
       JetPt->push_back(j.Pt());
       JetPt_SU->push_back(j.SU.Pt());
       JetPt_SD->push_back(j.SD.Pt());
@@ -158,7 +159,7 @@ public:
   }
 };
 
-void Validation(int isampleyear = 3, int isampletype = 1, int ifile = -1) {
+void Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
   Configs *conf = new Configs(isampleyear, isampletype, ifile);
   conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/SingleMuon/2018/2B07B4C0-852B-9B4F-83FA-CA6B047542D1.root";
   conf->LocalOutput = false;

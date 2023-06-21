@@ -1,5 +1,6 @@
 #ifndef DATASET_CC
 #define DATASET_CC
+// As title suggests, dataset information library
 
 #include "TString.h"
 #include "TH1.h"

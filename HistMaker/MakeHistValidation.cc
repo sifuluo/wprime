@@ -1,7 +1,10 @@
 #include "Utilities/TreeClass/ValidationTree.C"
 #include "Utilities/DrawDataFormat.cc"
 #include "../Utilities/ProgressBar.cc"
+
 #include <math.h>
+
+#include "TChain.h"
 
 using namespace std;
 
@@ -38,30 +41,33 @@ void MakeHistValidation(int isampleyear = 3) {
   Progress* progress = new Progress(0,10000);
   
   for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
+    TChain* t = new TChain("t");
     string SampleType = SampleTypes[ist];
     if (SampleType == "ZZ") continue;
     float NormFactor = dlib.GetNormFactor(SampleType, isampleyear);
     cout << endl << "Start processing " << SampleType << endl;
-    string SamplePath = SampleYear + "_" + SampleType + ".root";
+    string SamplePath = SampleYear + "_" + SampleType + "/*";
     TString InFilePath = basepath + itpath + SamplePath;
-    cout << "File Path: " << InFilePath << endl;
-    TFile *fin = new TFile(InFilePath,"READ");
-    if (fin->IsZombie()) {
-      cout << InFilePath << " is broken. Proceeding to next file" <<endl;
-      continue;
-    } 
-    TTree* t = (TTree*) fin->Get("t");
-    if (!t) {
-      cout << InFilePath << " tree is broken. Proceeding to next file" << endl;
-      continue;
-    }
+    t->Add(InFilePath);
+    // TFile *fin = new TFile(InFilePath,"READ");
+    // if (fin->IsZombie()) {
+    //   cout << InFilePath << " is broken. Proceeding to next file" <<endl;
+    //   continue;
+    // } 
+    // TTree* t = (TTree*) fin->Get("t");
+    // if (!t) {
+    //   cout << InFilePath << " tree is broken. Proceeding to next file" << endl;
+    //   continue;
+    // }
     InterTree *r = new InterTree(t);
-    progress->SetEntryMax(t->GetEntries());
+    // progress->SetEntryMax(t->GetEntriesFast());
+    Long64_t EntryMax = 2000000;
+    progress->SetEntryMax(EntryMax);
     int n_nan_weight = 0;
-    for (Long64_t ievt = 0; ievt < t->GetEntries(); ++ievt) {
-      if (ievt > 1000000) continue;
+    for (Long64_t ievt = 0; ievt < EntryMax; ++ievt) {
       r->GetEntry(ievt);
       progress->Print(ievt);
+      // checkpoint(0);
 
       bool hasnan = false;
       for (unsigned iv = 9; iv < HistCol.Variations.size(); ++iv) {
@@ -71,12 +77,14 @@ void MakeHistValidation(int isampleyear = 3) {
         n_nan_weight++;
         continue;
       }
+      // checkpoint(1);
 
       for (unsigned iv = 0; iv < HistCol.Variations.size(); ++iv) {
         float EventWeight = r->EventWeight[0];
         if (iv > 8) EventWeight = r->EventWeight[iv-8];
         EventWeight *= NormFactor;
         int RegionIdentifier = r->RegionIdentifier[0];
+        if (RegionIdentifier%100/10 == 0) continue;
         if (iv < 9) RegionIdentifier = r->RegionIdentifier[iv];
     
         //Start of customize part
@@ -116,6 +124,7 @@ void MakeHistValidation(int isampleyear = 3) {
         HistCol.Fill("WPrimeMassSimpleLL",WPrimeMassSimpleLL);
 
       }
+      // checkpoint(2);
     }
     cout << "In SampleType: " << SampleTypes[ist];
     cout << ", Number of events with nan weight = " << n_nan_weight << endl;

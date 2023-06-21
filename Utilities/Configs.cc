@@ -1,5 +1,6 @@
 #ifndef CONFIGS_CC
 #define CONFIGS_CC
+// Configuration file that is designed to be passed across the entire process
 
 #include <vector>
 #include <map>

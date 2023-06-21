@@ -1,5 +1,6 @@
 #ifndef PUID_CC
 #define PUID_CC
+// Determines the PUID with the PUID discriminator (Also provided by skims)
 
 #include <vector>
 #include <string>

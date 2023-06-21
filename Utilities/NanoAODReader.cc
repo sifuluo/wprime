@@ -1,5 +1,7 @@
 #ifndef NANOAODREADER_CC
 #define NANOAODREADER_CC
+// Main interface takes raw data from MakeClass() class and dump them into physics objects defined in Datasets
+// Calucate the event weights and region identifier in the meantime.
 
 #include <vector>
 #include <iostream>

@@ -1,5 +1,8 @@
 #ifndef ANALYZER_CC
 #define ANALYZER_CC
+// Central code that reads from NanoAODReader and conduct further (time consuming) processing such as fitting to hypothesis etc.
+// Derived class of this class is suggested to define analysis functions within the class body in respective analysis.
+// So in this code, there is only fundamental functions that would be needed by all processed
 
 #include <TFile.h>
 #include <TTree.h>
