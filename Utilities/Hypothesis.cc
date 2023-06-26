@@ -135,7 +135,7 @@ public:
     pd.first = GetFirst(i);
     pd.last = GetLast(i);
     pd.d = GetDaughters(pd.last);
-    return PartDecay;
+    return pd;
   }
 
   void FindGenHypothesis() {
@@ -154,7 +154,7 @@ public:
     }
     
     for (unsigned i = 0; i < gp->size(); ++i) { // Other top share the same mother with the wprime
-      if (mother(i) == WP.mother && abspid(i) == 6) {
+      if (mother(i) == mother(WP.first) && abspid(i) == 6) {
         if (OTt.first != -1 && OTt.first != GetFirst(i)) cout << "Multiple OTt found" << endl;
         OTt = CompletePart(i);
       }
@@ -177,13 +177,13 @@ public:
     if (OutPartDecay[2].InValid("Hadb") || HadW.InValid("HadW")) return;
 
     for (unsigned i = 0; i < HadW.d.size(); ++i) { // Light Jets ordered by Pt
-      if (Pt(HadW.d[i]) > Pt(OutPartDecay[0])) {
+      if (Pt(HadW.d[i]) > Pt(OutPartDecay[0].last)) {
         OutPartDecay[1] = OutPartDecay[0];
         OutPartDecay[0] = CompletePart(HadW.d[i]);
       }
-      else if (Pt(HadW.d[i] > Pt(OutPartDecay[1]))) OutPartDecay[1] = CompletePart(HadW.d[i]);
+      else if (Pt(HadW.d[i]) > Pt(OutPartDecay[1].last)) OutPartDecay[1] = CompletePart(HadW.d[i]);
     }
-    if (OutPartDecay[0].Invalid("LJ0") || OutPartDecay[1].Invalid("LJ1")) return;
+    if (OutPartDecay[0].InValid("LJ0") || OutPartDecay[1].InValid("LJ1")) return;
 
     for (unsigned i = 0; i < LepT.d.size(); ++i) {
       if (abspid(LepT.d[i]) == 5) OutPartDecay[3] = CompletePart(LepT.d[i]); // Lepb
@@ -195,7 +195,7 @@ public:
       if (abspid(LepW.d[i]) == 11 || abspid(LepW.d[i]) == 13) OutPartDecay[5] = CompletePart(LepW.d[i]);
       if (abspid(LepW.d[i]) == 12 || abspid(LepW.d[i]) == 14) OutPartDecay[6] = CompletePart(LepW.d[i]);
     }
-    if (OutPartDecay[5].Invalid("Lep") || OutPartDecay[6].Invalid("Neu")) return;
+    if (OutPartDecay[5].InValid("Lep") || OutPartDecay[6].InValid("Neu")) return;
 
     for (unsigned i = 0; i < OutPartDecay.size(); ++i) {
       OutParts.push_back(gp->at(OutPartDecay[i].last));

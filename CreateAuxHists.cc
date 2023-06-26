@@ -6,6 +6,8 @@
 #include <cmath>
 #include <array>
 
+#include <TApplication.h>
+
 #include "Utilities/NanoAODReader.cc"
 #include "Utilities/JetScale.cc"
 
@@ -59,5 +61,7 @@ void CreateAuxHists(int sampleyear = 3, int sampletype = 2, int ifile = -1, stri
   JS->Clear();
   
   progress->JobEnd();
+
+  gApplication->Terminate();
 
 }

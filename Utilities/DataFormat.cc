@@ -111,6 +111,7 @@ struct Electron : Lepton {
   vector<float> SFs = {1.,1.,1.}; // {nominal, up, down}
   int cutBased;
   bool cutBasedHEEP;
+  bool mva;
 };
 
 struct Muon: Lepton {

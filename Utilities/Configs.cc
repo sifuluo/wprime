@@ -19,7 +19,8 @@ struct Configs {
     iFile = ifile_;
     SampleYear = dlib.SampleYears[isy_];
     SampleType = dlib.DatasetNames[ist_];
-    IsMC = iSampleType > 1;
+    Type = dlib.Datasets[SampleType].Type;
+    IsMC = Type > 0;
   };
 
   ~Configs() {
@@ -30,8 +31,9 @@ struct Configs {
   int iSampleYear; 
   string SampleYear;
   int iSampleType;
-  string SampleType;
+  string SampleType; // Should be SampleName actually
   bool IsMC;
+  int Type; // 0: Data, 1: MC, 2: Signal
 
   // iFile >=0 will be index of files in the text file containing the path to files
   // if iFile < 0, a InputFile must be specified to be run on.

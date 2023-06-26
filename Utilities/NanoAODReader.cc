@@ -251,8 +251,8 @@ public:
         vector<vector<float> > bTSFs = {{1,1,1},{1,1,1},{1,1,1}};
         if (conf->UseSkims_bTagSF || conf->Compare_bTagSF) {
           bTSFs[0] = {evts->Jet_bTagScaleFactorLoose[i], evts->Jet_bTagScaleFactorMedium[i], evts->Jet_bTagScaleFactorTight[i]};
-          bTSFs[1] = {evts->Jet_bTagScaleFactorLooseUp[i], evts->Jet_bTagScaleFactorMediumUp[i], evts->Jet_bTagScaleFactorTightUp[i]};
-          bTSFs[2] = {evts->Jet_bTagScaleFactorLooseDown[i], evts->Jet_bTagScaleFactorMediumDown[i], evts->Jet_bTagScaleFactorTightDown[i]};
+          bTSFs[1] = {evts->Jet_bTagScaleFactorLooseUpCorrelated[i], evts->Jet_bTagScaleFactorMediumUpCorrelated[i], evts->Jet_bTagScaleFactorTightUpCorrelated[i]};
+          bTSFs[2] = {evts->Jet_bTagScaleFactorLooseDownCorrelated[i], evts->Jet_bTagScaleFactorMediumDownCorrelated[i], evts->Jet_bTagScaleFactorTightDownCorrelated[i]};
         }
         if (conf->Compare_bTagSF) {
           R_BTSF->CompareScaleFactors(tmp, bTSFs);
@@ -328,7 +328,8 @@ public:
     pass &= e.TriggerMatched;
     if (iv < 0) pass &= (e.MaxPt() > 30.);
     else pass &= (e.v(iv).Pt() > 30.);
-    pass &= e.cutBasedHEEP;
+    // pass &= e.cutBasedHEEP;
+    pass &= e.mva;
     return pass;
   }
   bool PassVeto(Electron e, int iv = -1) { // iv: Variation. -1: MaxPt, 0-4, nominal and variations
@@ -422,6 +423,7 @@ public:
       tmp.charge = evts->Electron_charge[i];
       tmp.cutBased = evts->Electron_cutBased[i];
       tmp.cutBasedHEEP = evts->Electron_cutBased_HEEP[i];
+      tmp.mva = evts->Electron_mvaFall17V2Iso_WP90[i];
 
       if (!PassCommon(tmp)) continue;
 

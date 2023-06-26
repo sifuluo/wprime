@@ -48,7 +48,7 @@ public:
   void GetFileName() {
     string sampletype = conf->SampleType;
     if ((!conf->AuxHistCreation && conf->UseMergedAuxHist) || !conf->IsMC) sampletype = "Merged";
-    string filename = "bTagEff_" + conf->SampleYear + "_" + conf->SampleType + ".root";
+    string filename = "bTagEff_" + conf->SampleYear + "_" + sampletype + ".root";
     FileName = conf->AuxHistBasePath + filename;
   }
 
@@ -104,10 +104,13 @@ public:
       return;
     }
     h_eff.resize(6);
-    h_eff[0] = (TH2F*) f_eff->Get("BtagEff_L");
-    h_eff[1] = (TH2F*) f_eff->Get("BtagEff_M");
-    h_eff[2] = (TH2F*) f_eff->Get("BtagEff_T");
+    h_eff[0] = (TH2F*) f_eff->Get("BtagPass_L");
+    h_eff[1] = (TH2F*) f_eff->Get("BtagPass_M");
+    h_eff[2] = (TH2F*) f_eff->Get("BtagPass_T");
     TotalEvts = (TH2F*) f_eff->Get("TotalEvts");
+    h_eff[0]->Divide(TotalEvts);
+    h_eff[1]->Divide(TotalEvts);
+    h_eff[2]->Divide(TotalEvts);
     h_eff[0]->SetDirectory(0);
     h_eff[1]->SetDirectory(0);
     h_eff[2]->SetDirectory(0);

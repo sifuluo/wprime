@@ -13,7 +13,7 @@ def GetLocalDataset(names, iy):
   if inname == "SingleElectron" and iy == 3: inname = "EGamma/"
   else: inname = inname + "/"
 
-  if iy == 3: basepath = pbasepath
+  if iy == 3: basepath = ebasepath
   else: basepath = ebasepath
   infile = basepath + inname + inyears[iy] + "/*"
   if not os.path.exists("filenames/"):

@@ -83,6 +83,7 @@ public:
   Int_t           Electron_charge[nElectronMax];   //[nElectron]
   Int_t           Electron_cutBased[nElectronMax];   //[nElectron]
   Bool_t          Electron_cutBased_HEEP[nElectronMax];   //[nElectron]
+  Bool_t          Electron_mvaFall17V2Iso_WP90[nElectronMax];   //[nElectron]
   Float_t	  Electron_dEsigmaDown[nElectronMax];    //[nElectron]
   Float_t	  Electron_dEsigmaUp[nElectronMax];    //[nElectron]
   // Int_t           Electron_genPartIdx[9];   //[nElectron]
@@ -129,36 +130,42 @@ public:
   Int_t           TrigObj_filterBits[nTrigObjMax];   //[nTrigObj]
 
   //SFs
-  Float_t	  Electron_scaleFactor[nSFMax]; //nElectron
-  Float_t	  Electron_scaleFactorUp[nSFMax]; //[nElectron]
-  Float_t	  Electron_scaleFactorDown[nSFMax]; //[nElectron]
-  Float_t   Muon_triggerScaleFactor[nSFMax]; // [nMuon]
-  Float_t   Muon_triggerScaleFactorSystUp[nSFMax]; // [nMuon]
-  Float_t   Muon_triggerScaleFactorSystDown[nSFMax]; // [nMuon]
-  Float_t   Muon_idScaleFactor[nSFMax]; // [nMuon]
-  Float_t   Muon_idScaleFactorSystUp[nSFMax]; // [nMuon]
-  Float_t   Muon_idScaleFactorSystDown[nSFMax]; // [nMuon]
-  Float_t   Muon_isoScaleFactor[nSFMax]; // [nMuon]
-  Float_t   Muon_isoScaleFactorSystUp[nSFMax]; // [nMuon]
-  Float_t   Muon_isoScaleFactorSystDown[nSFMax]; // [nMuon]
-  Float_t	  Jet_bTagScaleFactorTight[nSFMax]; //[nJet]
-  Float_t	  Jet_bTagScaleFactorTightUp[nSFMax]; //[nJet]
-  Float_t	  Jet_bTagScaleFactorTightDown[nSFMax]; //[nJet]
-  Float_t         Jet_bTagScaleFactorMedium[nSFMax]; //[nJet]
-  Float_t         Jet_bTagScaleFactorMediumUp[nSFMax]; //[nJet]
-  Float_t         Jet_bTagScaleFactorMediumDown[nSFMax]; //[nJet]
-  Float_t         Jet_bTagScaleFactorLoose[nSFMax]; //[nJet]
-  Float_t         Jet_bTagScaleFactorLooseUp[nSFMax]; //[nJet]
-  Float_t         Jet_bTagScaleFactorLooseDown[nSFMax]; //[nJet]
-  Float_t	  Jet_puIdScaleFactorTight[nSFMax]; //[nJet]
-  Float_t	  Jet_puIdScaleFactorTightUp[nSFMax]; //nJet]
-  Float_t	  Jet_puIdScaleFactorTightDown[nSFMax]; //[nJet]
-  Float_t         Jet_puIdScaleFactorMedium[nSFMax]; //[nJet]
-  Float_t         Jet_puIdScaleFactorMediumUp[nSFMax]; //nJet]
-  Float_t         Jet_puIdScaleFactorMediumDown[nSFMax]; //[nJet]
-  Float_t         Jet_puIdScaleFactorLoose[nSFMax]; //[nJet]
-  Float_t         Jet_puIdScaleFactorLooseUp[nSFMax]; //nJet]
-  Float_t         Jet_puIdScaleFactorLooseDown[nSFMax]; //[nJet]
+  Float_t         Electron_scaleFactor[nSFMax];
+  Float_t         Electron_scaleFactorUp[nSFMax];
+  Float_t         Electron_scaleFactorDown[nSFMax];
+  Float_t         Muon_triggerScaleFactor[nSFMax];
+  Float_t         Muon_triggerScaleFactorSystUp[nSFMax];
+  Float_t         Muon_triggerScaleFactorSystDown[nSFMax];
+  Float_t         Muon_idScaleFactor[nSFMax];
+  Float_t         Muon_idScaleFactorSystUp[nSFMax];
+  Float_t         Muon_idScaleFactorSystDown[nSFMax];
+  Float_t         Muon_isoScaleFactor[nSFMax];
+  Float_t         Muon_isoScaleFactorSystUp[nSFMax];
+  Float_t         Muon_isoScaleFactorSystDown[nSFMax];
+  Float_t         Jet_bTagScaleFactorTight[nSFMax];
+  Float_t         Jet_bTagScaleFactorTightUpCorrelated[nSFMax];
+  Float_t         Jet_bTagScaleFactorTightUpUncorrelated[nSFMax];
+  Float_t         Jet_bTagScaleFactorTightDownCorrelated[nSFMax];
+  Float_t         Jet_bTagScaleFactorTightDownUncorrelated[nSFMax];
+  Float_t         Jet_bTagScaleFactorMedium[nSFMax];
+  Float_t         Jet_bTagScaleFactorMediumUpCorrelated[nSFMax];
+  Float_t         Jet_bTagScaleFactorMediumUpUncorrelated[nSFMax];
+  Float_t         Jet_bTagScaleFactorMediumDownCorrelated[nSFMax];
+  Float_t         Jet_bTagScaleFactorMediumDownUncorrelated[nSFMax];
+  Float_t         Jet_bTagScaleFactorLoose[nSFMax];
+  Float_t         Jet_bTagScaleFactorLooseUpCorrelated[nSFMax];
+  Float_t         Jet_bTagScaleFactorLooseUpUncorrelated[nSFMax];
+  Float_t         Jet_bTagScaleFactorLooseDownCorrelated[nSFMax];
+  Float_t         Jet_bTagScaleFactorLooseDownUncorrelated[nSFMax];
+  Float_t         Jet_puIdScaleFactorTight[nSFMax];
+  Float_t         Jet_puIdScaleFactorTightUp[nSFMax];
+  Float_t         Jet_puIdScaleFactorTightDown[nSFMax];
+  Float_t         Jet_puIdScaleFactorMedium[nSFMax];
+  Float_t         Jet_puIdScaleFactorMediumUp[nSFMax];
+  Float_t         Jet_puIdScaleFactorMediumDown[nSFMax];
+  Float_t         Jet_puIdScaleFactorLoose[nSFMax];
+  Float_t         Jet_puIdScaleFactorLooseUp[nSFMax];
+  Float_t         Jet_puIdScaleFactorLooseDown[nSFMax];
 
   UInt_t      nLHEPdfWeight;
   Float_t    LHEPdfWeight[200];
@@ -350,14 +357,20 @@ public:
       chain->SetBranchAddress("Muon_isoScaleFactorSystDown", Muon_isoScaleFactorSystDown);
 
       chain->SetBranchAddress("Jet_bTagScaleFactorTight", Jet_bTagScaleFactorTight);
-      chain->SetBranchAddress("Jet_bTagScaleFactorTightUp", Jet_bTagScaleFactorTightUp);
-      chain->SetBranchAddress("Jet_bTagScaleFactorTightDown", Jet_bTagScaleFactorTightDown);
+      chain->SetBranchAddress("Jet_bTagScaleFactorTightUpCorrelated", Jet_bTagScaleFactorTightUpCorrelated);
+      chain->SetBranchAddress("Jet_bTagScaleFactorTightUpUncorrelated", Jet_bTagScaleFactorTightUpUncorrelated);
+      chain->SetBranchAddress("Jet_bTagScaleFactorTightDownCorrelated", Jet_bTagScaleFactorTightDownCorrelated);
+      chain->SetBranchAddress("Jet_bTagScaleFactorTightDownUncorrelated", Jet_bTagScaleFactorTightDownUncorrelated);
       chain->SetBranchAddress("Jet_bTagScaleFactorMedium", Jet_bTagScaleFactorMedium);
-      chain->SetBranchAddress("Jet_bTagScaleFactorMediumUp", Jet_bTagScaleFactorMediumUp);
-      chain->SetBranchAddress("Jet_bTagScaleFactorMediumDown", Jet_bTagScaleFactorMediumDown);
+      chain->SetBranchAddress("Jet_bTagScaleFactorMediumUpCorrelated", Jet_bTagScaleFactorMediumUpCorrelated);
+      chain->SetBranchAddress("Jet_bTagScaleFactorMediumUpUncorrelated", Jet_bTagScaleFactorMediumUpUncorrelated);
+      chain->SetBranchAddress("Jet_bTagScaleFactorMediumDownCorrelated", Jet_bTagScaleFactorMediumDownCorrelated);
+      chain->SetBranchAddress("Jet_bTagScaleFactorMediumDownUncorrelated", Jet_bTagScaleFactorMediumDownUncorrelated);
       chain->SetBranchAddress("Jet_bTagScaleFactorLoose", Jet_bTagScaleFactorLoose);
-      chain->SetBranchAddress("Jet_bTagScaleFactorLooseUp", Jet_bTagScaleFactorLooseUp);
-      chain->SetBranchAddress("Jet_bTagScaleFactorLooseDown", Jet_bTagScaleFactorLooseDown);
+      chain->SetBranchAddress("Jet_bTagScaleFactorLooseUpCorrelated", Jet_bTagScaleFactorLooseUpCorrelated);
+      chain->SetBranchAddress("Jet_bTagScaleFactorLooseUpUncorrelated", Jet_bTagScaleFactorLooseUpUncorrelated);
+      chain->SetBranchAddress("Jet_bTagScaleFactorLooseDownCorrelated", Jet_bTagScaleFactorLooseDownCorrelated);
+      chain->SetBranchAddress("Jet_bTagScaleFactorLooseDownUncorrelated", Jet_bTagScaleFactorLooseDownUncorrelated);
       chain->SetBranchAddress("Jet_puIdScaleFactorTight", Jet_puIdScaleFactorTight);
       chain->SetBranchAddress("Jet_puIdScaleFactorTightUp", Jet_puIdScaleFactorTightUp);
       chain->SetBranchAddress("Jet_puIdScaleFactorTightDown", Jet_puIdScaleFactorTightDown);
