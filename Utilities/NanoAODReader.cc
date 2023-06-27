@@ -245,41 +245,60 @@ public:
       
 
       //set btagging SFs
-      tmp.bJetSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
+      tmp.bJetSFweightsCorr = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
+      tmp.bJetSFweightsUncorr = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}};
       if (IsMC || conf->Compare_bTagSF) {
         //FIXME: Need b-tagging efficiency per sample at some point, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/BTagSFMethods#b_tagging_efficiency_in_MC_sampl
-        vector<vector<float> > bTSFs = {{1,1,1},{1,1,1},{1,1,1}};
+        vector<vector<float> > bTSFsCorr = {{1,1,1},{1,1,1},{1,1,1}};
+        vector<vector<float> > bTSFsUncorr = {{1,1,1},{1,1,1},{1,1,1}};
         if (conf->UseSkims_bTagSF || conf->Compare_bTagSF) {
-          bTSFs[0] = {evts->Jet_bTagScaleFactorLoose[i], evts->Jet_bTagScaleFactorMedium[i], evts->Jet_bTagScaleFactorTight[i]};
-          bTSFs[1] = {evts->Jet_bTagScaleFactorLooseUpCorrelated[i], evts->Jet_bTagScaleFactorMediumUpCorrelated[i], evts->Jet_bTagScaleFactorTightUpCorrelated[i]};
-          bTSFs[2] = {evts->Jet_bTagScaleFactorLooseDownCorrelated[i], evts->Jet_bTagScaleFactorMediumDownCorrelated[i], evts->Jet_bTagScaleFactorTightDownCorrelated[i]};
+          bTSFsCorr[0] = {evts->Jet_bTagScaleFactorLoose[i], evts->Jet_bTagScaleFactorMedium[i], evts->Jet_bTagScaleFactorTight[i]};
+          bTSFsCorr[1] = {evts->Jet_bTagScaleFactorLooseUpCorrelated[i], evts->Jet_bTagScaleFactorMediumUpCorrelated[i], evts->Jet_bTagScaleFactorTightUpCorrelated[i]};
+          bTSFsCorr[2] = {evts->Jet_bTagScaleFactorLooseDownCorrelated[i], evts->Jet_bTagScaleFactorMediumDownCorrelated[i], evts->Jet_bTagScaleFactorTightDownCorrelated[i]};
+          bTSFsUncorr[0] = {1, 1, 1};
+          bTSFsUncorr[1] = {evts->Jet_bTagScaleFactorLooseUpCorrelated[i], evts->Jet_bTagScaleFactorMediumUpCorrelated[i], evts->Jet_bTagScaleFactorTightUpCorrelated[i]};
+          bTSFsUncorr[2] = {evts->Jet_bTagScaleFactorLooseDownCorrelated[i], evts->Jet_bTagScaleFactorMediumDownCorrelated[i], evts->Jet_bTagScaleFactorTightDownCorrelated[i]};
         }
         if (conf->Compare_bTagSF) {
-          R_BTSF->CompareScaleFactors(tmp, bTSFs);
+          R_BTSF->CompareScaleFactors(tmp, bTSFsCorr);
           conf->Compare_bTagSF--;
         }
         if (!conf->UseSkims_bTagSF) {
-          bTSFs = R_BTSF->GetScaleFactors(tmp);
+          bTSFsCorr = R_BTSF->GetScaleFactors(tmp);
         }
         
         if (IsMC) {
           vector<float> bTag_Eff = bTE->GetEff(tmp);
           for (unsigned iv = 0; iv < 3; ++iv) {
             for (unsigned iwp = 0; iwp < 3; ++iwp) {
-              if (tmp.bTagPasses[iwp]) tmp.bJetSFweights[iv][iwp] = bTSFs[iv][iwp];
-              else tmp.bJetSFweights[iv][iwp] = (1. - bTag_Eff[iwp] * bTSFs[iv][iwp]) / (1. - bTag_Eff[iwp]);
+              if (tmp.bTagPasses[iwp]) {
+                tmp.bJetSFweightsCorr[iv][iwp] = bTSFsCorr[iv][iwp];
+                tmp.bJetSFweightsUncorr[iv][iwp] = bTSFsUncorr[iv][iwp];
+              }
+              else {
+                tmp.bJetSFweightsCorr[iv][iwp] = (1. - bTag_Eff[iwp] * bTSFsCorr[iv][iwp]) / (1. - bTag_Eff[iwp]);
+                tmp.bJetSFweightsUncorr[iv][iwp] = (1. - bTag_Eff[iwp] * bTSFsUncorr[iv][iwp]) / (1. - bTag_Eff[iwp]);
+              }
               if (tmp.Pt() < 20 || tmp.Pt() > 1000 || fabs(tmp.Eta()) >= 2.4999) {
-                tmp.bJetSFweights[iv][iwp] = 1.0;
+                tmp.bJetSFweightsCorr[iv][iwp] = 1.0;
+                tmp.bJetSFweightsUncorr[iv][iwp] = 1.0;
                 continue;
               }
               if (conf->AuxHistCreation) continue;
-              if (tmp.bJetSFweights[iv][iwp] <= 0 || tmp.bJetSFweights[iv][iwp] != tmp.bJetSFweights[iv][iwp]) {
+              if (tmp.bJetSFweightsCorr[iv][iwp] < 0 || tmp.bJetSFweightsCorr[iv][iwp] != tmp.bJetSFweightsCorr[iv][iwp]) {
                 cout << "In bTag WP " << iwp << " , " << iv << " variation, ";
                 if (tmp.bTagPasses[iwp]) cout << " bTagged ";
                 else cout << " Non-bTagged ";
-                cout << Form("Jet %i (pT = %f, eta = %f) has unexpected bJetSFweight. Eff = %f, SF = %f", i, tmp.Pt(), tmp.Eta(), bTag_Eff[iwp], bTSFs[iv][iwp]) << endl;
+                cout << Form("Jet %i (pT = %f, eta = %f) has unexpected bJetSFweightsCorr. Eff = %f, SF = %f", i, tmp.Pt(), tmp.Eta(), bTag_Eff[iwp], bTSFsCorr[iv][iwp]) << endl;
               }
-              if (tmp.bJetSFweights[iv][iwp] == 0) tmp.bJetSFweights[iv][iwp] = 1.0; // Final safeguard
+              if (tmp.bJetSFweightsUncorr[iv][iwp] < 0 || tmp.bJetSFweightsUncorr[iv][iwp] != tmp.bJetSFweightsUncorr[iv][iwp]) {
+                cout << "In bTag WP " << iwp << " , " << iv << " variation, ";
+                if (tmp.bTagPasses[iwp]) cout << " bTagged ";
+                else cout << " Non-bTagged ";
+                cout << Form("Jet %i (pT = %f, eta = %f) has unexpected bJetSFweightsUncorr. Eff = %f, SF = %f", i, tmp.Pt(), tmp.Eta(), bTag_Eff[iwp], bTSFsUncorr[iv][iwp]) << endl;
+              }
+              if (tmp.bJetSFweightsCorr[iv][iwp] == 0) tmp.bJetSFweightsCorr[iv][iwp] = 1.0; // Final safeguard
+              if (tmp.bJetSFweightsUncorr[iv][iwp] == 0) tmp.bJetSFweightsUncorr[iv][iwp] = 1.0; // Final safeguard
             }
           }
         }
@@ -387,6 +406,14 @@ public:
     pass &= m.looseId;
     return pass;
   }
+  bool PassVetoPick(Muon m) { // iv: Variation. -1: MaxPt, 0-4, nominal and variations
+    bool pass = true;
+    pass &= m.TriggerMatched;
+    pass &= (m.Pt() > 27.);
+    pass &= (m.relIso > 0.15);
+    pass &= m.looseId;
+    return pass;
+  }
   bool PassLoose(Muon m) {
     bool pass = true;
     pass &= m.TriggerMatched;
@@ -482,6 +509,7 @@ public:
       Electrons.push_back(tmp);
       Leptons.push_back(tmp);
     }
+
     emptysequence = 0;
     for (unsigned i = 0; i < evts->nMuon; ++i) {
       if (emptysequence >= 3) break; // [9] is the hard cap of Muon array size
@@ -739,12 +767,13 @@ public:
   vector<pair<double, string> > CalcEventSFweights() {
     vector<EventWeight> SFweights;
     //set SF weights per object
-    EventWeight electronW, muonTriggerW, muonIdW, muonIsoW, BjetW, PUIDW, L1PreFiringW, PUreweight, PDFWeight, LHEScaleW;
+    EventWeight electronW, muonTriggerW, muonIdW, muonIsoW, BjetWCorr, BjetWUncorr, PUIDW, L1PreFiringW, PUreweight, PDFWeight, LHEScaleW;
     electronW.source = "electron";
     muonTriggerW.source = "muonTrigger";
     muonIdW.source = "muonId";
     muonIsoW.source = "muonIso";
-    BjetW.source = "BjetTag";
+    BjetWCorr.source = "BjetTagCorr";
+    BjetWUncorr.source = "BjetTagUncorr";
     PUIDW.source = "PUID";
     L1PreFiringW.source = "L1PreFiring";
     PUreweight.source = "PUreweight";
@@ -761,11 +790,13 @@ public:
           muonIsoW.variations[i] *= Muons[j].isoSFs[i];
         }
         for(unsigned j = 0; j < Jets.size(); ++j){
-          BjetW.variations[i] *= Jets[j].bJetSFweights[i][bTagWP];
+          BjetWCorr.variations[i] *= Jets[j].bJetSFweightsCorr[i][bTagWP];
+          BjetWUncorr.variations[i] *= Jets[j].bJetSFweightsUncorr[i][bTagWP];
           PUIDW.variations[i] *= Jets[j].PUIDSFweights[i][PUIDWP];
         }
       }
-      if (BjetW.variations[0] != BjetW.variations[0]) cout << "Caught BjetW nan" <<endl;
+      if (BjetWCorr.variations[0] != BjetWCorr.variations[0]) cout << "Caught BjetWCorr nan" <<endl;
+      if (BjetWUncorr.variations[0] != BjetWUncorr.variations[0]) cout << "Caught BjetWUncorr nan" <<endl;
       // return;
       string sampleyear;
       string sy = conf->SampleYear;
@@ -816,7 +847,8 @@ public:
     SFweights.push_back(muonTriggerW);
     SFweights.push_back(muonIdW);
     SFweights.push_back(muonIsoW);
-    SFweights.push_back(BjetW);
+    SFweights.push_back(BjetWCorr);
+    SFweights.push_back(BjetWUncorr);
     SFweights.push_back(PUIDW);
     SFweights.push_back(L1PreFiringW);
     SFweights.push_back(PUreweight);
