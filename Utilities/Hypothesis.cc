@@ -207,7 +207,7 @@ public:
     for (unsigned i = 0; i < 5; ++i) {
       for (unsigned j = 0; j < gjs.size(); ++j) {
         if (OutParts[i].DeltaR(gjs[j]) < 0.4) {
-          if (abs(OutParts[i].pdgId) != abs(gjs[j].partonFlavour)) cout << "GenPart " << i << "Matched to a GenJet with wrong partonFlavour" <<endl;
+          if (abs(OutParts[i].pdgId) != abs(gjs[j].partonFlavour)) cout <<Form("GenPart %i (%i), Matched to GenJet of Flavour %i", i, OutParts[i].pdgId, gjs[j].partonFlavour) <<endl;
           else genout[i] = j;
         }
       }

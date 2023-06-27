@@ -88,22 +88,25 @@ void MergeAuxHists(int isampleyear = 3) {
   vector<TH2F*> bTEHists;
   bTEHists.resize(bTEsn.size());
   for (unsigned ist = 0; ist < bTEInFiles.size(); ++ist) {
-    vector<TH2F*> tmphists;
-    tmphists.resize(bTEsn.size());
     for (unsigned ih = 3; ih < 7; ++ih) {
       TH2F* h1 = (TH2F*) bTEInFiles[ist]->Get(bTEsn[ih]);
       h1->Scale(bTENorms[ist]);
-      tmphists[ih] = h1;
-    }
-    if (ist == 0) {
-      bTEHists = tmphists;
-      for (unsigned ih = 4; ih < 7; ++ih) bTEHists[ih]->SetDirectory(fbTE);
-    }
-    else {
-      for (unsigned ih = 0; ih < 4; ++ih) bTEHists[ih]->Add((TH2F*) bTEInFiles[ist]->Get(bTEsn[ih]));
+      if (ist == 0) {
+        bTEHists[ih] = h1->Clone();
+        bTEHists[ih]->SetDirectory(fbTE);
+      }
+      else {
+        bTEHists[ih]->Add(h1);
+      }
     }
   }
-  for (unsigned ih = 0; ih < 3; ++ih) bTEHists[ih]->Divide(bTEHists[3]);
+  for (unsigned ih = 0; ih < 3; ++ih) {
+    bTEHists[ih] = bTEHists[ih + 3]->Clone();
+    bTEHists[ih]->Divide(bTEHists[6]);
+    bTEHists[ih]->SetName(bTEsn[ih]);
+    bTEHists[ih]->SetTitle(bTEsn[ih]);
+    bTEHists[ih]->SetDirectory(fbTE);
+  }
 
   fbTE->Write();
   fbTE->Save();

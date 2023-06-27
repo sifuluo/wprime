@@ -105,8 +105,8 @@ public:
   vector<string> Variations = {"central" // 0
   , "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown" // 1-8
   , "EleSFup", "EleSFdown", "MuonTriggerWup", "MuonTriggerWdown", "MuonIdWup", "MuonIdWdown", "MuonIsoWup", "MuonIsoWdown" // 9-16
-  , "BjetTagSFup", "BjetTagSFdown", "PUIDSFup", "PUIDSFdown", "L1PreFiringSFup", "L1PreFiringSFdown" // 17-22
-  , "PUreweightSFup", "PUreweightSFdown", "PDFWup", "PDFWdown", "LHEScaleWup", "LHEScaleWdown" // 23 - 28
+  , "BjetTagCorrup", "BjetTagCorrdown", "BjetTagUncorrup", "BjetTagUncorrdown", "PUIDSFup", "PUIDSFdown", "L1PreFiringSFup", "L1PreFiringSFdown" // 17-24
+  , "PUreweightSFup", "PUreweightSFdown", "PDFWup", "PDFWdown", "LHEScaleWup", "LHEScaleWdown" // 25 - 30
   };
 
   // Temperary working version below Take the version above next time. FIXME
