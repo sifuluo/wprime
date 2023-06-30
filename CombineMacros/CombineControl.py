@@ -18,9 +18,9 @@ os.system("root -l -b -q 'runCombineHistogramDumpster.C+(" + str(binNumber) + ",
 os.system("hadd -f SimpleShapes_" + binName + ".root TestHistograms/*.root") #hadd all histograms to a convenient combined file
 
 #define all the systematic names, types, and values
-systNames = ["lumi", "electron", "muonTrigger", "muonId", "muonIso", "BjetTag", "PUID", "L1PreFiring", "PUreweight", "PDF",  "LHEScale", "electronScale", "electronRes", "JES",  "JER"]
-systTypes = ["lnN",  "shape"   , "shape"      , "shape",  "shape",   "shape",   "shape","shape",       "shape",      "shape","shape",    "shape",         "shape",       "shape","shape"] 
-systVals  = ["1.025","1"       , "1",           "1",      "1",       "1",       "1",    "1",           "1",          "1",    "1",        "1",             "1",           "1",    "1"]
+systNames = ["lumi", "electron", "muonTrigger", "muonId", "muonIso", "BjetTagCorr", "BjetTagUncorr", "PUID",  "L1PreFiring", "PUreweight", "PDF",  "LHEScale", "electronScale", "electronRes", "JES",  "JER"]
+systTypes = ["lnN",  "shape"   , "shape"      , "shape",  "shape",   "shape",       "shape",         "shape", "shape",       "shape",      "shape","shape",    "shape",         "shape",       "shape","shape"] 
+systVals  = ["1.025","1"       , "1",           "1",      "1",       "1",           "1",             "1",     "1",           "1",          "1",    "1",        "1",             "1",           "1",    "1"]
 
 #write the actual combine card
 print("Creating Combine card file")
