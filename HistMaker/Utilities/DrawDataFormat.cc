@@ -163,6 +163,11 @@ public:
     Add(1121);
   }
 
+  void InclusiveInit() {
+    Reset();
+    Add(1150,2266,true);
+  }
+
   void Reset() {
     Ranges.clear();
     StringRanges.clear();

@@ -39,6 +39,10 @@ public:
   void SetObservable(string ob) {
     Observable = ob;
   }
+
+  void SetSampleTypes(vector<string> sts) {
+    SampleTypes = sts;
+  }
   
   void SetPrefix(string prefix) {
     PlotNamePrefix = prefix;
@@ -52,15 +56,6 @@ public:
   void SetRegions(vector<string> rs) {
     Regions = rs;
   }
-
-  // TString GetHistName(int ist, int iv, int ir) {
-  //   TString histname = StandardNames::HistName;
-  //   histname.ReplaceAll("=SampleType=", SampleTypes[ist]);
-  //   histname.ReplaceAll("=Variation=", Variations[iv]);
-  //   histname.ReplaceAll("=RegionRange=", Regions[ir]);
-  //   histname.ReplaceAll("=Observable=", Observable);
-  //   return histname;
-  // }
   
   // Reading Histograms
   void ReadHistograms(TFile *f) {
@@ -98,18 +93,21 @@ public:
 
       for (unsigned ig = 0; ig < GroupNames.size(); ++ig) {
         for (unsigned iv = 0; iv < Variations.size(); ++iv) {
+          if (PlotGroupHists[ig][iv] == nullptr) continue;
+          if (NormalizePlot) PlotGroupHists[ig][iv]->Scale(1./PlotGroupHists[ig][iv]->Integral());
           string gn = GroupNames[ig];
           Plots[ir]->AddHist(gn, PlotGroupHists[ig][iv], dlib.Groups[gn].Type,iv);
           delete PlotGroupHists[ig][iv];
         }
       }
-      Plots[ir]->SetLogy(true);
+      Plots[ir]->SetLogy(DoLogy);
       Plots[ir]->Legend(LegendPos);
       dlib.AddLegend(Plots[ir]->leg,IsSR);
     }
   }
 
   void CreateAuxiliaryPlots(int ir) {
+    Plots[ir]->PrepHists();
     Plots[ir]->CreateRatioPlots();
     Plots[ir]->CreateErrorGraphs();
   }
@@ -122,7 +120,7 @@ public:
     Plots[ir]->SetMaximum(max);
   }
 
-  void DrawPlot(int ir, TVirtualPad* p_, int year) {
+  void DrawPlot(int ir, TVirtualPad* p_, int year, bool drawsens = false) {
     Plots[ir]->SetPad(p_);
     Plots[ir]->DrawPlot(year);
     Plots[ir]->UPad->cd();
@@ -131,6 +129,7 @@ public:
     latex.SetTextSize(0.035);
     latex.SetTextAlign(23);
     latex.DrawLatex((LegendPos[0] + LegendPos[2])/2., LegendPos[1] - 0.025, rm.LatexRanges[ir]);
+    if (!drawsens) return;
     TString sens = Form("Sig/#sqrt{Sig + BG} = %f", Plots[ir]->GetSensitivity());
     latex.DrawLatex((LegendPos[0] + LegendPos[2])/2., LegendPos[1] - 0.065, sens);
   }
@@ -142,5 +141,7 @@ public:
   vector<string> SampleTypes, Variations, Regions;
   string XTitle, YTitle;// [Observable]
   vector<RatioPlot*> Plots; // [Region]
+  bool NormalizePlot = false;
+  bool DoLogy = true;
 };
 #endif
