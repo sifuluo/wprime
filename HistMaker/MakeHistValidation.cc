@@ -17,7 +17,8 @@ public:
   void FillHistograms() {}
 };
 
-void MakeHistValidation(int isampleyear = 3) {
+void MakeHistValidation(int isampleyear = 3, int isampletype = -1, int ifile = -1) {
+  rm.SplitInit();
   string basepath = "/eos/user/s/siluo/WPrimeAnalysis/Validation/";
   string itpath = "";
   string SampleYear = dlib.SampleYears[isampleyear];
@@ -25,43 +26,40 @@ void MakeHistValidation(int isampleyear = 3) {
   string HistFilePrefix = SampleYear + "_Validation";
   Histograms HistCol;
   vector<string> SampleTypes = dlib.DatasetNames;
-  SampleTypes = {"ttbar"};
+  string IterSampleType = "";
+  if (isampletype != -1) IterSampleType = SampleTypes[isampletype];
+  if (IterSampleType == "ZZ") return;
 
   HistCol.SetSampleTypes(SampleTypes);
   HistCol.AddObservable("LeptonPt",100,0,500);
   HistCol.AddObservable("LeptonEta",90,-4.5,4.5);
-  HistCol.AddObservable("LeadingJetPt",200,0,100);
+  HistCol.AddObservable("LeadingJetPt",200,0,1000);
   HistCol.AddObservable("LeadingJetEta",90,-4.5,4.5);
   HistCol.AddObservable("METPt",200,0,2000);
   HistCol.AddObservable("METPhi",64,-3.2,3.2);
   HistCol.AddObservable("mT",200,0,2000);
   HistCol.AddObservable("WPrimeMassSimpleFL",200,0,2000);
   HistCol.AddObservable("WPrimeMassSimpleLL",200,0,2000);
-  HistCol.CreateHistograms(HistFilePath, HistFilePrefix);
+  HistCol.CreateHistograms(HistFilePath, HistFilePrefix, IterSampleType, ifile);
   Progress* progress = new Progress(0,10000);
   
   for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
+    if (isampletype != -1 && (int)ist != isampletype) continue;
     TChain* t = new TChain("t");
     string SampleType = SampleTypes[ist];
     if (SampleType == "ZZ") continue;
     float NormFactor = dlib.GetNormFactor(SampleType, isampleyear);
     cout << endl << "Start processing " << SampleType << endl;
-    string SamplePath = SampleYear + "_" + SampleType + "/*";
+    string SamplePath = SampleYear + "_" + SampleType + "/" + SampleYear + "_" + SampleType;
+    if (ifile != -1) SamplePath += Form("_%i.root",ifile);
+    else SamplePath += "*.root";
     TString InFilePath = basepath + itpath + SamplePath;
+    cout << "The InputFile path is " << InFilePath << endl;
     t->Add(InFilePath);
-    // TFile *fin = new TFile(InFilePath,"READ");
-    // if (fin->IsZombie()) {
-    //   cout << InFilePath << " is broken. Proceeding to next file" <<endl;
-    //   continue;
-    // } 
-    // TTree* t = (TTree*) fin->Get("t");
-    // if (!t) {
-    //   cout << InFilePath << " tree is broken. Proceeding to next file" << endl;
-    //   continue;
-    // }
     InterTree *r = new InterTree(t);
-    // progress->SetEntryMax(t->GetEntriesFast());
-    Long64_t EntryMax = 2000000;
+    Long64_t EntryMax = t->GetEntries();
+    // Long64_t EntryMax = t->GetEntriesFast();
+    // Long64_t EntryMax = 2000000;
     progress->SetEntryMax(EntryMax);
     int n_nan_weight = 0;
     for (Long64_t ievt = 0; ievt < EntryMax; ++ievt) {
@@ -130,4 +128,6 @@ void MakeHistValidation(int isampleyear = 3) {
     cout << ", Number of events with nan weight = " << n_nan_weight << endl;
   }
   HistCol.PostProcess();
+  cout << "Auto exiting" << endl;
+  gApplication->Terminate();
 }

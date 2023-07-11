@@ -190,12 +190,16 @@ namespace StandardNames {
     histname.ReplaceAll("=Variation=", variation);
     return histname;
   }
-  TString HistFileName(string path, string prefix, string observable) {// eg. path/2018_Validation_LeptonPt.root, where 2018_Validation is the prefix
+  TString HistFileName(string path, string prefix, string observable, string sampletype = "", int ifile = -1) {// eg. path/2018_Validation_LeptonPt.root, where 2018_Validation is the prefix
     TString hfn = path;
     if (hfn != "" && !(hfn.EndsWith("/"))) hfn += "/";
-    hfn += "=Prefix=_=Observable=.root";
+    if (sampletype != "" || ifile != -1) hfn += "batch/";
+    hfn += "=Prefix=_=Observable=";
     hfn.ReplaceAll("=Prefix=", prefix);
     hfn.ReplaceAll("=Observable=", observable);
+    if (sampletype != "") hfn += "_" + sampletype;
+    if (ifile != -1) hfn += Form("_%i",ifile);
+    hfn += ".root";
     return hfn;
   }
 

@@ -8,6 +8,7 @@
 #include "TString.h"
 #include "TH1.h"
 #include "TFile.h"
+#include <TApplication.h>
 
 #include "../../Utilities/DataFormat.cc"
 #include "../../Utilities/Dataset.cc"
@@ -35,7 +36,7 @@ public:
   }
 
   string GetString() {
-    string out = Form("%i-%i",b1,b2);
+    string out = Form("%ito%i",b1,b2);
     return out;
   }
 
@@ -209,6 +210,11 @@ public:
   Histograms() {
     Init();
   };
+  
+  ~Histograms() {
+    fouts.clear();
+    Hists.clear();
+  }
 
   void Init() {
     Hists.clear();
@@ -238,12 +244,12 @@ public:
     xup.push_back(xup_);
   }
 
-  void CreateHistograms(string path, string prefix) {
+  void CreateHistograms(string path, string prefix, string st = "", int ifile = -1) {
     Hists.clear();
     Hists.resize(Observables.size());
     for (unsigned io = 0; io < Observables.size(); ++io) {
       Hists[io].resize(SampleTypes.size());
-      TString fn = StandardNames::HistFileName(path, prefix, Observables[io]);
+      TString fn = StandardNames::HistFileName(path, prefix, Observables[io], st, ifile);
       fouts.push_back(new TFile(fn, "RECREATE"));
       fouts[io]->cd();
       for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
@@ -302,7 +308,9 @@ public:
     for (unsigned i = 0; i < Observables.size(); ++i) {
       fouts[i]->Write();
       fouts[i]->Save();
+      fouts[i]->Close();
     }
+    cout << "Done Post Processing" <<endl;
   }
 
   vector<TFile*> fouts;

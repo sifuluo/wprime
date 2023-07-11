@@ -6,7 +6,7 @@ void DrawPlotPerm(int isampleyear = 3, int iobs = 0) {
   vector<string> obstitle{"Pt Permutation Indices", "bTag Permutation "};
   string SampleYear = dlib.SampleYears[isampleyear];
   vector<string> SampleTypes = dlib.DatasetNames;
-  SampleTypes = {"FL300", "FL500", "FL1100"};
+  SampleTypes = {"FL300", "FL500","FL700", "FL1100"};
   // vector<string> StringRanges = rm.StringRanges;
   
   

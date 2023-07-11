@@ -104,7 +104,7 @@ public:
       RegionIdentifier[i] = r->RegionAssociations.Regions[i];
     }
 
-    for(unsigned i = 0; i < 21; ++i){
+    for(unsigned i = 0; i < r->EventWeights.size(); ++i){
       EventWeight[i] = r->EventWeights[i].first;
     }
 
@@ -166,7 +166,7 @@ void Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
   conf->PrintProgress = true;
   // conf->DebugList = {"LeptonRegion"};
   // conf->ProgressInterval = 2000;
-  // conf->EntryMax = 1000;
+  // conf->EntryMax = 20000;
 
   ThisAnalysis *a = new ThisAnalysis(conf);
   a->SetOutput("Validation");
