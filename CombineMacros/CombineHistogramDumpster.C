@@ -36,39 +36,50 @@ void CombineHistogramDumpster::Loop()
   //define variations
   vector<TH1F*> WPrimeMass_FL;
   //first variations are all weight variations and map 1:1, region variations start at index 21
-  vector<TString> variations = {
-    gn + "_" + binS, 
-    gn + "_" + binS + "_" + "electronUp",
-    gn + "_" + binS + "_" + "electronDown",
-		gn + "_" + binS + "_" + "muonTriggerUp",
-		gn + "_" + binS + "_" + "muonTriggerDown",
-		gn + "_" + binS + "_" + "muonIdUp",
-		gn + "_" + binS + "_" + "muonIdDown",
-		gn + "_" + binS + "_" + "muonIsoUp",
-		gn + "_" + binS + "_" + "muonIsoDown",
-		gn + "_" + binS + "_" + "BjetTagCorrUp",
-		gn + "_" + binS + "_" + "BjetTagCorrDown",
-    gn + "_" + binS + "_" + "BjetTagUncorrUp",
-		gn + "_" + binS + "_" + "BjetTagUncorrDown",
-		gn + "_" + binS + "_" + "PUIDUp",
-		gn + "_" + binS + "_" + "PUIDDown",
-		gn + "_" + binS + "_" + "L1PreFiringUp",
-		gn + "_" + binS + "_" + "L1PreFiringDown",
-		gn + "_" + binS + "_" + "PUreweightUp",
-		gn + "_" + binS + "_" + "PUreweightDown",
-		gn + "_" + binS + "_" + "PDFUp",
-		gn + "_" + binS + "_" + "PDFDown",
-		gn + "_" + binS + "_" + "LHEScaleUp",
-		gn + "_" + binS + "_" + "LHEScaleDown",
-		gn + "_" + binS + "_" + "electronScaleUp",
-		gn + "_" + binS + "_" + "electronScaleDown",
-		gn + "_" + binS + "_" + "electronResUp",
-		gn + "_" + binS + "_" + "electronResDown",
-		gn + "_" + binS + "_" + "JESUp",
-		gn + "_" + binS + "_" + "JESDown",
-		gn + "_" + binS + "_" + "JERUp",
-		gn + "_" + binS + "_" + "JERDown"
+  vector<TString> variations = {"" // 0
+  , "electronScaleUp", "electronScaleDown", "electronResUp", "electronResDown", "JESUp", "JESDown", "JERUp", "JERDown" // 1 - 8
+  , "electronUp", "electronDown", "muonTriggerUp", "muonTriggerDown", "muonIdUp", "muonIdDown", "muonIsoUp", "muonIsoDown" // 9 - 16
+  , "BjetTagCorrUp", "BjetTagCorrDown", "BjetTagUncorrUp", "BjetTagUncorrDown", "PUIDUp", "PUIDDown", "L1PreFiringUp", "L1PreFiringDown" // 17 - 24
+  , "PUreweightUp", "PUreweightDown", "PDFUp", "PDFDown", "LHEScaleUp", "LHEScaleDown", // 25 - 30
+
   };
+  for (unsigned i = 1; i < variations.size(); ++i) {
+    variations[i] = gn + "_" + binS + "_" + variations[i];
+  }
+
+  // vector<TString> variations = {
+  //   gn + "_" + binS,                             // 0
+  //   gn + "_" + binS + "_" + "electronUp",        // 1
+  //   gn + "_" + binS + "_" + "electronDown",      // 2
+	// 	gn + "_" + binS + "_" + "muonTriggerUp",     // 3
+	// 	gn + "_" + binS + "_" + "muonTriggerDown",   // 4
+	// 	gn + "_" + binS + "_" + "muonIdUp",          // 5
+	// 	gn + "_" + binS + "_" + "muonIdDown",        // 6
+	// 	gn + "_" + binS + "_" + "muonIsoUp",         // 7
+	// 	gn + "_" + binS + "_" + "muonIsoDown",       // 8
+	// 	gn + "_" + binS + "_" + "BjetTagCorrUp",     // 9
+	// 	gn + "_" + binS + "_" + "BjetTagCorrDown",   // 10
+  //   gn + "_" + binS + "_" + "BjetTagUncorrUp",   // 11
+	// 	gn + "_" + binS + "_" + "BjetTagUncorrDown", // 12
+	// 	gn + "_" + binS + "_" + "PUIDUp",            // 13
+	// 	gn + "_" + binS + "_" + "PUIDDown",          // 14
+	// 	gn + "_" + binS + "_" + "L1PreFiringUp",     // 15
+	// 	gn + "_" + binS + "_" + "L1PreFiringDown",
+	// 	gn + "_" + binS + "_" + "PUreweightUp",
+	// 	gn + "_" + binS + "_" + "PUreweightDown",
+	// 	gn + "_" + binS + "_" + "PDFUp",
+	// 	gn + "_" + binS + "_" + "PDFDown",
+	// 	gn + "_" + binS + "_" + "LHEScaleUp",
+	// 	gn + "_" + binS + "_" + "LHEScaleDown",
+	// 	gn + "_" + binS + "_" + "electronScaleUp",
+	// 	gn + "_" + binS + "_" + "electronScaleDown",
+	// 	gn + "_" + binS + "_" + "electronResUp",
+	// 	gn + "_" + binS + "_" + "electronResDown",
+	// 	gn + "_" + binS + "_" + "JESUp",
+	// 	gn + "_" + binS + "_" + "JESDown",
+	// 	gn + "_" + binS + "_" + "JERUp",
+	// 	gn + "_" + binS + "_" + "JERDown"
+  // };
   for(unsigned i = 0; i < variations.size(); ++i) WPrimeMass_FL.push_back(new TH1F(variations[i],"W' mass, simplified, FL case; m_{W'} [GeV/c^{2}]; Events", 400, 0., 2000.));
 
   if (fChain == 0) return;
@@ -90,21 +101,21 @@ void CombineHistogramDumpster::Loop()
     else if(YearType == "2018") {Year = 3; Lumi = 67.86;}
     float SampleWeight = 1.;
     if(dset.Type != 0) SampleWeight = Lumi * dset.CrossSection / dset.Size[Year];
-
+    //variations of selections
+    for(unsigned i = 0; i < 9; ++ i){
+      if(RegionIdentifier[i] != bin) continue;
+      string HistName;
+      WPrimeMass_FL[i]->Fill(WPrimeMassSimpleFL->at(i),EventWeight[0]*SampleWeight);
+    }
     //Muon type variations, for a test
     if(RegionIdentifier[0] == bin){
       //EventWeight variations
-      for(unsigned i = 0; i < 21; ++i){
+      for(unsigned i = 9; i < variations.size(); ++i){
         string HistName;
         WPrimeMass_FL[i]->Fill(WPrimeMassSimpleFL->at(0),EventWeight[i]*SampleWeight);
       }
     }
-    //variations of selections
-    for(unsigned i = 1; i < 9; ++ i){
-      if(RegionIdentifier[i] != bin) continue;
-      string HistName;
-      WPrimeMass_FL[i+20]->Fill(WPrimeMassSimpleFL->at(0),EventWeight[0]*SampleWeight);
-    }
+    
   }
   //save all the W' variation histograms into a file
   TFile *savefile;
