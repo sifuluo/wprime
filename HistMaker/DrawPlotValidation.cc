@@ -13,7 +13,7 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0) {
   , "BjetTagCorrup", "BjetTagCorrdown", "BjetTagUncorrup", "BjetTagUncorrdown", "PUIDSFup", "PUIDSFdown", "L1PreFiringSFup", "L1PreFiringSFdown" // 17-24
   , "PUreweightSFup", "PUreweightSFdown"
   , "PDFWup", "PDFWdown"
-  // , "LHEScaleWup", "LHEScaleWdown" // 25 - 30
+  , "LHEScaleWup", "LHEScaleWdown" // 25 - 30
   };
   // SampleTypes = {"FL500"};
   // vector<string> StringRanges = rm.StringRanges;

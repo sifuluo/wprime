@@ -51,7 +51,7 @@ public:
     MCStack->SetTitle(UTitle);
   }
 
-  void SetVariationTypes(vector<string> vars) {
+  void SetVariations(vector<string> vars) {
     Variations = vars;
     VarSize = Variations.size();
     MCSummed.clear();

@@ -31,15 +31,15 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = -1, int ifile = -
   if (IterSampleType == "ZZ") return;
 
   HistCol.SetSampleTypes(SampleTypes);
-  HistCol.AddObservable("LeptonPt",100,0,500);
+  HistCol.AddObservable("LeptonPt",50,0,500);
   HistCol.AddObservable("LeptonEta",90,-4.5,4.5);
-  HistCol.AddObservable("LeadingJetPt",200,0,1000);
+  HistCol.AddObservable("LeadingJetPt",100,0,1000);
   HistCol.AddObservable("LeadingJetEta",90,-4.5,4.5);
-  HistCol.AddObservable("METPt",200,0,2000);
+  HistCol.AddObservable("METPt",100,0,2000);
   HistCol.AddObservable("METPhi",64,-3.2,3.2);
-  HistCol.AddObservable("mT",200,0,2000);
-  HistCol.AddObservable("WPrimeMassSimpleFL",200,0,2000);
-  HistCol.AddObservable("WPrimeMassSimpleLL",200,0,2000);
+  HistCol.AddObservable("mT",100,0,2000);
+  HistCol.AddObservable("WPrimeMassSimpleFL",100,0,2000);
+  HistCol.AddObservable("WPrimeMassSimpleLL",100,0,2000);
   HistCol.CreateHistograms(HistFilePath, HistFilePrefix, IterSampleType, ifile);
   Progress* progress = new Progress(0,10000);
   

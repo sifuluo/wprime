@@ -65,7 +65,7 @@ public:
       bool IsSR = rm.Ranges[ir].IsSR;
       TString PlotName = PlotNamePrefix + "_" + Observable + "_" + rm.StringRanges[ir];
       Plots[ir] = new RatioPlot(PlotName,IsSR, XTitle, YTitle);
-      Plots[ir]->SetVariationTypes(Variations);
+      Plots[ir]->SetVariations(Variations);
       // Continue work from here
       vector<vector<TH1F*> > PlotGroupHists;
       PlotGroupHists.resize(GroupNames.size());
