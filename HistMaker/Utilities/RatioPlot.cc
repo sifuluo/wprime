@@ -354,6 +354,20 @@ public:
     return sens;
   }
 
+  TString GetMCPurityLatex() {
+    TString out = "";
+    for (unsigned i = 0; i < MCNames.size(); ++i) {
+      out += Form("#color[%i]{(%.2f%%)} ", MCHists[i]->GetLineColor(), MCHists[i]->Integral() / MCSummed[0]->Integral());
+    }
+    return out;
+  }
+  double GetMCPurity(TString sn) {
+    for (unsigned i = 0; i < MCNames.size(); ++i) {
+      if (MCNames[i] == sn) return MCHists[i]->Integral() / MCSummed[0]->Integral();
+    }
+    return 0;
+  }
+
   void SetPad(TVirtualPad* p_) {
     setTDRStyle();
     Pad = p_;
@@ -379,7 +393,7 @@ public:
     UPad->cd();
     
     if (CanvasMaximum > 0) MCStack->SetMaximum(CanvasMaximum);
-    else MCStack->SetMaximum(TrueMaximum * 1.2);
+    else MCStack->SetMaximum(TrueMaximum * TrueMaximumScale);
     MCStack->Draw("hist");
 
     if (MCErrorGraph != nullptr && HasMC) {
@@ -460,6 +474,7 @@ public:
   double MinY = 0;
   double CanvasMaximum = 0;
   double TrueMaximum = 0;
+  double TrueMaximumScale = 3.0;
 
   bool HasData = false;
   bool HasMC = false;

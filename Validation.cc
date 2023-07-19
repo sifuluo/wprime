@@ -35,7 +35,7 @@ public:
   };
 
   std::array<int,9> RegionIdentifier;
-  std::array<float,21> EventWeight;
+  std::array<float,30> EventWeight; // Size of Array subject to change
 
   float LeptonPt, LeptonPt_SU, LeptonPt_SD, LeptonPt_RU, LeptonPt_RD, LeptonEta;
 

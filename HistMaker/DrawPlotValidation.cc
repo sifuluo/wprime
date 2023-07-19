@@ -13,7 +13,7 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0) {
   , "BjetTagCorrup", "BjetTagCorrdown", "BjetTagUncorrup", "BjetTagUncorrdown", "PUIDSFup", "PUIDSFdown", "L1PreFiringSFup", "L1PreFiringSFdown" // 17-24
   , "PUreweightSFup", "PUreweightSFdown"
   , "PDFWup", "PDFWdown"
-  , "LHEScaleWup", "LHEScaleWdown" // 25 - 30
+  // , "LHEScaleWup", "LHEScaleWdown" // 25 - 30
   };
   // SampleTypes = {"FL500"};
   // vector<string> StringRanges = rm.StringRanges;
@@ -38,7 +38,7 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0) {
   for (unsigned ir = 0; ir < rm.StringRanges.size(); ++ir) {
     TCanvas* c1 = new TCanvas("c1","c1",800,800);
     AllPlots->CreateAuxiliaryPlots(ir);
-    AllPlots->DrawPlot(ir, c1, isampleyear);
+    AllPlots->DrawPlot(ir, c1, isampleyear, false, true);
     TString PlotName = AllPlots->Plots[ir]->PlotName;
     TString pn  = "plots/" + PlotName + ".pdf";
     c1->SaveAs(pn);

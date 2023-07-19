@@ -120,7 +120,7 @@ public:
     Plots[ir]->SetMaximum(max);
   }
 
-  void DrawPlot(int ir, TVirtualPad* p_, int year, bool drawsens = false) {
+  void DrawPlot(int ir, TVirtualPad* p_, int year, bool drawsens = false, bool drawpurity = false) {
     Plots[ir]->SetPad(p_);
     Plots[ir]->DrawPlot(year);
     Plots[ir]->UPad->cd();
@@ -128,10 +128,19 @@ public:
     latex.SetNDC();
     latex.SetTextSize(0.035);
     latex.SetTextAlign(23);
-    latex.DrawLatex((LegendPos[0] + LegendPos[2])/2., LegendPos[1] - 0.025, rm.LatexRanges[ir]);
-    if (!drawsens) return;
-    TString sens = Form("Sig/#sqrt{Sig + BG} = %f", Plots[ir]->GetSensitivity());
-    latex.DrawLatex((LegendPos[0] + LegendPos[2])/2., LegendPos[1] - 0.065, sens);
+    float xpos = (LegendPos[0] + LegendPos[2])/2.;
+    float ypos = LegendPos[1] - 0.025;
+    latex.DrawLatex(xpos, ypos, rm.LatexRanges[ir]);
+    ypos -= 0.04;
+    if (drawsens) {
+      TString sens = Form("Sig/#sqrt{Sig + BG} = %f", Plots[ir]->GetSensitivity());
+      latex.DrawLatex(xpos, ypos, sens);
+      ypos -= 0.04;
+    }
+    if (drawpurity) {
+      latex.DrawLatex(xpos, ypos, Plots[ir]->GetMCPurityLatex());
+      ypos -= 0.04;
+    }
   }
   vector<double> LegendPos = {0.65,0.65,0.9,0.9};
 

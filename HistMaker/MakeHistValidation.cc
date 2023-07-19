@@ -22,12 +22,16 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = -1, int ifile = -
   string basepath = "/eos/user/s/siluo/WPrimeAnalysis/Validation/";
   string itpath = "";
   string SampleYear = dlib.SampleYears[isampleyear];
-  string HistFilePath = "outputs/";
+  // string HistFilePath = "outputs/";
+  string HistFilePath = basepath;
   string HistFilePrefix = SampleYear + "_Validation";
   Histograms HistCol;
   vector<string> SampleTypes = dlib.DatasetNames;
   string IterSampleType = "";
-  if (isampletype != -1) IterSampleType = SampleTypes[isampletype];
+  if (isampletype != -1) {
+    IterSampleType = SampleTypes[isampletype];
+    HistFilePrefix = SampleYear + "_" + IterSampleType + "/Hists/" + HistFilePrefix;
+  }
   if (IterSampleType == "ZZ") return;
 
   HistCol.SetSampleTypes(SampleTypes);

@@ -255,6 +255,7 @@ public:
       fouts.push_back(new TFile(fn, "RECREATE"));
       fouts[io]->cd();
       for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
+        if (st != "" && SampleTypes[ist] != st) continue;
         Hists[io][ist].resize(Variations.size());
         for (unsigned iv = 0; iv < Variations.size(); ++iv) {
           Hists[io][ist][iv].resize(Regions.size());
