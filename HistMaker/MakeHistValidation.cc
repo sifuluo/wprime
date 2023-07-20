@@ -1,10 +1,12 @@
 #include "Utilities/TreeClass/ValidationTree.C"
 #include "Utilities/DrawDataFormat.cc"
+#include "Utilities/MCReweight.cc"
 #include "../Utilities/ProgressBar.cc"
 
 #include <math.h>
 
 #include "TChain.h"
+#include "TFile.h"
 
 using namespace std;
 
@@ -17,7 +19,7 @@ public:
   void FillHistograms() {}
 };
 
-void MakeHistValidation(int isampleyear = 3, int isampletype = -1, int ifile = -1) {
+void MakeHistValidation(int isampleyear = 3,int ReweightRegion = 1161, int isampletype = -1, int ifile = -1) {
   rm.SplitInit();
   string basepath = "/eos/user/s/siluo/WPrimeAnalysis/Validation/";
   string itpath = "";
@@ -30,22 +32,53 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = -1, int ifile = -
   string IterSampleType = "";
   if (isampletype != -1) {
     IterSampleType = SampleTypes[isampletype];
-    HistFilePrefix = SampleYear + "_" + IterSampleType + "/Hists/" + HistFilePrefix;
+    // HistFilePath = HistFilePath + SampleYear + "_" + IterSampleType + "/Hists/";
+    HistFilePath = HistFilePath + "Hists/";
+    if (ifile != -1) HistFilePath = HistFilePath + "batch/";
   }
+  if (ReweightRegion != 0) HistFilePrefix += Form("_%i", ReweightRegion);
   if (IterSampleType == "ZZ") return;
 
   HistCol.SetSampleTypes(SampleTypes);
-  HistCol.AddObservable("LeptonPt",50,0,500);
-  HistCol.AddObservable("LeptonEta",90,-4.5,4.5);
-  HistCol.AddObservable("LeadingJetPt",100,0,1000);
-  HistCol.AddObservable("LeadingJetEta",90,-4.5,4.5);
-  HistCol.AddObservable("METPt",100,0,2000);
-  HistCol.AddObservable("METPhi",64,-3.2,3.2);
-  HistCol.AddObservable("mT",100,0,2000);
+  // HistCol.AddObservable("LeptonPt",50,0,500);
+  // HistCol.AddObservable("LeptonEta",90,-4.5,4.5);
+  // HistCol.AddObservable("LeadingJetPt",100,0,1000);
+  // HistCol.AddObservable("LeadingJetEta",90,-4.5,4.5);
+  // HistCol.AddObservable("METPt",100,0,2000);
+  // HistCol.AddObservable("METPhi",64,-3.2,3.2);
+  // HistCol.AddObservable("mT",100,0,2000);
   HistCol.AddObservable("WPrimeMassSimpleFL",100,0,2000);
   HistCol.AddObservable("WPrimeMassSimpleLL",100,0,2000);
   HistCol.CreateHistograms(HistFilePath, HistFilePrefix, IterSampleType, ifile);
   Progress* progress = new Progress(0,10000);
+
+  MCReweight *mcr = new MCReweight();
+  if (ReweightRegion != 0) {
+    string idr = rm.StringRanges[rm.GetRangeIndex(ReweightRegion)];
+    string DeriveObs = "WPrimeMassSimpleFL";
+    string derivepath = "outputs/";
+    string deriveprefix = SampleYear + "_Validation";
+    TString DeriveFileName = StandardNames::HistFileName(derivepath, deriveprefix, DeriveObs);
+    TFile *fval = new TFile(DeriveFileName);
+    for (unsigned i = 0; i < dlib.DatasetNames.size(); ++i) {
+      string ds = dlib.DatasetNames[i];
+      TString histname = StandardNames::HistName(ds, DeriveObs, idr, rm.Variations[0]);
+      TH1F* h_ = (TH1F*) fval->Get(histname);
+      if (dlib.Datasets[ds].Type == 0) {
+        mcr->AddData(h_);
+        cout << "Adding DataHist: " << histname << endl;
+      }
+      else if (ds == "ttbar") {
+        mcr->Addttbar(h_);
+        cout << "Adding ttbar: " << histname <<endl;
+      }
+      else if (dlib.Datasets[ds].Type == 1) {
+        mcr->AddMC(h_);
+        cout << "Adding Other MC: " << histname <<endl;
+      }
+    }
+    mcr->CreateSF1DPlot();
+  }
   
   for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
     if (isampletype != -1 && (int)ist != isampletype) continue;
@@ -113,15 +146,15 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = -1, int ifile = -
           WPrimeMassSimpleFL = r->WPrimeMassSimpleFL->at(iv);
           WPrimeMassSimpleLL = r->WPrimeMassSimpleLL->at(iv);
         }
-
+        if (SampleType == "ttbar") EventWeight *= mcr->GetSF1D(WPrimeMassSimpleFL);
         HistCol.SetCurrentFill(ist, iv, RegionIdentifier, EventWeight);
-        HistCol.Fill("LeptonPt", LeptonPt);
-        HistCol.Fill("LeptonEta",LeptonEta);
-        HistCol.Fill("LeadingJetPt",LeadingJetPt);
-        HistCol.Fill("LeadingJetEta",LeadingJetEta);
-        HistCol.Fill("METPt",METPt);
-        HistCol.Fill("METPhi",METPhi);
-        HistCol.Fill("mT",mT);
+        // HistCol.Fill("LeptonPt", LeptonPt);
+        // HistCol.Fill("LeptonEta",LeptonEta);
+        // HistCol.Fill("LeadingJetPt",LeadingJetPt);
+        // HistCol.Fill("LeadingJetEta",LeadingJetEta);
+        // HistCol.Fill("METPt",METPt);
+        // HistCol.Fill("METPhi",METPhi);
+        // HistCol.Fill("mT",mT);
         HistCol.Fill("WPrimeMassSimpleFL",WPrimeMassSimpleFL);
         HistCol.Fill("WPrimeMassSimpleLL",WPrimeMassSimpleLL);
 

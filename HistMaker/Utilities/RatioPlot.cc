@@ -344,23 +344,28 @@ public:
     CanvasMaximum = max;
   }
 
+  TString GetSensitivityLatex(TString SensSig = "M500") {
+    TString sens = Form("Sig/#sqrt{Sig + BG} = %f", GetSensitivity(SensSig));
+    return sens;
+  }
+
   double GetSensitivity(TString SensSig = "M500") {
     double SigIntegral = 0;
     for (unsigned i = 0; i < SigNames.size(); ++i) {
       if (SigNames[i] == SensSig) SigIntegral = SigHists[i][0]->Integral();
     }
-    double MCIntegral = MCSummed[0]->Integral();
-    double sens = SigIntegral / sqrt(SigIntegral + MCIntegral);
+    double sens = SigIntegral / sqrt(SigIntegral + MCSummed[0]->Integral());
     return sens;
   }
 
   TString GetMCPurityLatex() {
     TString out = "";
     for (unsigned i = 0; i < MCNames.size(); ++i) {
-      out += Form("#color[%i]{(%.2f%%)} ", MCHists[i]->GetLineColor(), MCHists[i]->Integral() / MCSummed[0]->Integral());
+      out += Form("#color[%i]{(%.2f%%)} ", MCHists[i]->GetLineColor(), MCHists[i]->Integral() / MCSummed[0]->Integral() * 100. );
     }
     return out;
   }
+
   double GetMCPurity(TString sn) {
     for (unsigned i = 0; i < MCNames.size(); ++i) {
       if (MCNames[i] == sn) return MCHists[i]->Integral() / MCSummed[0]->Integral();
@@ -474,7 +479,7 @@ public:
   double MinY = 0;
   double CanvasMaximum = 0;
   double TrueMaximum = 0;
-  double TrueMaximumScale = 3.0;
+  double TrueMaximumScale = 10.0;
 
   bool HasData = false;
   bool HasMC = false;
