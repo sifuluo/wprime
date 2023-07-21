@@ -1,12 +1,12 @@
 #include "TFile.h"
 #include "Utilities/HistManager.cc"
 
-void DrawPlotValidation(int isampleyear = 3, int iobs = 0) {
-  vector<string> obs{"LeptonPt","LeptonEta","LeadingJetPt","LeadingJetEta","METPt","METPhi","mT","WPrimeMassSimpleFL","WPrimeMassSimpleLL"};
-  vector<string> obstitle{"Lepton p_{T}","Lepton #eta","Leading Jet p_{T}","Leading Jet #eta","MET p_{T}","MET #phi","m_{T}","Simple m(W'_{FL})"," Simple m(W'_{LL})"};
+void DrawPlotValidation(int isampleyear = 3, int iobs = 0, bool DoMCReweight = false) {
+  vector<string> obs{"LeptonPt","LeptonEta","LeadingJetPt","LeadingJetEta","METPt","METPhi","mT","HT","WPrimeMassSimpleFL","WPrimeMassSimpleLL"};
+  vector<string> obstitle{"Lepton p_{T}","Lepton #eta","Leading Jet p_{T}","Leading Jet #eta","MET p_{T}","MET #phi","m_{T}","H_{T}","Simple m(W'_{FL})"," Simple m(W'_{LL})"};
   string SampleYear = dlib.SampleYears[isampleyear];
   vector<string> SampleTypes = dlib.DatasetNames;
-  rm.SplitInit();
+  rm.TightOnlyInit(1);
   rm.Variations = {"central" // 0
   , "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown" // 1-8
   , "EleSFup", "EleSFdown", "MuonTriggerWup", "MuonTriggerWdown", "MuonIdWup", "MuonIdWdown", "MuonIsoWup", "MuonIsoWdown" // 9-16
@@ -23,7 +23,8 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0) {
   string ObservablesXTitle = obstitle[iobs];
 
   string HistFilePath = "outputs/";
-  string HistFilePrefix = SampleYear + "_Validation_1161";
+  string HistFilePrefix = SampleYear + "_Validation";
+  if (DoMCReweight) HistFilePrefix += "_RW";
   string PlotNamePrefix = HistFilePrefix;
   TString filename = StandardNames::HistFileName(HistFilePath, HistFilePrefix, Observable);
   TFile* f = new TFile(filename, "READ");
@@ -43,6 +44,26 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0) {
     TString pn  = "plots/" + PlotName + ".pdf";
     c1->SaveAs(pn);
     delete c1;
+  }
+
+
+  if (obs[iobs] == "WPrimeMassSimpleFL" && DoMCReweight) {
+    TString fsfname = StandardNames::HistFileName(HistFilePath, HistFilePrefix, "ReweightSF");
+    TFile *fsf = new TFile(fsfname,"READ");
+    TCanvas* c1 = new TCanvas("c1","c1",800,800);
+    TH1F* mcr1161sf1d = (TH1F*) fsf->Get("ttbarReweightSFFrom1161");
+    TH1F* mcr1151sf1d = (TH1F*) fsf->Get("ttbarReweightSFFrom1151");
+    mcr1161sf1d->SetLineColor(2);
+    mcr1151sf1d->SetLineColor(3);
+    TLegend* leg = new TLegend(0.7,0.7,0.9,0.9);
+    leg->AddEntry(mcr1161sf1d, "1161","l");
+    leg->AddEntry(mcr1151sf1d, "1151","l");
+
+    c1->cd();
+    mcr1161sf1d->Draw("E1");
+    mcr1151sf1d->Draw("E1same");
+    leg->Draw();
+    c1->SaveAs("plots/ReweightSF.pdf");
   }
 
 }
