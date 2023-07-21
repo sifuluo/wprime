@@ -215,23 +215,23 @@ public:
 
 
   Events(TChain *chain_, string sy_ = "2018", Bool_t mc_ = true) : chain(0){
-     chain = chain_;
-     SampleYear = sy_;
-     IsMC = mc_;
-     Init();
+    chain = chain_;
+    SampleYear = sy_;
+    IsMC = mc_;
+    Init();
   };
 
   ~Events() {
-     if (!chain) return;
-     delete chain->GetCurrentFile();
+    if (!chain) return;
+    delete chain->GetCurrentFile();
   };
 
   Int_t GetEntry(Long64_t entry) {
   // Read contents of entry.
-     if (!chain) return 0;
-     Int_t out = chain->GetEntry(entry);
+    if (!chain) return 0;
+    Int_t out = chain->GetEntry(entry);
     //  std::cout <<"flag1 " <<  Flag_goodVertices <<std::endl;
-     return out;
+    return out;
   }
 
   void Init() {
@@ -443,14 +443,14 @@ public:
   Long64_t LoadTree(Long64_t entry)
   {
 // Set the environment to read one entry
-   if (!chain) return -5;
-   Long64_t centry = chain->LoadTree(entry);
-   if (centry < 0) return centry;
-   if (chain->GetTreeNumber() != fCurrent) {
-      fCurrent = chain->GetTreeNumber();
-      Notify();
-   }
-   return centry;
+  if (!chain) return -5;
+  Long64_t centry = chain->LoadTree(entry);
+  if (centry < 0) return centry;
+  if (chain->GetTreeNumber() != fCurrent) {
+    fCurrent = chain->GetTreeNumber();
+    Notify();
+  }
+  return centry;
 }
 
 Bool_t Notify()
@@ -461,7 +461,7 @@ Bool_t Notify()
    // to the generated code, but the routine can be extended by the
    // user if needed. The return value is currently not used.
 
-   return kTRUE;
+  return kTRUE;
 }
 
 void Show(Long64_t entry)
