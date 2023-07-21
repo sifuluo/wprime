@@ -260,6 +260,7 @@ public:
     chain->SetBranchAddress("Electron_charge", Electron_charge);
     chain->SetBranchAddress("Electron_cutBased", Electron_cutBased);
     chain->SetBranchAddress("Electron_cutBased_HEEP", Electron_cutBased_HEEP);
+    chain->SetBranchAddress("Electron_mvaFall17V2Iso_WP90", Electron_mvaFall17V2Iso_WP90);
 
     chain->SetBranchAddress("nMuon", &nMuon);
     chain->SetBranchAddress("Muon_pt", Muon_pt);
