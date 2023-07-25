@@ -98,8 +98,7 @@ public:
     AddDataset_NGTCXS("wjets_HT_600_800"       ,"wjets"         , 1, 3 , 14581,   {1, 2251807, 5545298, 7718765}); // 7
     AddDataset_NGTCXS("wjets_HT_800_1200"      ,"wjets"         , 1, 3 , 6656,    {1, 2132228, 5088483, 7306187}); // 8
     AddDataset_NGTCXS("wjets_HT_1200_2500"     ,"wjets"         , 1, 3 , 1608,    {1, 2090561, 4752118, 6481518}); // 9
-    AddDataset_NGTCXS("wjets_HT_2500_inf"      ,"wjets"         , 1, 3 , 39,      {1, 709514, 1185699, 2097648}); // 10
-    // AddDataset_NGTCXS("wjets_inclusive"        ,"wjets"         , 1, 3 , 0,       {0,0,0,0});                     
+    AddDataset_NGTCXS("wjets_HT_2500_inf"      ,"wjets"         , 1, 3 , 39,      {1, 709514, 1185699, 2097648}); // 10                 
 
     AddDataset_NGTCXS("single_top_schan"       ,"single_top"    , 1, 4 , 3740,   {1,5471000,13620000,19365999}); // 11
     AddDataset_NGTCXS("single_top_tchan"       ,"single_top"    , 1, 4 , 115300, {1,63073000,129903000,178336000}); // 12
@@ -139,9 +138,21 @@ public:
     AddDataset_NGTCXS("LL900"                  ,"M900"            , 2, 30, 16.49,  {0, 464288, 1015927, 1006881}); // 37
     AddDataset_NGTCXS("LL1000"                 ,"M1000"           , 2, 40, 10.25,  {540970, 457909, 998840, 1008866}); // 38
     AddDataset_NGTCXS("LL1100"                 ,"M1100"           , 2, 46, 6.546,  {535810, 461040, 990631, 1010305}); // 39
-
-    // AddDataset_NGTCXS("Private_FL_M500"        ,""              , 2, 7 , 161.1,  {1,1,1,189291});
   }
+
+  void AppendAndrewDatasets() {
+    AddDataset_NGTCXS("wjets_inclusive"        ,"wjets"           , 1, 3 , 0,      {0,0,0,0});
+    AddDataset_NGTCXS("dy_HT_70_100"           ,"dy"              , 1, 3 , 208977, {1, 12618142, 12205958, 17004433}); // 3
+    AddDataset_NGTCXS("dy_HT_100_200"          ,"dy"              , 1, 3 , 181302, {1, 17886393, 18648544, 26202328}); // 4
+    AddDataset_NGTCXS("dy_HT_200_400"          ,"dy"              , 1, 3 , 50418,  {1, 11516413, 12451701, 18455718}); // 5
+    AddDataset_NGTCXS("dy_HT_400_600"          ,"dy"              , 1, 3 , 6984,   {1, 5208308, 5384252, 8682257}); // 6
+    AddDataset_NGTCXS("dy_HT_600_800"          ,"dy"              , 1, 3 , 1681,   {1, 4981503, 5118706, 7035971}); // 7
+    AddDataset_NGTCXS("dy_HT_800_1200"         ,"dy"              , 1, 3 , 775,    {1, 4805067, 4347168, 6554679}); // 8
+    AddDataset_NGTCXS("dy_HT_1200_2500"        ,"dy"              , 1, 3 , 186,    {1, 4160521, 4725936, 5966661}); // 9
+    AddDataset_NGTCXS("dy_HT_2500_inf"         ,"dy"              , 1, 3 , 4,      {1, 1418215, 1480047, 1978203}); // 10
+    AddDataset_NGTCXS("dy_inclusive"           ,"dy"              , 1, 3 , 0,      {0,0,0,0});
+  }
+
   // Adding Dataset with parameters as Name, Group name, Type (0:Data,1:MC,2:Signal), Color, Xsection, SampleSize
   int AddDataset_NGTCXS(string name, string gname = "", int type = 2, int color = 3, double xsec = 1.0, vector<double> size = {}) {
     if (Datasets.find(name) != Datasets.end()) {

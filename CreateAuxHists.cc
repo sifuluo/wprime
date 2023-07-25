@@ -12,6 +12,7 @@
 #include "Utilities/JetScale.cc"
 
 void CreateAuxHists(int sampleyear = 3, int sampletype = 2, int ifile = -1, string infile = "All") {
+  dlib.AppendAndrewDatasets();
   // infile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/wprime_500/2017/003C756A-BC7B-5A48-8F2E-A61D3CDC7C32.root";
   // sampletype = dlib.AddDataset_NGTCXS("WP500");
   if (sampletype < 0) {

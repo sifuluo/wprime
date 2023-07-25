@@ -70,6 +70,18 @@ def GetDatasetNames():
     outname = "LL" + im
     datasets.append([outname, inname])
   
+  datasets.append(["wjets_inclusive"])
+  datasets.append(["dy_HT_70_100"]) # 3
+  datasets.append(["dy_HT_100_200"]) # 4
+  datasets.append(["dy_HT_200_400"]) # 5
+  datasets.append(["dy_HT_400_600"]) # 6
+  datasets.append(["dy_HT_600_800"]) # 7
+  datasets.append(["dy_HT_800_1200"]) # 8
+  datasets.append(["dy_HT_1200_2500"]) # 9
+  datasets.append(["dy_HT_2500_inf"]) # 10
+  datasets.append(["dy_inclusive"]) # 11
+
+
   return datasets
 
 def GetSampleTypes():
@@ -81,5 +93,6 @@ def GetSampleTypes():
 CreateFileNames = True
 if CreateFileNames:
   for iy in range(4):
+    if iy != 3: continue # currenlty only 2018 available
     for ids in GetDatasetNames():
       GetLocalDataset(ids, iy)
