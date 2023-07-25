@@ -8,6 +8,7 @@
 
 #include "TH1.h"
 #include "TH2.h"
+#include "TF1.h"
 #include "DrawDataFormat.cc"
 
 class MCReweight {
@@ -27,6 +28,7 @@ public:
   }
 
   void AddData(TH1F* h_) {
+    if (h_ == nullptr) return;
     if (DataHist == nullptr) {
       DataHist = (TH1F*) h_->Clone();
       DataHist->SetDirectory(0);
@@ -36,6 +38,7 @@ public:
   }
 
   void AddMC(TH1F* h_, int iv = 0) {
+    if (h_ == nullptr) return;
     if (OtherMCHists[iv] == nullptr) {
       OtherMCHists[iv] = (TH1F*) h_->Clone();
       OtherMCHists[iv]->SetDirectory(0);
@@ -44,6 +47,7 @@ public:
   }
 
   void Addttbar(TH1F* h_, int iv = 0) {
+    if (h_ == nullptr) return;
     ttbarHists[iv] = (TH1F*) h_->Clone();
     ttbarHists[iv]->SetDirectory(0);
   }
@@ -110,6 +114,9 @@ public:
     SF1D->Divide(ttbarHists[0]);
     SF1D->SetName(("ttbarReweightSFFrom" + SourceRegion).c_str());
     SF1D->SetTitle(("ttbar Reweighting Scale Factor From " + SourceRegion).c_str());
+    TString FuncName = "MCRFunc" + SourceRegion;
+    SF1DF = new TF1(FuncName,"[0]/x+[1]*x+[2]*x*x+[3]",100,2000);
+    SF1D->Fit(SF1DF,"RM");
     // cout << "SF Value at 685.592GeV from" << SourceRegion << " is " << SF1D->GetBinContent(SF1D->FindBin(685.592)) << endl;
   }
 
@@ -125,6 +132,12 @@ public:
   float GetSF1D(double wpmass, int type = 0) {
     return SF1D->GetBinContent(SF1D->FindBin(wpmass));
   }
+  float GetSF1DF(double wpmass, int type = 0) {
+    float sf = SF1DF->Eval(wpmass);
+    if (sf > 2.0 || sf < 0.5) cout << SF1DF->GetName() << " at " << wpmass << " has extreme value of " << sf << endl;
+    return SF1DF->Eval(wpmass);
+    // return SF1D->GetBinContent(SF1D->FindBin(wpmass));
+  }
 
   // float GetSF2D(float wpmassfl, float wpmassll) {
     
@@ -137,6 +150,7 @@ public:
   int VarSize;
   vector<TH1F*> OtherMCHists, ttbarHists;// [iVariation]
   TH1F* SF1D;
+  TF1* SF1DF;
   TH2F* SF2D;
 };
 

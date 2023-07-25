@@ -163,6 +163,8 @@ public:
 
   void SystError(TH1F* hcentral, TH1F* hvarup, TH1F* hvarlow, vector<double>& errup, vector<double>& errlow) {
     if (hcentral == nullptr) return;
+    if (hvarup->Integral() / hcentral->Integral() > 2. || hvarup->Integral() / hcentral->Integral() < 0.5) cout << hvarup->GetName() << " ratio to central " << hcentral->GetName() << " = " <<hvarup->Integral() / hcentral->Integral() << endl;
+    if (hvarlow->Integral() / hcentral->Integral() > 2. || hvarlow->Integral() / hcentral->Integral() < 0.5) cout << hvarlow->GetName() << " ratio to central " << hcentral->GetName() << " = " <<hvarlow->Integral() / hcentral->Integral() << endl;
     bool doreport = false;
     bool reportedup = false;
     bool reportedlow = false;
@@ -345,16 +347,21 @@ public:
   }
 
   TString GetSensitivityLatex(TString SensSig = "M500") {
-    TString sens = Form("Sig/#sqrt{Sig + BG} = %f", GetSensitivity(SensSig));
+    TString sens = Form("#sqrt{#Sigma_{ibin} (Sig / #sqrt(Sig + BG)) ^ 2} = %f", GetSensitivity(SensSig));
     return sens;
   }
 
   double GetSensitivity(TString SensSig = "M500") {
-    double SigIntegral = 0;
+    double SensSum = 0;
     for (unsigned i = 0; i < SigNames.size(); ++i) {
-      if (SigNames[i] == SensSig) SigIntegral = SigHists[i][0]->Integral();
+      if (SigNames[i] != SensSig) continue;
+      TH1F* hsig = SigHists[i][0];
+      TH1F* hbg = MCSummed[0];
+      for (unsigned i = 1; i <= nbins; ++i) {
+        SensSum = hsig->GetBinContent(i) * hsig->GetBinContent(i) / (hsig->GetBinContent(i) + hbg->GetBinContent(i));
+      }
     }
-    double sens = SigIntegral / sqrt(SigIntegral + MCSummed[0]->Integral());
+    double sens = sqrt(SensSum);
     return sens;
   }
 

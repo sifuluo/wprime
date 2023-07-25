@@ -2,6 +2,7 @@
 #include "Utilities/DrawDataFormat.cc"
 #include "Utilities/MCReweight.cc"
 #include "../Utilities/ProgressBar.cc"
+// #include "../Utilities/Configs.cc" // For checkpoints
 
 #include <math.h>
 
@@ -32,21 +33,21 @@ void MakeHistValidation(int isampleyear = 3,bool DoMCReweight = false, int isamp
   string IterSampleType = "";
   if (isampletype != -1) {
     IterSampleType = SampleTypes[isampletype];
-    // HistFilePath = HistFilePath + SampleYear + "_" + IterSampleType + "/Hists/";
     HistFilePath = HistFilePath + "Hists/";
-    if (ifile != -1) HistFilePath = HistFilePath + "batch/";
+    if (ifile > -1) HistFilePath = HistFilePath + "batch/";
   }
   if (DoMCReweight) HistFilePrefix += "_RW";
   if (IterSampleType == "ZZ") return;
+  bool DrawMCReweight = DoMCReweight && (isampletype == -1 || isampletype == 24) && ifile < 1;
 
   HistCol.SetSampleTypes(SampleTypes);
-  // HistCol.AddObservable("LeptonPt",50,0,500);
-  // HistCol.AddObservable("LeptonEta",90,-4.5,4.5);
-  // HistCol.AddObservable("LeadingJetPt",100,0,1000);
-  // HistCol.AddObservable("LeadingJetEta",90,-4.5,4.5);
-  // HistCol.AddObservable("METPt",100,0,2000);
-  // HistCol.AddObservable("METPhi",64,-3.2,3.2);
-  // HistCol.AddObservable("mT",100,0,2000);
+  HistCol.AddObservable("LeptonPt",50,0,500);
+  HistCol.AddObservable("LeptonEta",90,-4.5,4.5);
+  HistCol.AddObservable("LeadingJetPt",100,0,1000);
+  HistCol.AddObservable("LeadingJetEta",90,-4.5,4.5);
+  HistCol.AddObservable("METPt",100,0,2000);
+  HistCol.AddObservable("METPhi",64,-3.2,3.2);
+  HistCol.AddObservable("mT",100,0,2000);
   HistCol.AddObservable("HT",200,0,2000);
   HistCol.AddObservable("WPrimeMassSimpleFL",100,0,2000);
   HistCol.AddObservable("WPrimeMassSimpleLL",100,0,2000);
@@ -55,7 +56,7 @@ void MakeHistValidation(int isampleyear = 3,bool DoMCReweight = false, int isamp
 
   MCReweight *mcr1161 = new MCReweight("1161");
   MCReweight *mcr1151 = new MCReweight("1151");
-  if (DoMCReweight) {
+  if ((DoMCReweight && (IterSampleType == "ttbar" || IterSampleType == "")) || DrawMCReweight) {
     string idr1161 = rm.StringRanges[rm.GetRangeIndex(1161)];
     string idr1151 = rm.StringRanges[rm.GetRangeIndex(1151)];
     string SourceObs = "WPrimeMassSimpleFL";
@@ -74,7 +75,7 @@ void MakeHistValidation(int isampleyear = 3,bool DoMCReweight = false, int isamp
         mcr1161->AddData(h1161_);
         mcr1151->AddData(h1151_);
       }
-      else if (ds == "ttbar" || i == 2) {
+      else if (ds == "ttbar") {
         mcr1161->Addttbar(h1161_);
         mcr1151->Addttbar(h1151_);
       }
@@ -85,16 +86,18 @@ void MakeHistValidation(int isampleyear = 3,bool DoMCReweight = false, int isamp
     }
     mcr1161->CreateSF1DPlot();
     mcr1151->CreateSF1DPlot();
-    // if (isampletype < 1 && ifile < 1) {
-    //   TString fweightname = StandardNames::HistFileName(HistFilePath, HistFilePrefix, "ReweightSF");
-    //   TFile *fweight = new TFile(fweightname,"RECREATE");
-    //   fweight->cd();
-    //   TH1F* mcr1161sf1d = (TH1F*) mcr1161->SF1D->Clone();
-    //   TH1F* mcr1151sf1d = (TH1F*) mcr1151->SF1D->Clone();
-    //   fweight->Write();
-    //   fweight->Save();
-    //   fweight->Close();
-    // }
+    if (DrawMCReweight) {
+      TString fweightname = StandardNames::HistFileName(HistFilePath, HistFilePrefix, "ReweightSF");
+      TFile *fweight = new TFile(fweightname,"RECREATE");
+      fweight->cd();
+      TH1F* mcr1161sf1d = (TH1F*) mcr1161->SF1D->Clone();
+      TH1F* mcr1151sf1d = (TH1F*) mcr1151->SF1D->Clone();
+      fweight->Write();
+      fweight->Save();
+      fweight->Close();
+      cout << "Reweight file is saved at " << fweightname << endl;
+    }
+    else cout << "This iteration is not saving SF file" << endl;
     fsource->Close();
     delete fsource;
   }
@@ -142,13 +145,13 @@ void MakeHistValidation(int isampleyear = 3,bool DoMCReweight = false, int isamp
         if (iv < 9) RegionIdentifier = r->RegionIdentifier[iv];
     
         //Start of customize part
-        // float LeptonPt = r->LeptonPt;
-        // float LeptonEta = r->LeptonEta;
-        // float LeadingJetPt = r->JetPt->at(0);
-        // float LeadingJetEta = r->JetEta->at(0);
-        // float METPt = r->METPt;
-        // float METPhi = r->METPhi;
-        // float mT = r->mT->at(0);
+        float LeptonPt = r->LeptonPt;
+        float LeptonEta = r->LeptonEta;
+        float LeadingJetPt = r->JetPt->at(0);
+        float LeadingJetEta = r->JetEta->at(0);
+        float METPt = r->METPt;
+        float METPhi = r->METPhi;
+        float mT = r->mT->at(0);
         float HT = 0;
         for (unsigned ij = 0; ij < r->JetPt->size(); ++ij) {
           HT += r->JetPt->at(ij);
@@ -157,34 +160,34 @@ void MakeHistValidation(int isampleyear = 3,bool DoMCReweight = false, int isamp
         float WPrimeMassSimpleLL = r->WPrimeMassSimpleLL->at(0);
         if (iv > 0 && iv < 9) { // Variations on Physical quantities
           // "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown"
-          // if (iv == 1) LeptonPt = r->LeptonPt_SU;
-          // if (iv == 2) LeptonPt = r->LeptonPt_SD;
-          // if (iv == 3) LeptonPt = r->LeptonPt_RU;
-          // if (iv == 4) LeptonPt = r->LeptonPt_RD;
-          // if (iv == 5) LeadingJetPt = r->JetPt_SU->at(0);
-          // if (iv == 6) LeadingJetPt = r->JetPt_SD->at(0);
-          // if (iv == 7) LeadingJetPt = r->JetPt_RU->at(0);
-          // if (iv == 8) LeadingJetPt = r->JetPt_RD->at(0);
-          // mT = r->mT->at(iv);
+          if (iv == 1) LeptonPt = r->LeptonPt_SU;
+          if (iv == 2) LeptonPt = r->LeptonPt_SD;
+          if (iv == 3) LeptonPt = r->LeptonPt_RU;
+          if (iv == 4) LeptonPt = r->LeptonPt_RD;
+          if (iv == 5) LeadingJetPt = r->JetPt_SU->at(0);
+          if (iv == 6) LeadingJetPt = r->JetPt_SD->at(0);
+          if (iv == 7) LeadingJetPt = r->JetPt_RU->at(0);
+          if (iv == 8) LeadingJetPt = r->JetPt_RD->at(0);
+          mT = r->mT->at(iv);
           WPrimeMassSimpleFL = r->WPrimeMassSimpleFL->at(iv);
           WPrimeMassSimpleLL = r->WPrimeMassSimpleLL->at(iv);
         }
         if (SampleType == "ttbar" && DoMCReweight) {
           // cout << "Trying to get SF of WPrimeMassSimpleFL = " << WPrimeMassSimpleFL << endl;
           float mcrweight = 1.0;
-          if (RegionIdentifier / 10 % 10 == 6) mcrweight = mcr1161->GetSF1D(WPrimeMassSimpleFL);
-          else if (RegionIdentifier / 10 % 10 == 5) mcrweight = mcr1151->GetSF1D(WPrimeMassSimpleFL);
+          if (RegionIdentifier / 10 % 10 == 6) mcrweight = mcr1161->GetSF1DF(WPrimeMassSimpleFL);
+          else if (RegionIdentifier / 10 % 10 == 5) mcrweight = mcr1151->GetSF1DF(WPrimeMassSimpleFL);
           EventWeight *= mcrweight;
           // cout << "SF = " << mcrweight <<endl;
         }
         HistCol.SetCurrentFill(ist, iv, RegionIdentifier, EventWeight);
-        // HistCol.Fill("LeptonPt", LeptonPt);
-        // HistCol.Fill("LeptonEta",LeptonEta);
-        // HistCol.Fill("LeadingJetPt",LeadingJetPt);
-        // HistCol.Fill("LeadingJetEta",LeadingJetEta);
-        // HistCol.Fill("METPt",METPt);
-        // HistCol.Fill("METPhi",METPhi);
-        // HistCol.Fill("mT",mT);
+        HistCol.Fill("LeptonPt", LeptonPt);
+        HistCol.Fill("LeptonEta",LeptonEta);
+        HistCol.Fill("LeadingJetPt",LeadingJetPt);
+        HistCol.Fill("LeadingJetEta",LeadingJetEta);
+        HistCol.Fill("METPt",METPt);
+        HistCol.Fill("METPhi",METPhi);
+        HistCol.Fill("mT",mT);
         HistCol.Fill("HT",HT);
         HistCol.Fill("WPrimeMassSimpleFL",WPrimeMassSimpleFL);
         HistCol.Fill("WPrimeMassSimpleLL",WPrimeMassSimpleLL);

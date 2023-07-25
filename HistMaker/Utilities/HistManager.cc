@@ -133,8 +133,7 @@ public:
     latex.DrawLatex(xpos, ypos, rm.LatexRanges[ir]);
     ypos -= 0.04;
     if (drawsens) {
-      TString sens = Form("Sig/#sqrt{Sig + BG} = %f", Plots[ir]->GetSensitivity());
-      latex.DrawLatex(xpos, ypos, sens);
+      latex.DrawLatex(xpos, ypos, Plots[ir]->GetSensitivityLatex());
       ypos -= 0.04;
     }
     if (drawpurity) {
