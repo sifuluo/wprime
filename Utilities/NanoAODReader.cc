@@ -116,6 +116,7 @@ public:
   }
 
   int ReadEvent(Long64_t i) {
+    PassedHEMCut = true;
     bTagWP = conf->bTagWP;
     PUIDWP = conf->PUIDWP;
 
@@ -140,6 +141,7 @@ public:
     ReadLeptons();
     ReadMET();
     ReadVertices();
+    if (!PassedHEMCut) return 0;
     RegionAssociations = RegionReader();
     KeepEvent = RegionAssociations.KeepEvent();
     EventWeights = CalcEventSFweights();
@@ -171,6 +173,15 @@ public:
     }
   }
 
+  bool PassHEMCut(TLorentzVector &v) {
+    if (conf->SampleYear != "2018") return true;
+    if (v.Eta() < -3.) return true;
+    if (v.Eta() > -1.3) return true;
+    if (v.Phi() < -1.57) return true;
+    if (v.Phi() > -0.87) return true;
+    return false;
+  }
+
   bool PassCommon(Jet& j) {
     bool pass = true;
     pass &= (j.MaxPt() >= 30.);
@@ -181,6 +192,7 @@ public:
 
   void ReadJets() {
     Jets.clear();
+    if (!PassedHEMCut) return;
     int emptysequence = 0;
     if (evts->nJet > evts->nJetMax) cout << "Error: nJet = " << evts->nJet << " at iEvent = " << iEvent << endl;
     for (unsigned i = 0; i < evts->nJet; ++i) {
@@ -190,6 +202,10 @@ public:
       Jet tmp;
       tmp.index = i;
       tmp.SetPtEtaPhiM(evts->Jet_pt_nom[i],evts->Jet_eta[i],evts->Jet_phi[i],evts->Jet_mass_nom[i]); //the nominal here in MC contains JER while nanoAOD default does not
+      if (!PassHEMCut(tmp)) {
+        PassedHEMCut = false;
+        return;
+      }
       tmp.JESup().SetPtEtaPhiM(evts->Jet_pt_jesTotalUp[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jesTotalUp[i]);
       tmp.JESdown().SetPtEtaPhiM(evts->Jet_pt_jesTotalDown[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jesTotalDown[i]);
       tmp.JERup().SetPtEtaPhiM(evts->Jet_pt_jerUp[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jerUp[i]);
@@ -309,6 +325,7 @@ public:
 
   void ReadTriggers() {
     Triggers.clear();
+    if (!PassedHEMCut) return;
     isolated_electron_trigger = evts->isolated_electron_trigger;
     isolated_muon_trigger = evts->isolated_muon_trigger;
     isolated_muon_track_trigger = evts->isolated_muon_track_trigger;
@@ -427,6 +444,7 @@ public:
     Leptons.clear();
     Electrons.clear();
     Muons.clear();
+    if (!PassedHEMCut) return;
     int emptysequence = 0;
     for (unsigned i = 0; i < evts->nElectron; ++i) {
       if (emptysequence >= 3) break;
@@ -438,6 +456,10 @@ public:
       Electron tmp;
       // cout << "Electron i = " << i << ", nElectron = " << evts->nElectron <<endl;
       tmp.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
+      if (!PassHEMCut(tmp)) {
+        PassedHEMCut = false;
+        return;
+      }
       //set resolution variations (only matter in MC, will be ineffective in data)
       tmp.ResUp() = ((TLorentzVector) tmp) * ((tmp.E() - evts->Electron_dEsigmaUp[i]) / tmp.E());
       tmp.ResDown() = ((TLorentzVector) tmp) * ((tmp.E() - evts->Electron_dEsigmaDown[i]) / tmp.E());
@@ -520,6 +542,10 @@ public:
       else emptysequence = 0;
       Muon tmp;
       tmp.SetPtEtaPhiM(evts->Muon_pt[i],evts->Muon_eta[i],evts->Muon_phi[i],evts->Muon_mass[i]);
+      if (!PassHEMCut(tmp)) {
+        PassedHEMCut = false;
+        return;
+      }
       tmp.index = i;
       tmp.charge = evts->Muon_charge[i];
       tmp.tightId = evts->Muon_tightId[i];
@@ -915,6 +941,7 @@ public:
   PUIDSFReader *R_PUIDSF;
 
   bool IsMC;
+  bool PassedHEMCut;
   int bTagWP, PUIDWP;
   TChain* chain;
   Events* evts;
