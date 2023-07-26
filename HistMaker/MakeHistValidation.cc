@@ -20,7 +20,7 @@ public:
   void FillHistograms() {}
 };
 
-void MakeHistValidation(int isampleyear = 3,bool DoMCReweight = false, int isampletype = -1, int ifile = -1) {
+void MakeHistValidation(int isampleyear = 3,bool DoMCReweight = false, int isampletype = -1, int ifile = -1, bool DrawMCReweight = false) {
   rm.TightOnlyInit();
   string basepath = "/eos/user/s/siluo/WPrimeAnalysis/Validation/";
   string itpath = "";
@@ -38,21 +38,6 @@ void MakeHistValidation(int isampleyear = 3,bool DoMCReweight = false, int isamp
   }
   if (DoMCReweight) HistFilePrefix += "_RW";
   if (IterSampleType == "ZZ") return;
-  bool DrawMCReweight = DoMCReweight && (isampletype == -1 || isampletype == 24) && ifile < 1;
-
-  HistCol.SetSampleTypes(SampleTypes);
-  HistCol.AddObservable("LeptonPt",50,0,500);
-  HistCol.AddObservable("LeptonEta",90,-4.5,4.5);
-  HistCol.AddObservable("LeadingJetPt",100,0,1000);
-  HistCol.AddObservable("LeadingJetEta",90,-4.5,4.5);
-  HistCol.AddObservable("METPt",100,0,2000);
-  HistCol.AddObservable("METPhi",64,-3.2,3.2);
-  HistCol.AddObservable("mT",100,0,2000);
-  HistCol.AddObservable("HT",200,0,2000);
-  HistCol.AddObservable("WPrimeMassSimpleFL",100,0,2000);
-  HistCol.AddObservable("WPrimeMassSimpleLL",100,0,2000);
-  HistCol.CreateHistograms(HistFilePath, HistFilePrefix, IterSampleType, ifile);
-  Progress* progress = new Progress(0,10000);
 
   MCReweight *mcr1161 = new MCReweight("1161");
   MCReweight *mcr1151 = new MCReweight("1151");
@@ -101,6 +86,21 @@ void MakeHistValidation(int isampleyear = 3,bool DoMCReweight = false, int isamp
     fsource->Close();
     delete fsource;
   }
+  if (DrawMCReweight) return;
+
+  HistCol.SetSampleTypes(SampleTypes);
+  HistCol.AddObservable("LeptonPt",50,0,500);
+  HistCol.AddObservable("LeptonEta",90,-4.5,4.5);
+  HistCol.AddObservable("LeadingJetPt",100,0,1000);
+  HistCol.AddObservable("LeadingJetEta",90,-4.5,4.5);
+  HistCol.AddObservable("METPt",100,0,2000);
+  HistCol.AddObservable("METPhi",64,-3.2,3.2);
+  HistCol.AddObservable("mT",100,0,2000);
+  HistCol.AddObservable("HT",200,0,2000);
+  HistCol.AddObservable("WPrimeMassSimpleFL",100,0,2000);
+  HistCol.AddObservable("WPrimeMassSimpleLL",100,0,2000);
+  HistCol.CreateHistograms(HistFilePath, HistFilePrefix, IterSampleType, ifile);
+  Progress* progress = new Progress(0,10000);
   
   for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
     if (isampletype != -1 && (int)ist != isampletype) continue;

@@ -347,7 +347,7 @@ public:
   }
 
   TString GetSensitivityLatex(TString SensSig = "M500") {
-    TString sens = Form("#sqrt{#Sigma_{ibin} (Sig / #sqrt(Sig + BG)) ^ 2} = %f", GetSensitivity(SensSig));
+    TString sens = Form("#sqrt{#Sigma_{ibin} Sig ^ 2 / (Sig + BG)} = %f", GetSensitivity(SensSig));
     return sens;
   }
 

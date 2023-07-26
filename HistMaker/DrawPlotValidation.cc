@@ -8,7 +8,7 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0, bool DoMCReweight = f
   vector<string> obstitle{"Lepton p_{T}","Lepton #eta","Leading Jet p_{T}","Leading Jet #eta","MET p_{T}","MET #phi","m_{T}","H_{T}","Simple m(W'_{FL})"," Simple m(W'_{LL})"};
   string SampleYear = dlib.SampleYears[isampleyear];
   vector<string> SampleTypes = dlib.DatasetNames;
-  rm.TightOnlyInit(1);
+  rm.TightOnlyInit();
   rm.Variations = {"central" // 0
   , "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown" // 1-8
   , "EleSFup", "EleSFdown", "MuonTriggerWup", "MuonTriggerWdown", "MuonIdWup", "MuonIdWdown", "MuonIsoWup", "MuonIsoWdown" // 9-16
@@ -56,14 +56,14 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0, bool DoMCReweight = f
     TCanvas* c1 = new TCanvas("c1","c1",800,800);
     TH1F* mcr1161sf1d = (TH1F*) fsf->Get("ttbarReweightSFFrom1161");
     TH1F* mcr1151sf1d = (TH1F*) fsf->Get("ttbarReweightSFFrom1151");
-    // TF1* mcr1161f = new TF1("mcr1161f","[0]/x+[1]*x+[2]*x*x+[3]",100,2000);
-    // TF1* mcr1151f = new TF1("mcr1151f","[0]/x+[1]*x+[2]*x*x+[3]",100,2000);
+    TF1* mcr1161f = new TF1("mcr1161f","[0]/x+[1]*x+[2]*x*x+[3]",100,2000);
+    TF1* mcr1151f = new TF1("mcr1151f","[0]/x+[1]*x+[2]*x*x+[3]",100,2000);
     // mcr1161f->SetParameters(1.,2.,0.1,0.1);
-    // mcr1151f->SetParameters(1.,2.,0.1,0.1);
+    // mcr1151f->SetParameters(1.,2.,0.1,0.1); // Doesn't affect the final fit parameters at all in this practice
     mcr1161sf1d->SetLineColor(2);
     mcr1151sf1d->SetLineColor(3);
-    // mcr1161sf1d->Fit(mcr1161f,"RM","");
-    // mcr1151sf1d->Fit(mcr1151f,"RM","");
+    mcr1161sf1d->Fit(mcr1161f,"RM","");
+    mcr1151sf1d->Fit(mcr1151f,"RM","");
     TLegend* leg = new TLegend(0.7,0.7,0.9,0.9);
     leg->AddEntry(mcr1161sf1d, "1161","l");
     leg->AddEntry(mcr1151sf1d, "1151","l");

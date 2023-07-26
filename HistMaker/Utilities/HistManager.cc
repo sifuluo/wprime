@@ -131,14 +131,14 @@ public:
     float xpos = (LegendPos[0] + LegendPos[2])/2.;
     float ypos = LegendPos[1] - 0.025;
     latex.DrawLatex(xpos, ypos, rm.LatexRanges[ir]);
-    ypos -= 0.04;
+    ypos -= 0.05;
     if (drawsens) {
       latex.DrawLatex(xpos, ypos, Plots[ir]->GetSensitivityLatex());
-      ypos -= 0.04;
+      ypos -= 0.05;
     }
     if (drawpurity) {
       latex.DrawLatex(xpos, ypos, Plots[ir]->GetMCPurityLatex());
-      ypos -= 0.04;
+      ypos -= 0.05;
     }
   }
   vector<double> LegendPos = {0.65,0.65,0.9,0.9};

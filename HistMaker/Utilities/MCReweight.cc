@@ -134,9 +134,11 @@ public:
   }
   float GetSF1DF(double wpmass, int type = 0) {
     float sf = SF1DF->Eval(wpmass);
-    if (sf > 2.0 || sf < 0.5) cout << SF1DF->GetName() << " at " << wpmass << " has extreme value of " << sf << endl;
-    return SF1DF->Eval(wpmass);
-    // return SF1D->GetBinContent(SF1D->FindBin(wpmass));
+    if (wpmass < 2000 && wpmass > 0) {
+      if (sf > 2.0 || sf < 0.5) cout << SF1DF->GetName() << " at " << wpmass << " has extreme value of " << sf << endl;
+      return SF1DF->Eval(wpmass);
+    }
+    return GetSF1D(wpmass, type);
   }
 
   // float GetSF2D(float wpmassfl, float wpmassll) {
