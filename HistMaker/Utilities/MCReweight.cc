@@ -7,14 +7,17 @@
 #include <iostream>
 
 #include "TH1.h"
-#include "TH2.h"
 #include "TF1.h"
+#include "TFile.h"
+#include "TString.h"
 #include "DrawDataFormat.cc"
 
 class MCReweight {
 public:
-  MCReweight(string s_) {
-    SourceRegion = s_;
+  MCReweight(int r_) {
+    SourceRegionInt = r_;
+    SourceRegion = Form("%d",r_);
+    StringRange = rm.StringRanges[rm.GetRangeIndex(r_)];
     OtherMCHists.clear();
     ttbarHists.clear();
     SetVariations(rm.Variations);
@@ -50,6 +53,17 @@ public:
     if (h_ == nullptr) return;
     ttbarHists[iv] = (TH1F*) h_->Clone();
     ttbarHists[iv]->SetDirectory(0);
+  }
+
+  void ReadFromFile(TFile* f, string obs) {
+    for (unsigned i = 0; i < dlib.DatasetNames.size(); ++i) {
+      string ds = dlib.DatasetNames[i];
+      TString histname = StandardNames::HistName(ds, obs, StringRange, rm.Variations[0]);
+      TH1F* h_ = (TH1F*) f->Get(histname);
+      if (dlib.Datasets[ds].Type == 0) AddData(h_);
+      else if (ds == "ttbar") Addttbar(h_);
+      else if (dlib.Datasets[ds].Type == 1) AddMC(h_);
+    }
   }
 
   // void StatError(TH1F* hcentral, vector<double>& errup, vector<double>& errlow) {
@@ -103,10 +117,6 @@ public:
   //   }
   // }
 
-  // void CreateOutputFile() {
-
-  // }
-
   void CreateSF1DPlot() {
     SF1D = (TH1F*) DataHist->Clone();
     SF1D->SetDirectory(0);
@@ -120,32 +130,21 @@ public:
     // cout << "SF Value at 685.592GeV from" << SourceRegion << " is " << SF1D->GetBinContent(SF1D->FindBin(685.592)) << endl;
   }
 
-  // void CreateSF2DPlot() {
-
-  // }
-
-  void SetSaveDirectory(TFile *f) {
-    if (SF1D != nullptr) SF1D->SetDirectory(f);
-    if (SF2D != nullptr) SF2D->SetDirectory(f);
-  }
-
-  float GetSF1D(double wpmass, int type = 0) {
+  float GetSF1D(double wpmass) {
     return SF1D->GetBinContent(SF1D->FindBin(wpmass));
   }
-  float GetSF1DF(double wpmass, int type = 0) {
+  float GetSF1DF(double wpmass) {
     float sf = SF1DF->Eval(wpmass);
     if (wpmass < 2000 && wpmass > 0) {
       if (sf > 2.0 || sf < 0.5) cout << SF1DF->GetName() << " at " << wpmass << " has extreme value of " << sf << endl;
       return SF1DF->Eval(wpmass);
     }
-    return GetSF1D(wpmass, type);
+    return GetSF1D(wpmass);
   }
 
-  // float GetSF2D(float wpmassfl, float wpmassll) {
-    
-  // }
-
+  int SourceRegionInt;
   string SourceRegion;
+  string Stringrange;
   unsigned nbins;
   TH1F* DataHist = nullptr;
   vector<string> Variations;
@@ -153,7 +152,60 @@ public:
   vector<TH1F*> OtherMCHists, ttbarHists;// [iVariation]
   TH1F* SF1D;
   TF1* SF1DF;
-  TH2F* SF2D;
+};
+
+class MCReweightManager {
+public:
+  MCReweightManager(string obs = "WPrimeMassSimpleFL") {
+    SourceObs = obs;
+  };
+
+  void Init() {
+    rws.push_back(new MCReweight(1151));
+    rws.push_back(new MCReweight(1161));
+    rws.push_back(new MCReweight(2151));
+    rws.push_back(new MCReweight(2161));
+  }
+
+  void ReadFromFile(TString fname) {
+    TFile* f = new TFile(fname);
+    for (unsigned i = 0; i < rws.size(); ++i) {
+      rws[i]->ReadFromFile(f, SourceObs);
+      rws[i]->CreateSF1DPlot();
+    }
+    f->Close();
+    delete f;
+  }
+
+  void SaveToFile(TString fname) {
+    TFile *f = new TFile(fname,"RECREATE");
+    f->cd();
+    for (unsigned i = 0; i < rws.size(); ++i) {
+      TH1F* h = rws[i]->SF1D->Clone();
+    }
+    f->Write();
+    f->Save();
+    f->Close();
+    delete f;
+  }
+
+  float GetSF1D(double wpmass, int rid) {
+    for (unsigned i = 0; i < rws.size(); ++i) {
+      if (rws[i]->SourceRegionInt / 10 == rid / 10) return rws[i]->GetSF1D(wpmass); 
+    }
+    return 1.0;
+  }
+
+  float GetSF1DF(double wpmass, int rid) {
+    for (unsigned i = 0; i < rws.size(); ++i) {
+      if (rws[i]->SourceRegionInt / 10 == rid / 10) return rws[i]->GetSF1DF(wpmass); 
+    }
+    return 1.0;
+  }
+
+  string SourceObs;
+  vector<MCReweight*> rws;
+
 };
 
 
