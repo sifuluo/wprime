@@ -37,10 +37,11 @@ public:
   std::array<int,9> RegionIdentifier;
   std::array<float,30> EventWeight; // Size of Array subject to change
 
-  float LeptonPt, LeptonPt_SU, LeptonPt_SD, LeptonPt_RU, LeptonPt_RD, LeptonEta;
+  float LeptonPt, LeptonPt_SU, LeptonPt_SD, LeptonPt_RU, LeptonPt_RD, LeptonEta, LeptonPhi;
 
-  vector<float> *JetPt, *JetPt_SU, *JetPt_SD, *JetPt_RU, *JetPt_RD, *JetEta;
+  vector<float> *JetPt, *JetPt_SU, *JetPt_SD, *JetPt_RU, *JetPt_RD, *JetEta, *JetPhi;
   float METPt, METPt_SU, METPt_SD, METPt_RU, METPt_RD, METPhi;
+  float dPhiMetLep;
 
   vector<float> *mT;
 
@@ -60,6 +61,7 @@ public:
     t->Branch("LeptonPt_RU",&LeptonPt_RU);
     t->Branch("LeptonPt_RD",&LeptonPt_RD);
     t->Branch("LeptonEta",&LeptonEta);
+    t->Branch("LeptonPhi",&LeptonPhi);
 
     JetPt = new vector<float>;
     JetPt_SU = new vector<float>;
@@ -73,6 +75,8 @@ public:
     t->Branch("JetPt_RD",&JetPt_RD);
     JetEta = new vector<float>;
     t->Branch("JetEta",&JetEta);
+    JetPhi = new vector<float>;
+    t->Branch("JetPhi",&JetPhi);
 
     t->Branch("METPt",&METPt);
     t->Branch("METPt_SU",&METPt_SU);
@@ -80,6 +84,8 @@ public:
     t->Branch("METPt_RU",&METPt_RU);
     t->Branch("METPt_RD",&METPt_RD);
     t->Branch("METPhi", &METPhi);
+
+    t->Branch("dPhiMetLep", &dPhiMetLep);
 
     mT = new vector<float>; // central , EleSU, EleSD, EleRU, EleRD, JetSU, JetSD, JetRU, JetRD
     mT->resize(9);
@@ -114,6 +120,7 @@ public:
     LeptonPt_RU = r->TheLepton.RU.Pt();
     LeptonPt_RD = r->TheLepton.RD.Pt();
     LeptonEta = r->TheLepton.Eta();
+    LeptonPhi = r->TheLepton.Phi();
 
     JetPt->clear();
     JetPt_SU->clear();
@@ -121,6 +128,7 @@ public:
     JetPt_RU->clear();
     JetPt_RD->clear();
     JetEta->clear();
+    JetPhi->clear();
     for (Jet& j : r->Jets) {
       if (!j.PUIDpasses[conf->PUIDWP]) continue;
       JetPt->push_back(j.Pt());
@@ -129,6 +137,7 @@ public:
       JetPt_RU->push_back(j.RU.Pt());
       JetPt_RD->push_back(j.RD.Pt());
       JetEta->push_back(j.Eta());
+      JetPhi->push_back(j.Phi());
     }
 
     METPt = r->Met.Pt();
@@ -137,6 +146,8 @@ public:
     METPt_RU = r->Met.RU.Pt();
     METPt_RD = r->Met.RD.Pt();
     METPhi = r->Met.Phi();
+
+    dPhiMetLep = r->Met.DeltaPhi(r->TheLepton);
 
     for (unsigned i = 0; i < 9; ++i) {
       TLorentzVector vmT = r->TheLepton.GetV(i) + r->Met.GetV(i);

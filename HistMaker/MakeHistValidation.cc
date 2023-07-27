@@ -61,10 +61,13 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = -1, int ifile = -
   HistCol.SetSampleTypes(SampleTypes);
   HistCol.AddObservable("LeptonPt",50,0,500);
   HistCol.AddObservable("LeptonEta",90,-4.5,4.5);
+  HistCol.AddObservable("LeptonPhi",90,-4.5,4.5);
   HistCol.AddObservable("LeadingJetPt",100,0,1000);
   HistCol.AddObservable("LeadingJetEta",90,-4.5,4.5);
+  HistCol.AddObservable("LeadingJetPhi",90,-4.5,4.5);
   HistCol.AddObservable("METPt",100,0,2000);
   HistCol.AddObservable("METPhi",64,-3.2,3.2);
+  HistCol.AddObservable("dPhiMetLep",90,-4.5,4.5);
   HistCol.AddObservable("mT",100,0,2000);
   HistCol.AddObservable("HT",200,0,2000);
   HistCol.AddObservable("WPrimeMassSimpleFL",100,0,2000);
@@ -114,10 +117,13 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = -1, int ifile = -
       //Start of customize part
       float LeptonPt = r->LeptonPt;
       float LeptonEta = r->LeptonEta;
+      float LeptonPhi = r->LeptonPhi;
       float LeadingJetPt = r->JetPt->at(0);
       float LeadingJetEta = r->JetEta->at(0);
+      float LeadingJetPhi = r->JetPhi->at(0);
       float METPt = r->METPt;
       float METPhi = r->METPhi;
+      float dPhiMetLep = r->dPhiMetLep;
       float mT = r->mT->at(0);
       float HT = 0;
       for (unsigned ij = 0; ij < r->JetPt->size(); ++ij) {
@@ -146,10 +152,13 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = -1, int ifile = -
       HistCol.SetCurrentFill(isampletype, iv, RegionIdentifier, EventWeight);
       HistCol.Fill("LeptonPt", LeptonPt);
       HistCol.Fill("LeptonEta",LeptonEta);
+      HistCol.Fill("LeptonPhi",LeptonPhi);
       HistCol.Fill("LeadingJetPt",LeadingJetPt);
       HistCol.Fill("LeadingJetEta",LeadingJetEta);
+      HistCol.Fill("LeadingJetPhi",LeadingJetPhi);
       HistCol.Fill("METPt",METPt);
       HistCol.Fill("METPhi",METPhi);
+      HistCol.Fill("dPhiMetLep",dPhiMetLep);
       HistCol.Fill("mT",mT);
       HistCol.Fill("HT",HT);
       HistCol.Fill("WPrimeMassSimpleFL",WPrimeMassSimpleFL);

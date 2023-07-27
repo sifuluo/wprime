@@ -4,8 +4,21 @@
 #include "TROOT.h"
 
 void DrawPlotValidation(int isampleyear = 3, int iobs = 0, bool DoMCReweight = false) {
-  vector<string> obs{"LeptonPt","LeptonEta","LeadingJetPt","LeadingJetEta","METPt","METPhi","mT","HT","WPrimeMassSimpleFL","WPrimeMassSimpleLL"};
-  vector<string> obstitle{"Lepton p_{T}","Lepton #eta","Leading Jet p_{T}","Leading Jet #eta","MET p_{T}","MET #phi","m_{T}","H_{T}","Simple m(W'_{FL})"," Simple m(W'_{LL})"};
+  vector<pair<string,string> > obs;
+  obs.push_back({"LeptonPt", "Lepton p_{T}"});
+  obs.push_back({"LeptonEta", "Lepton #eta"} );
+  obs.push_back({"LeptonPhi", "Lepton #phi"} );
+  obs.push_back({"LeadingJetPt", "Leading Jet p_{T}"} );
+  obs.push_back({"LeadingJetEta", "Leading Jet #eta"} );
+  obs.push_back({"LeadingJetPhi", "Leading Jet #phi"} );
+  obs.push_back({"METPt", "#slash{E}_{T} p_{T}"} );
+  obs.push_back({"METPhi", "#slash{E}_{T} #phi"} );
+  obs.push_back({"dPhiMetLep","#Delta#phi(#slash{E}_{T},l)"});
+  obs.push_back({"mT", "m_{T}"} );
+  obs.push_back({"HT", "H_{T}"} );
+  obs.push_back({"WPrimeMassSimpleFL", "Simple m(W'_{H})"} );
+  obs.push_back({"WPrimeMassSimpleLL", "Simple m(W'_{L})"} );
+
   string SampleYear = dlib.SampleYears[isampleyear];
   vector<string> SampleTypes = dlib.DatasetNames;
   rm.TightOnlyInit();
@@ -21,8 +34,8 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0, bool DoMCReweight = f
   // vector<string> StringRanges = rm.StringRanges;
   
   
-  string Observable = obs[iobs];
-  string ObservablesXTitle = obstitle[iobs];
+  string Observable = obs[iobs].first;
+  string ObservablesXTitle = obs[iobs].second;
 
   string HistFilePath = "outputs/";
   string HistFilePrefix = SampleYear + "_Validation";
@@ -49,7 +62,7 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0, bool DoMCReweight = f
   }
 
 
-  if (obs[iobs] == "WPrimeMassSimpleFL" && DoMCReweight) {
+  if (Observable == "WPrimeMassSimpleFL" && DoMCReweight) {
     gStyle->SetOptFit(0000);
     TString fsfname = StandardNames::HistFileName(HistFilePath, HistFilePrefix, "ReweightSF");
     TFile *fsf = new TFile(fsfname,"READ");
