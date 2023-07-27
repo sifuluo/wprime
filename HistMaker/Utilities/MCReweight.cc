@@ -144,7 +144,7 @@ public:
 
   int SourceRegionInt;
   string SourceRegion;
-  string Stringrange;
+  string StringRange;
   unsigned nbins;
   TH1F* DataHist = nullptr;
   vector<string> Variations;
@@ -168,6 +168,7 @@ public:
   }
 
   void ReadFromFile(TString fname) {
+    cout << "Calculating ttbar scale factor from file " << fname << endl;
     TFile* f = new TFile(fname);
     for (unsigned i = 0; i < rws.size(); ++i) {
       rws[i]->ReadFromFile(f, SourceObs);
@@ -181,7 +182,7 @@ public:
     TFile *f = new TFile(fname,"RECREATE");
     f->cd();
     for (unsigned i = 0; i < rws.size(); ++i) {
-      TH1F* h = rws[i]->SF1D->Clone();
+      TH1F* h = (TH1F*)rws[i]->SF1D->Clone();
     }
     f->Write();
     f->Save();
