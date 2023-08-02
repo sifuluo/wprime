@@ -24,7 +24,7 @@ struct PO : TLorentzVector {
     TString a = Form("X = %f, Y = %f, Z = %f, M = %f", X(), Y(), Z(), M());
     return a;
   }
-  TString PrintPtEtaPhiM() {
+  TString PrintPtEtaPhiM() const{
     TString a = Form("Pt = %f, Eta = %f, Phi = %f, M = %f", Pt(), Eta(), Phi(), M());
     return a;
   }

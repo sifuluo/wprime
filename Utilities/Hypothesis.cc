@@ -43,15 +43,15 @@ public:
   TLorentzVector HadT() {
     return Jets[0] + Jets[1] + Jets[2];
   }
-  TLorentzVector FLWP() {
+  TLorentzVector WPH() {
     return HadT() + Jets[4];
   }
-  TLorentzVector LLWP() {
+  TLorentzVector WPL() {
     return LepT() + Jets[4];
   }
   TLorentzVector WP() {
-    if (Type == 0) return FLWP();
-    else if (Type == 1) return LLWP();
+    if (Type == 0) return WPH();
+    else if (Type == 1) return WPL();
     return TLorentzVector();
   }
 
@@ -257,7 +257,10 @@ public:
       HadT = OTt;
       LepT = WPt;
     }
-    else cout << "GenHypothesis Type is set incorrectly to " << Type << endl;
+    else {
+      cout << "GenHypothesis Type is set incorrectly to " << Type << endl;
+      throw runtime_error("GenHypothesis Type not correctly set");
+    }
 
     for (unsigned i = 0; i < HadT.d.size(); ++i) {
       if (abspid(HadT.d[i]) == 5) OutPartDecay[2] = CompletePart(HadT.d[i]); // Hadb
@@ -310,33 +313,56 @@ public:
       // cout << Form("%i th part decay pid = %i, part pid = %i", i, pid(OutPartDecay[i].last), gp_.pdgId) <<endl;
       OutParts.push_back(gp->at(OutPartDecay[i].last));
     }
+    // cout << "OutPartDecay size = " << OutPartDecay.size() << ", OutParts size = " << OutParts.size() << endl;
   }
 
-  vector<Jet> MatchToJets(const vector<GenJet>& gjs, const vector<Jet>& js) {
-    vector<int> genout = vector<int> (5,-1);
-    vector<Jet> out = vector<Jet> (5,Jet());
+  vector<int> MatchToJets(const vector<GenJet>& gjs, const vector<Jet>& js) {
+    vector<int> genjout = vector<int> (5,-1);
+    vector<int> jout = vector<int> (5,-1);
+    if (OutParts.size() == 0) {
+      // cout << "OutPart size = " << OutParts.size() << endl;
+      jout.clear();
+      return jout;
+    }
     for (unsigned i = 0; i < 5; ++i) {
       float mindr = 0.4;
       for (unsigned j = 0; j < gjs.size(); ++j) {
         float dr = OutParts[i].DeltaR(gjs[j]);
         if (dr < mindr) {
           mindr = dr;
-          genout[i] = j;
+          genjout[i] = j;
         }
       }
-      if (genout[i] == -1) {
-        out.clear();
-        return out;
+      if (genjout[i] == -1) {
+        jout.clear();
+        return jout;
       }
-      if (abs(OutParts[i].pdgId) != abs(gjs[genout[i]].partonFlavour) && Debug) {
-        cout <<Form("GenPart %i (%i), Matched to GenJet of Flavour %i, dR = %f, pT ratio = %f", i, OutParts[i].pdgId, gjs[genout[i]].partonFlavour, OutParts[i].DeltaR(gjs[genout[i]]), OutParts[i].Pt() / gjs[genout[i]].Pt()) <<endl;
+      if (abs(OutParts[i].pdgId) != abs(gjs[genjout[i]].partonFlavour) && Debug) {
+        cout <<Form("GenPart %i (%i), Matched to GenJet of Flavour %i, dR = %f, pT ratio = %f", i, OutParts[i].pdgId, gjs[genjout[i]].partonFlavour, OutParts[i].DeltaR(gjs[genjout[i]]), OutParts[i].Pt() / gjs[genjout[i]].Pt()) <<endl;
       }
     }
 
     for (unsigned i = 0; i < 5; ++i) {
       for (unsigned j = 0; j < js.size(); ++j) {
-        if (js[j].genJetIdx == genout[i]) out[i] = js[j];
+        if (js[j].genJetIdx == genjout[i]) jout[i] = j;
       }
+    }
+    return jout;
+  }
+
+  vector<Jet> GetTruthJets(const vector<GenJet>& gjs, const vector<Jet>& js) {
+    vector<Jet> out = vector<Jet> (5,Jet());
+    vector<int> outindex = MatchToJets(gjs, js);
+    if (outindex.size() == 0) {
+      out.clear();
+      return out;
+    }
+    for (unsigned i = 0; i < 5; ++i) {
+      if (outindex[i] < 0) {
+        out.clear();
+        return out;
+      }
+      out[i] = js[outindex[i]];
     }
     return out;
   }

@@ -10,6 +10,8 @@
 
 #include "Utilities/NanoAODReader.cc"
 #include "Utilities/JetScale.cc"
+#include "Utilities/Permutations.cc"
+#include "Utilities/Hypothesis.cc"
 
 void CreateAuxHists(int sampleyear = 3, int sampletype = 2, int ifile = -1, string infile = "All") {
   dlib.AppendAndrewDatasets();
@@ -30,6 +32,11 @@ void CreateAuxHists(int sampleyear = 3, int sampletype = 2, int ifile = -1, stri
   NanoAODReader* r = new NanoAODReader(conf);
   bTagEff* bTE = new bTagEff(conf);
   JetScale *JS = new JetScale(conf);
+  GenHypothesis *gh = new GenHypothesis();
+  TString st = conf->SampleType;
+  if (st.Contains("FL")) gh->Type = 0;
+  else if (st.Contains("LL")) gh->Type = 1;
+  Permutations *PM = new Permutations(conf);
   r->SetbTag(bTE);
   
   Long64_t nentries = r->GetEntries();
@@ -55,11 +62,20 @@ void CreateAuxHists(int sampleyear = 3, int sampletype = 2, int ifile = -1, stri
         JS->FillJet(r->Jets[ij],r->GenJets[r->Jets[ij].genJetIdx]);
       }
     }
+    if (conf->Type != 2) continue;
+
+    if (nj != 5 && nj != 6) continue;
+    gh->SetGenParts(r->GenParts);
+    gh->FindGenHypothesis();
+    vector<Jet> HypoJets = gh->GetTruthJets(r->GenJets, r->Jets);
+    PM->FillPerm(HypoJets);
   }
   bTE->PostProcess();
   bTE->Clear();
   JS->PostProcess();
   JS->Clear();
+  PM->PostProcess();
+  PM->Clear();
   
   progress->JobEnd();
 

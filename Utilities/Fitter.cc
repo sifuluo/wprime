@@ -33,7 +33,7 @@ public:
   //   bTE = bt_;
   // }
 
-  void SetJets(vector<Jet> ajs, int iregion = 0) {
+  void SetJets(vector<Jet>& ajs, int iregion = 0) {
     AllJets.clear();
     AllbTags.clear();
     for (unsigned i = 0; i < ajs.size(); ++i) {
