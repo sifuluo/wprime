@@ -91,17 +91,17 @@ public:
     ScaleHists = jes;
   }
 
-  void FillJet(double eta, double pt, double gpt) {
+  void FillJet(double eta, double pt, double gpt, double ew = 1) {
     pair<int,int> ibins = FindBin(eta, pt);
     if (ibins.first == -1 || ibins.second == -1) {
       return;
     }
     double ratio = gpt / pt;
-    ScaleHists[ibins.first][ibins.second]->Fill(ratio);
+    ScaleHists[ibins.first][ibins.second]->Fill(ratio, ew);
   }
 
-  void FillJet(Jet& j, GenJet& g) {
-    FillJet(j.Eta(), j.Pt(), g.Pt());
+  void FillJet(Jet& j, GenJet& g, double ew = 1) {
+    FillJet(j.Eta(), j.Pt(), g.Pt(), ew);
   }
 
   void PostProcess() {

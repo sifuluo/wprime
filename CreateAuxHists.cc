@@ -27,39 +27,32 @@ void CreateAuxHists(int sampleyear = 3, int sampletype = 2, int ifile = -1, stri
   conf->AuxHistCreation = true;
   // conf->ProgressInterval = 1;
   conf->InputFile = infile;
-  conf->EntryMax = 2000000;
+  // conf->EntryMax = 2000000;
 
   NanoAODReader* r = new NanoAODReader(conf);
   bTagEff* bTE = new bTagEff(conf);
+  r->SetbTag(bTE);
   JetScale *JS = new JetScale(conf);
   GenHypothesis *gh = new GenHypothesis();
   TString st = conf->SampleType;
   if (st.Contains("FL")) gh->Type = 0;
   else if (st.Contains("LL")) gh->Type = 1;
   Permutations *PM = new Permutations(conf);
-  r->SetbTag(bTE);
   
   Long64_t nentries = r->GetEntries();
   if (conf->EntryMax > 0 && conf->EntryMax < nentries) nentries = conf->EntryMax;
   Progress* progress = new Progress(nentries,conf->ProgressInterval);
   for (unsigned ievt = 0; ievt < nentries; ++ievt) {
     progress->Print(ievt);
-    if (!(r->ReadEvent(ievt))) break;
+    if (!(r->ReadEvent(ievt))) continue;
     r->BranchSizeCheck();
     if (conf->EntryMax > 0 && ievt == conf->EntryMax) break;
     //check jet multiplicity
-    int nj = 0;
-    int nb = 0;
-    for(unsigned j = 0; j<r->Jets.size(); ++j){
-      if(r->Jets[j].Pt() < 30.) continue;
-      if(!r->Jets[j].PUIDpasses[conf->PUIDWP]) continue;//select working point for PUID to none by commenting this line out, loose by PUIDpasses 0, medium by 1, tight by 2
-      nj++;
-      if(r->Jets[j].bTagPasses[conf->bTagWP]) nb++;//select working point for b-tagging by bTagPasses[0] = loose, 1 medium and 2 tight
-    }
+    int nj = r->RegionAssociations.GetNJets(0); // Nominal region
+    int nb = r->RegionAssociations.GetbTags(0); // Nominal region
     for (unsigned ij = 0; ij < r->Jets.size(); ++ij) {
-      bTE->FillJet(r->Jets[ij]);
-      if (r->Jets[ij].genJetIdx != -1 && ((nj >= 5 && nb >= 2) || (nj >= 6 && nb >= 3))) { // Fitter takes SR inputs
-        JS->FillJet(r->Jets[ij],r->GenJets[r->Jets[ij].genJetIdx]);
+      if (r->Jets[ij].genJetIdx != -1 && ((nj >= 5 && nb >= 3) || (nj >= 6 && nb >= 3))) { // Fitter takes SR inputs
+        JS->FillJet(r->Jets[ij],r->GenJets[r->Jets[ij].genJetIdx], r->EventWeights[0].first);
       }
     }
     if (conf->Type != 2) continue;
@@ -68,10 +61,8 @@ void CreateAuxHists(int sampleyear = 3, int sampletype = 2, int ifile = -1, stri
     gh->SetGenParts(r->GenParts);
     gh->FindGenHypothesis();
     vector<Jet> HypoJets = gh->GetTruthJets(r->GenJets, r->Jets);
-    PM->FillPerm(HypoJets);
+    PM->FillPerm(HypoJets, r->EventWeights[0].first);
   }
-  bTE->PostProcess();
-  bTE->Clear();
   JS->PostProcess();
   JS->Clear();
   PM->PostProcess();

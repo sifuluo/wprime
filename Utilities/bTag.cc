@@ -40,19 +40,23 @@ public:
     bTagWP = conf->bTagWP;
     if (!conf->IsMC) return;
     GetFileName();
-    if (conf->AuxHistCreation) CreateEffFile();
+    if (conf->bTagEffHistCreation) CreateEffFile();
     else ReadEffFile();
   };
   
 
   void GetFileName() {
     string sampletype = conf->SampleType;
-    if ((!conf->AuxHistCreation && conf->UseMergedAuxHist) || !conf->IsMC) sampletype = "Merged";
+    if ((!conf->bTagEffHistCreation && conf->UseMergedAuxHist) || !conf->IsMC) sampletype = "Merged";
     string filename = "bTagEff_" + conf->SampleYear + "_" + sampletype + ".root";
+    if (conf->bTagEffHistCreation && conf->iFile >= 0) {
+      filename = "batch/bTagEff_" + conf->SampleYear + "_" + sampletype + Form("_%i",conf->iFile) + ".root";
+    }
     FileName = conf->AuxHistBasePath + filename;
   }
 
   void CreateEffFile() {
+    cout << "Creating bTagEff file to " << FileName << endl;
     f_eff = new TFile(FileName,"RECREATE");
     h_eff.resize(6);
     const double HistPtBins[12] = {20,30,50,70,100,140,200,300,600,1000,3000,10000}; // 12 digits, 11 bins
@@ -85,7 +89,7 @@ public:
   }
 
   void PostProcess() {
-    if (!conf->AuxHistCreation || !conf->IsMC) return;
+    if (!conf->bTagEffHistCreation || !conf->IsMC) return;
     f_eff->cd();
     for (unsigned i = 0; i < 3; ++i) {
       h_eff[i]->Add(h_eff[i+3]);
@@ -96,7 +100,7 @@ public:
   }
 
   void ReadEffFile() {
-    if (conf->AuxHistCreation || !conf->IsMC) return;
+    if (conf->bTagEffHistCreation || !conf->IsMC) return;
     f_eff = new TFile(FileName,"READ");
     cout << "Reading from bTagEff file " << FileName << endl;
     if (f_eff->IsZombie()) {
@@ -122,7 +126,7 @@ public:
 
   vector<float> GetEff(Jet& j) { // This function is intented to be used by NanoAODReader 
     vector<float> out = {0.9,0.7,0.5};
-    if (conf->AuxHistCreation || !conf->IsMC) {
+    if (conf->bTagEffHistCreation || !conf->IsMC) {
       return out;
     }
     for (unsigned iwp = 0; iwp < 3; ++iwp) {
