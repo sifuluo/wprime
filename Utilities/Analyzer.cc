@@ -82,11 +82,14 @@ public:
     return;
   }
 
-  bool ReadEvent(Long64_t ievt) {
+  int ReadEvent(Long64_t ievt) {
     if (conf->PrintProgress) progress->Print(ievt);
     iEvent = ievt;
-    r->ReadEvent(ievt);
-    return r->KeepEvent;
+    return r->ReadEvent(ievt);
+  }
+
+  bool WithinROI() {
+    return r->RegionAssociations.HasValidRegions(conf->AcceptedRegions);
   }
 
   void FillTree() {

@@ -117,12 +117,12 @@ public:
   }
 
   void FillBranchContent() {
-    cout << "Regions are: " << endl;
+    // cout << "Regions are: " << endl;
     for(unsigned i = 0; i < 9; ++i){
       RegionIdentifier[i] = r->RegionAssociations.Regions[i];
-      cout << RegionIdentifier[i] << ", ";
+      // cout << RegionIdentifier[i] << ", ";
     }
-    cout <<endl;
+    // cout <<endl;
 
     for(unsigned i = 0; i < r->EventWeights.size(); ++i){
       EventWeight[i] = r->EventWeights[i].first;
@@ -213,7 +213,8 @@ void Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
   ThisAnalysis *a = new ThisAnalysis(conf);
   a->SetOutput("Validation");
   for (Long64_t iEvent = 0; iEvent < a->GetEntryMax(); ++iEvent) {
-    if (!a->ReadEvent(iEvent)) continue;
+    if (a->ReadEvent(iEvent)) continue;
+    if (!a->WithinROI()) continue;
     // a->r->BranchSizeCheck();
     a->FillBranchContent();
     a->FillTree();

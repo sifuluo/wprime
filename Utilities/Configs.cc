@@ -77,7 +77,7 @@ struct Configs {
     for (int aa : a) for (int bb : b) for (int cc : c) for (int dd: d) if (dd <= cc) AcceptedRegions.push_back(aa * 1000 + bb * 100 + cc * 10 + dd);
   }
   bool IsAcceptedRegion(int r) {
-    
+    return true;
   }
 
   vector<string> DebugList; // Look for "conf->Debug()" in modules to see candidates.

@@ -121,10 +121,10 @@ public:
     PUIDWP = conf->PUIDWP;
 
     Long64_t evtcode = evts->LoadTree(i);
-    if (evtcode < 0) return 0;
+    if (evtcode < 0) return -1;
     iEvent = i;
     evts->GetEntry(i);
-    if(ReadMETFilterStatus() == false) return 1; //skip events not passing MET filter flags
+    if (ReadMETFilterStatus() == false) return -2; //skip events not passing MET filter flags
     run = evts->run;
     luminosityBlock = evts->luminosityBlock;
     if (!IsMC && (run < 0 || luminosityBlock < 0)) cout << "Run/LuminosityBlock number is negative" <<endl;
@@ -141,16 +141,10 @@ public:
     ReadLeptons();
     ReadMET();
     ReadVertices();
-    if (!PassedHEMCut) return 0;
+    if (!PassedHEMCut) return -3;
     RegionAssociations = RegionReader();
-    KeepEvent = RegionAssociations.HasValidRegions(conf->AcceptedRegions);
-    // if (KeepEvent) {
-    //   cout << "Event kept: ";
-    //   for (int jj : RegionAssociations.Regions) cout << jj << ", ";
-    //   cout <<endl;
-    // }
     EventWeights = CalcEventSFweights();
-    return 1;
+    return 0;
   }
 
   void ReadGenParts() {
@@ -971,7 +965,6 @@ public:
   // bool LumiStatus;
 
   RegionID RegionAssociations;
-  bool KeepEvent;
   vector<pair<double, string> > EventWeights;
 };
 
