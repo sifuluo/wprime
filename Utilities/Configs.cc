@@ -69,10 +69,16 @@ struct Configs {
   string AuxHistBasePath = UserSpecifics::EOSBasePath + "AuxHists/";
   bool UseMergedAuxHist = false;
 
-  // bool bTagEffCreation = false;
-  // bool JetScaleCreation = false;
-  // string bTagEffBasepath = UserSpecifics::EOSBasePath + "AuxHists/outputs/";
-  // string JetScaleBasepath = UserSpecifics::EOSBasePath + "AuxHists/outputs/";
+  bool RunFitter = false;
+
+  vector<int> AcceptedRegions = {};
+  void AcceptRegions(vector<int> a, vector<int> b, vector<int> c, vector<int> d) {
+    AcceptedRegions.clear();
+    for (int aa : a) for (int bb : b) for (int cc : c) for (int dd: d) if (dd <= cc) AcceptedRegions.push_back(aa * 1000 + bb * 100 + cc * 10 + dd);
+  }
+  bool IsAcceptedRegion(int r) {
+    
+  }
 
   vector<string> DebugList; // Look for "conf->Debug()" in modules to see candidates.
   bool Debug(string n) {

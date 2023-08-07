@@ -13,8 +13,8 @@
 #include "TError.h"
 
 #include "JetScale.cc"
-#include "bTag.cc"
 #include "Hypothesis.cc"
+#include "Permutations.cc"
 
 using namespace std;
 
@@ -29,9 +29,10 @@ public:
   void SetJetScale(JetScale* JS_) {
     JS = JS_;
   }
-  // void SetbTag(bTagEff* bt_) {
-  //   bTE = bt_;
-  // }
+
+  void SetPermutation(Permutations *p_) {
+    PermEval = p_;
+  }
 
   void SetJets(vector<Jet>& ajs, int iregion = 0) {
     AllJets.clear();
@@ -76,18 +77,6 @@ public:
     return (-1.0 * p + 1.);
   }
 
-  // static vector<TLorentzVector> ScaleJets(const double *scales) {
-  //   vector<TLorentzVector> sjs;
-  //   sjs.clear();
-  //   ScaledMET = MET;
-  //   for (unsigned i = 0; i < 4; ++i) {
-  //     TLorentzVector sj = Jets[i] * scales[i];
-  //     ScaledMET = ScaledMET + Jets[i] - sj;
-  //     sjs.push_back(sj);
-  //   }
-  //   return sjs;
-  // }
-
   static double ScaleLikelihood(const double *scales) {
     double p = 1.0;
     for (unsigned i = 0; i < 4; ++i) {
@@ -124,24 +113,28 @@ public:
     return Prob;
   }
 
-  void MakePermutations(unsigned nj = 0) {
+  void MakePermutations(unsigned nj = 0, unsigned target = 5) {
     Perms.clear();
     if (nj == 0) nj = AllJets.size();
-    for (unsigned i0 = 0; i0 < nj - 1; ++i0) {
-      for (unsigned i1 = i0 + 1; i1 < nj; ++i1) {
-        for (unsigned i2 = 0; i2 < nj; ++i2) {
-          if (i2 == i1 || i2 == i0) continue;
-          for (unsigned i3 = 0; i3 < nj; ++i3) {
-            if (i3 == i2 || i3 == i1 || i3 == i0) continue;
-            Perms.push_back({i0,i1,i2,i3});
-          }
-        }
+    vector<unsigned> ThisPerm = vector<unsigned>(target);
+    AppendPerm(ThisPerm, nj);
+  }
+
+  void AppendPerm(vector<unsigned> thisperm, unsigned nj, unsigned pos = 0) {
+    for (unsigned i = 0; i < nj; ++i) {
+      bool taken = false;
+      for (unsigned j = 0; j < pos; ++j) {
+        if (i == thisperm[j]) taken = true;
       }
+      if (taken) continue;
+      if (pos == 1 && i < thisperm[0]) continue;
+      thisperm[pos] = i;
+      if (pos == thisperm.size() - 1) Perms.push_back(thisperm);
+      else AppendPerm(thisperm, nj, pos + 1);
     }
   }
 
   double Optimize() {
-    if (AllJets.size() < 5) cout << "This event has only " << AllJets.size() << " jets, skipped" <<endl;
     if (AllJets.size() < 5) return -2;
     MakePermutations();
     double BestP = -1;
@@ -149,68 +142,77 @@ public:
     for (unsigned ip = 0; ip < Perms.size(); ++ip) {
       BaseHypo.ResetJets();
       BaseHypo.SetJetsFromPerm(AllJets, Perms[ip]);
-      // double PbTag = bTE->GetLikelihood(AllJets, AllbTags, Perms[ip]);
-      double PbTag = 1.0; // FIXME
-      double PPerm = MinimizeP();
-      double ThisP = PbTag * PPerm;
-      if (ThisP > BestP) {
+      double PFitter = MinimizeP();
+      if (PFitter < 0) continue;
+
+      double ThisScale[4];
+      for (unsigned isc = 0; isc < 4; ++isc) ThisScale[isc] = mini->X()[isc];
+      MinimizePFunc(ThisScale);
+      double massh = ScaledHypo.WPH().M();
+      double massl = ScaledHypo.WPL().M();
+      double PbTag_h = PermEval->GetbTagPermLikelihood(AllbTags, Perms[ip], massh, 0);
+      double PPtPerm_h = PermEval->GetPtPermLikelihood(AllJets, Perms[ip], massh, 0);
+      double PbTag_l = PermEval->GetbTagPermLikelihood(AllbTags, Perms[ip], massl, 1);
+      double PPtPerm_l = PermEval->GetPtPermLikelihood(AllJets, Perms[ip], massl, 1);
+      if (PbTag_h * PPtPerm_h > PbTag_l * PPtPerm_l) {
+        ScaledHypo.PbTag = PbTag_h;
+        ScaledHypo.PPtPerm = PPtPerm_h;
+        ScaledHypo.WPType = 0;
+      }
+      else {
+        ScaledHypo.PbTag = PbTag_l;
+        ScaledHypo.PPtPerm = PPtPerm_l;
+        ScaledHypo.WPType = 1;
+      }
+      // if (fabs((PFitter - ScaledHypo.GetPFitter()) / PFitter) > 0.01) cout << "Minimizer gave PFitter = " << PFitter << ", Reproduced PFitter = " << ScaledHypo.GetPFitter() << endl;
+      double ThisP = ScaledHypo.PbTag * ScaledHypo.PPtPerm * PFitter;
+      if (ThisP > 0 && ThisP > BestP) {
         BestP = ThisP;
         BestPerm = Perms[ip];
         for (unsigned isc = 0; isc < 4; ++isc) {
           BestScales[isc] = mini->X()[isc];
         }
+        BestHypo = ScaledHypo;
       }
     }
-    if (BestP > 0) {
-      BaseHypo.SetJetsFromPerm(AllJets, BestPerm);
-      MinimizePFunc(BestScales);
-      BestHypo = ScaledHypo;
-      // BestHypo.PbTag = bTE->GetLikelihood(AllJets, AllbTags, BestPerm);
-      BestHypo.PbTag = 1.0; // FIXME
-      // if (BestP > 1.0) {
-      //   cout << "Event BestP = " << BestP << ", Recalculated P = " << BestHypo.PbTag * BestHypo.GetPFitter() <<endl;
-      //   cout << Form("PScale = %f, PLep = %f, PHadW = %f, PHadT = %f, PbTag = %f", BestHypo.PScale, BestHypo.PLep, BestHypo.PHadW, BestHypo.PHadT, BestHypo.PbTag) <<endl;
-      // }
-    }
-    
     return BestP;
   }
 
-  TLorentzVector BestWPrime() {
-    if (BestP < 0) return TLorentzVector();
-    TLorentzVector hadt = BestHypo.HadT();
-    TLorentzVector lept = BestHypo.LepT();
-    vector<TLorentzVector> wpbcands;
-    for (unsigned i = 0; i < AllJets.size(); ++i) {
-      bool used = (i == BestPerm[0] || i == BestPerm[1] || i == BestPerm[2] || i == BestPerm[3]);
-      if (!used) {
-        wpbcands.push_back(AllJets[i]);
-      }
-    }
-    if (wpbcands.size() == 0) cout << "No W'b Candidate" <<endl;
-    double dphiwpbt = 0;
-    for (unsigned ib = 0; ib < wpbcands.size(); ++ib) {
-      float dphilep = fabs(wpbcands[ib].DeltaPhi(lept));
-      float dphihad = fabs(wpbcands[ib].DeltaPhi(hadt));
-      if (dphilep > dphihad && dphilep > dphiwpbt) {
-        BestHypo.SetWPb(wpbcands[ib]);
-        BestHypo.Type = 1;
-        dphiwpbt = dphilep;
-      }
-      else if (dphihad > dphilep && dphihad > dphiwpbt) {
-        BestHypo.SetWPb(wpbcands[ib]);
-        BestHypo.Type = 0;
-        dphiwpbt = dphihad;
-      }
-    }
-    return BestHypo.WP();
-  }
+  // TLorentzVector BestWPrime() {
+  //   if (BestP < 0) return TLorentzVector();
+  //   TLorentzVector hadt = BestHypo.HadT();
+  //   TLorentzVector lept = BestHypo.LepT();
+  //   vector<TLorentzVector> wpbcands;
+  //   for (unsigned i = 0; i < AllJets.size(); ++i) {
+  //     bool used = (i == BestPerm[0] || i == BestPerm[1] || i == BestPerm[2] || i == BestPerm[3]);
+  //     if (!used) {
+  //       wpbcands.push_back(AllJets[i]);
+  //     }
+  //   }
+  //   if (wpbcands.size() == 0) cout << "No W'b Candidate" <<endl;
+  //   double dphiwpbt = 0;
+  //   for (unsigned ib = 0; ib < wpbcands.size(); ++ib) {
+  //     float dphilep = fabs(wpbcands[ib].DeltaPhi(lept));
+  //     float dphihad = fabs(wpbcands[ib].DeltaPhi(hadt));
+  //     if (dphilep > dphihad && dphilep > dphiwpbt) {
+  //       BestHypo.SetWPb(wpbcands[ib]);
+  //       BestHypo.WPType = 1;
+  //       dphiwpbt = dphilep;
+  //     }
+  //     else if (dphihad > dphilep && dphihad > dphiwpbt) {
+  //       BestHypo.SetWPb(wpbcands[ib]);
+  //       BestHypo.WPType = 0;
+  //       dphiwpbt = dphihad;
+  //     }
+  //   }
+  //   return BestHypo.WP();
+  // }
 
   Configs* conf;
   bool PUIDWP;
   bool bTagWP;
 
-  // bTagEff* bTE;
+  Permutations* PermEval;
   vector<TLorentzVector> AllJets;
   vector<bool> AllbTags;
   vector< vector<unsigned> > Perms;
@@ -226,28 +228,15 @@ public:
   static ROOT::Math::Functor func;
 
   static JetScale* JS;
-  // static vector<TLorentzVector> Jets;
-  // static TLorentzVector Lep;
-  // static TLorentzVector MET;
   static Hypothesis BaseHypo;
-
-  // static vector<TLorentzVector> ScaledJets;
-  // static TLorentzVector ScaledMET;
-  // static TLorentzVector Neutrino;
   static Hypothesis ScaledHypo;
 };
 
 JetScale* Fitter::JS;
 ROOT::Math::Minimizer* Fitter::mini = ROOT::Math::Factory::CreateMinimizer("TMinuit");
 ROOT::Math::Functor Fitter::func;
-// vector<TLorentzVector> Fitter::Jets;
-// TLorentzVector Fitter::Lep;
-// TLorentzVector Fitter::MET;
+
 Hypothesis Fitter::BaseHypo;
 Hypothesis Fitter::ScaledHypo;
-
-// vector<TLorentzVector> Fitter::ScaledJets;
-// TLorentzVector Fitter::ScaledMET;
-// TLorentzVector Fitter::Neutrino;
 
 #endif

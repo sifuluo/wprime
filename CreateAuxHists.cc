@@ -35,8 +35,8 @@ void CreateAuxHists(int sampleyear = 3, int sampletype = 2, int ifile = -1, stri
   JetScale *JS = new JetScale(conf);
   GenHypothesis *gh = new GenHypothesis();
   TString st = conf->SampleType;
-  if (st.Contains("FL")) gh->Type = 0;
-  else if (st.Contains("LL")) gh->Type = 1;
+  if (st.Contains("FL")) gh->WPType = 0;
+  else if (st.Contains("LL")) gh->WPType = 1;
   Permutations *PM = new Permutations(conf);
   
   Long64_t nentries = r->GetEntries();

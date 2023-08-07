@@ -160,9 +160,12 @@ struct RegionID{
   int Regions[9] = {-1, -1, -1, -1, -1, -1, -1, -1, -1};
   //Central; Electron scale up, down; Electron resolution up, down; Jet Energy Scale up, down; Jet Energy resolution up, down
   string RegionNames[9] = {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown"};
-  bool KeepEvent() {
+  bool HasValidRegions(vector<int> ar = {}) {
     for (unsigned i = 0; i < RegionCount; ++i) {
-      if (Regions[i] > 0) return true;
+      if (ar.size() == 0 && Regions[i] > 0) return true;
+      for (unsigned j = 0; j < ar.size(); ++j) {
+        if (Regions[i] == ar[j]) return true;
+      }
     }
     return false;
   }

@@ -34,8 +34,8 @@ public:
             if (i3 == i2 || i3 == i1 || i3 == i0) continue;
             for (unsigned i4 = i3 + 1; i4 < 5; ++i4) { // LJ1 is always lower in pT than LJ0
               if (i4 == i2 || i4 == i1 || i4 == i0) continue;
-              int thisperm = i3 * 10000 + i4 * 1000 + i1 * 100 + i2 * 10 + i0 * 1; // (Order is LJ0, LJ1, Hadb, Lepb, WPb)
-              PtPerms.push_back(thisperm % 1000);
+              int ThisPerm = i3 * 10000 + i4 * 1000 + i1 * 100 + i2 * 10 + i0 * 1; // (Order is LJ0, LJ1, Hadb, Lepb, WPb)
+              PtPerms.push_back(ThisPerm % 1000);
             }
           }
         }
@@ -87,6 +87,10 @@ public:
   }
 
   int GetPtPermIndex(vector<Jet>& js) {
+    return GetPtPermIndex(GetPtPerm(js));
+  }
+
+  int GetPtPermIndex(vector<TLorentzVector>& js) {
     return GetPtPermIndex(GetPtPerm(js));
   }
 
@@ -149,8 +153,8 @@ public:
 
   void GetFileName() {
     string sampletype = conf->SampleType;
+    if (!conf->AuxHistCreation) sampletype = "Merged";
     string filename = "Permutations_" + conf->SampleYear + "_" + sampletype + ".root";
-    if (!conf->AuxHistCreation) filename = "Permutations_" + conf->SampleYear + "_Signal.root";
     FileName = conf->AuxHistBasePath + filename;
   }
 
@@ -202,22 +206,34 @@ public:
     }
   }
 
-  int LocateHist(double mass, int type) {
+  int LocateHist(double mass, int WPType) {
     int im = floor(mass / 100.);
     if ((mass - im * 100.) >= 50.) im++;
     if (im < 3) im = 3;
     if (im > 11) im = 11;
     im -= 3;
-    if (type == 1) im += 9; // "LL"
+    if (WPType == 1) im += 9; // "LL"
     return im; 
   }
 
-  double GetPtPermLikelihood(vector<Jet>& js, double mass, int type) {
-    return PtPermHists[LocateHist(mass, type)]->GetBinContent(PtPermHists[LocateHist(mass, type)]->FindBin(GetPtPermIndex(js)));
+  double GetPtPermLikelihood(vector<Jet>& js, double mass, int WPType) {
+    return PtPermHists[LocateHist(mass, WPType)]->GetBinContent(PtPermHists[LocateHist(mass, WPType)]->FindBin(GetPtPermIndex(js)));
   }
 
-  double GetbTagPermLikelihood(vector<Jet>& js, double mass, int type) {
-    return bTagPermHists[LocateHist(mass, type)]->GetBinContent(PtPermHists[LocateHist(mass, type)]->FindBin(GetbTagPermIndex(js)));
+  double GetPtPermLikelihood(vector<TLorentzVector>& AllJets, vector<unsigned> ThisPerm, double mass, int WPType) {
+    vector<TLorentzVector> js = vector<TLorentzVector>(ThisPerm.size());
+    for (unsigned i = 0; i < ThisPerm.size(); ++i) js[i] = AllJets[ThisPerm[i]];
+    return PtPermHists[LocateHist(mass, WPType)]->GetBinContent(PtPermHists[LocateHist(mass, WPType)]->FindBin(GetPtPermIndex(js)));
+  }
+
+  double GetbTagPermLikelihood(vector<Jet>& js, double mass, int WPType) {
+    return bTagPermHists[LocateHist(mass, WPType)]->GetBinContent(PtPermHists[LocateHist(mass, WPType)]->FindBin(GetbTagPermIndex(js)));
+  }
+  
+  double GetbTagPermLikelihood(vector<bool>& AllbTags, vector<unsigned> ThisPerm, double mass, int WPType) {
+    vector<bool> js = vector<bool> (ThisPerm.size());
+    for (unsigned i = 0; i < ThisPerm.size(); ++i) js[i] = AllbTags[ThisPerm[i]];
+    return bTagPermHists[LocateHist(mass, WPType)]->GetBinContent(PtPermHists[LocateHist(mass, WPType)]->FindBin(GetbTagPermIndex(js)));
   }
 
   Configs* conf;

@@ -50,8 +50,8 @@ public:
     return LepT() + Jets[4];
   }
   TLorentzVector WP() {
-    if (Type == 0) return WPH();
-    else if (Type == 1) return WPL();
+    if (WPType == 0) return WPH();
+    else if (WPType == 1) return WPL();
     return TLorentzVector();
   }
 
@@ -59,8 +59,8 @@ public:
     return PScale * PLep * PHadW * PHadT;
   }
 
-  int Type; // 0 for FL, 1 for LL;
-  double PbTag, PScale, PLep, PHadW, PHadT;
+  int WPType = -1; // 0 for FL, 1 for LL;
+  double PbTag, PPtPerm, PScale, PLep, PHadW, PHadT;
   vector<TLorentzVector> Jets;
   TLorentzVector Lep, MET, Neu;
 };
@@ -105,7 +105,7 @@ struct PartDecay{
 class GenHypothesis{
 public:
   GenHypothesis(int t_ = -1) {
-    Type = t_;
+    WPType = t_;
   };
 
   void Reset() {
@@ -249,17 +249,17 @@ public:
       OTt.Print("OTt");
     }
 
-    if (Type == 0) {
+    if (WPType == 0) {
       HadT = WPt;
       LepT = OTt;
     }
-    else if (Type == 1){
+    else if (WPType == 1){
       HadT = OTt;
       LepT = WPt;
     }
     else {
-      cout << "GenHypothesis Type is set incorrectly to " << Type << endl;
-      throw runtime_error("GenHypothesis Type not correctly set");
+      cout << "GenHypothesis WPType is set incorrectly to " << WPType << endl;
+      throw runtime_error("GenHypothesis WPType not correctly set");
     }
 
     for (unsigned i = 0; i < HadT.d.size(); ++i) {
@@ -371,7 +371,7 @@ public:
 
   bool Debug = false;
   const vector<GenPart>* gp;
-  int Type; // 0: FL, 1: LL
+  int WPType; // 0: FL, 1: LL
   vector<PartDecay> WPs, Ts, Ws;
   vector<PartDecay> HadTDecay, LepTDecay;
   PartDecay WP, HadT, HadW, LepT, LepW, WPt, OTt;

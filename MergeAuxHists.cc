@@ -23,7 +23,7 @@ void MergeAuxHists(int isampleyear = 3) {
   vector<TFile*> JSInFiles;
   vector<double> JSNorms;
   for (unsigned ist = 0; ist < dlib.DatasetNames.size(); ++ist) {
-    if (ist < 2) continue; // Data not considered
+    if (dlib.GetType(dlib.DatasetNames[ist]) < 2) continue; // Data and BG not considered
     TString JSInFileName = conf->AuxHistBasePath + "Scale_" + conf->SampleYear + "_" + dlib.DatasetNames[ist] + ".root";
     TFile *infile = new TFile(JSInFileName, "READ");
     if (infile->IsZombie() || !infile || infile->GetListOfKeys()->IsEmpty()) continue;
@@ -92,7 +92,7 @@ void MergeAuxHists(int isampleyear = 3) {
       TH2F* h1 = (TH2F*) bTEInFiles[ist]->Get(bTEsn[ih]);
       h1->Scale(bTENorms[ist]);
       if (ist == 0) {
-        bTEHists[ih] = h1->Clone();
+        bTEHists[ih] = (TH2F*) h1->Clone();
         bTEHists[ih]->SetDirectory(fbTE);
       }
       else {
@@ -101,7 +101,7 @@ void MergeAuxHists(int isampleyear = 3) {
     }
   }
   for (unsigned ih = 0; ih < 3; ++ih) {
-    bTEHists[ih] = bTEHists[ih + 3]->Clone();
+    bTEHists[ih] = (TH2F*) bTEHists[ih + 3]->Clone();
     bTEHists[ih]->Divide(bTEHists[6]);
     bTEHists[ih]->SetName(bTEsn[ih]);
     bTEHists[ih]->SetTitle(bTEsn[ih]);

@@ -143,7 +143,12 @@ public:
     ReadVertices();
     if (!PassedHEMCut) return 0;
     RegionAssociations = RegionReader();
-    KeepEvent = RegionAssociations.KeepEvent();
+    KeepEvent = RegionAssociations.HasValidRegions(conf->AcceptedRegions);
+    // if (KeepEvent) {
+    //   cout << "Event kept: ";
+    //   for (int jj : RegionAssociations.Regions) cout << jj << ", ";
+    //   cout <<endl;
+    // }
     EventWeights = CalcEventSFweights();
     return 1;
   }

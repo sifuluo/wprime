@@ -49,7 +49,8 @@ public:
   float nTrueInt;
   int nPV, nPVGood;
 
-  vector<float> *WPrimeMassSimpleFL, *WPrimeMassSimpleLL;
+  vector<int> *WPType;
+  vector<float> *WPrimeMassSimpleFL, *WPrimeMassSimpleLL, *Likelihood, *WPrimeMass;
 
   void BookBranches() {
     t->Branch("RegionIdentifier", &RegionIdentifier);
@@ -98,6 +99,16 @@ public:
     t->Branch("WPrimeMassSimpleFL", &WPrimeMassSimpleFL);
     t->Branch("WPrimeMassSimpleLL", &WPrimeMassSimpleLL);
 
+    WPrimeMass = new vector<float>; // central , EleSU, EleSD, EleRU, EleRD, JetSU, JetSD, JetRU, JetRD
+    Likelihood = new vector<float>; // central , EleSU, EleSD, EleRU, EleRD, JetSU, JetSD, JetRU, JetRD
+    WPType = new vector<int>; // central , EleSU, EleSD, EleRU, EleRD, JetSU, JetSD, JetRU, JetRD
+    WPrimeMass->resize(9);
+    Likelihood->resize(9);
+    WPType->resize(9);
+    t->Branch("WPrimeMass", &WPrimeMass);
+    t->Branch("Likelihood", &Likelihood);
+    t->Branch("WPType", &WPType);
+
     t->Branch("nPU", &nPU);
     t->Branch("nTrueInt", &nTrueInt);
 
@@ -106,9 +117,12 @@ public:
   }
 
   void FillBranchContent() {
+    cout << "Regions are: " << endl;
     for(unsigned i = 0; i < 9; ++i){
       RegionIdentifier[i] = r->RegionAssociations.Regions[i];
+      cout << RegionIdentifier[i] << ", ";
     }
+    cout <<endl;
 
     for(unsigned i = 0; i < r->EventWeights.size(); ++i){
       EventWeight[i] = r->EventWeights[i].first;
@@ -157,7 +171,21 @@ public:
       TLorentzVector vWprimeLL = r->Jets[0].GetV(i) + r->Jets[1].GetV(i) + r->TheLepton.GetV(i) + r->Met.GetV(i);
       WPrimeMassSimpleFL->at(i) = vWprimeFL.M();
       WPrimeMassSimpleLL->at(i) = vWprimeLL.M();
+      if (i == 0) {
+        SetEventFitter(i);
+        Likelihood->at(i) = Ftr->Optimize();
+        if (Likelihood->at(i) < 0) continue;
+        WPType->at(i) = Ftr->BestHypo.WPType;
+        WPrimeMass->at(i) = Ftr->BestHypo.WP().M();
+      }
+      else {
+        Likelihood->at(i) = -1;
+        WPType->at(i) = -1;
+        WPrimeMass->at(i) = -1;
+      }
     }
+
+    // cout << "2" <<endl;
 
     nPU = 0;
     nTrueInt = 0;
@@ -175,8 +203,11 @@ void Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
   conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/SingleMuon/2018/2B07B4C0-852B-9B4F-83FA-CA6B047542D1.root";
   conf->LocalOutput = false;
   conf->PrintProgress = true;
+  conf->RunFitter = true;
+  conf->UseMergedAuxHist = true;
+  conf->AcceptRegions({1,2},{1},{5,6},{1,2,3,4,5,6});
   // conf->DebugList = {"LeptonRegion"};
-  // conf->ProgressInterval = 2000;
+  conf->ProgressInterval = 1;
   // conf->EntryMax = 20000;
 
   ThisAnalysis *a = new ThisAnalysis(conf);
