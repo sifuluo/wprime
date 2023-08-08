@@ -5,6 +5,8 @@
 
 using namespace std;
 
+// General Hypothesis information holder
+// As usual the Jets are ordered as LJ0, LJ1, Hadb, Lepb, WPb
 class Hypothesis {
 public:
   Hypothesis() {
@@ -65,6 +67,9 @@ public:
   TLorentzVector Lep, MET, Neu;
 };
 
+
+
+// Gen Particles and Gen Hypothesis only
 struct PartDecay{
   int first = -1;
   int last = -1;

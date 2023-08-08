@@ -110,7 +110,7 @@ public:
     ScaleFile->Save();
   }
 
-  void ReadScaleHists() {
+  void ReadScaleHists() {// Read the jet response file. Then read and fit the jet response histos.
     ScaleFile = new TFile(FileName, "READ");
     // vector< vector<TH1F*> > jes;
     vector< vector<TF1*> > fjes;
@@ -149,14 +149,14 @@ public:
     cout << "Function of etalow = " << etabins[1] << ", ptlow = " << ptbins[1][2] << ", mean = " << ScaleFuncs[1][2]->GetParameter(1) <<endl;
   }
 
-  pair<double, double> ScaleLimits(double eta, double pt) {
+  pair<double, double> ScaleLimits(double eta, double pt) { // Get the variation limit as +- 2 sigma from the mean
     pair<int,int> ibins = FindBin(eta, pt);
     double mean = ScaleFuncs[ibins.first][ibins.second]->GetParameter(1);
     double sigma = ScaleFuncs[ibins.first][ibins.second]->GetParameter(2);
     return pair<double,double>(mean - 2*sigma, mean + 2*sigma);
   }
 
-  double JetScaleLikelihood(double eta, double pt, double scale) {
+  double JetScaleLikelihood(double eta, double pt, double scale) { // Get the likelihood of variating  a jet in a eta, pt region.
     pair<int,int> ibins = FindBin(eta,pt);
     if (ibins.first == -1 || ibins.second == -1) return 0;
     double n = ScaleFuncs[ibins.first][ibins.second]->Eval(scale);
@@ -165,6 +165,7 @@ public:
     return p;
   }
 
+  // Evaluating the likelihood of mass of a W / t
   double EvalW(TLorentzVector w) {
     return WMassDis->Eval(w.M());
   }
@@ -173,6 +174,7 @@ public:
   }
 
   double SolveNeutrinos(TLorentzVector LVLep, TLorentzVector ScaledMET, vector<TLorentzVector>& LVNeu_, bool debug_ = false) {
+    // Solve for the neutrino with the lepton and met provided
     bool debug = debug_;
     LVNeu_.clear();
     const double LepWMass = 80.4;
@@ -197,7 +199,7 @@ public:
       cout << Form("radical = (tar4 - v1 + v2)*te2, here tar4 = %f, v1 = %f, v2 = %f, te2 = %f", tar4, v1, v2, te2)<<endl;
     }
 
-    if (radical < 0) {
+    if (radical < 0) { // No neutrino and be achieved, return negative value
       LVNeu_.push_back(TLorentzVector());
       LVNeu_.push_back(TLorentzVector());
       return radical;
@@ -215,7 +217,7 @@ public:
     LVNeu2.SetXYZT(xn,yn,zn2,tn2);
     LVNeu_.push_back(LVNeu1);
     LVNeu_.push_back(LVNeu2);
-    return 1;
+    return 1; // Neutrino solutions are achieved, return 1
   }
 
   void SetUpMassFunctions() {
