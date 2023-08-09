@@ -151,6 +151,29 @@ public:
       else AppendPerm(thisperm, nj, pos + 1); // Moving on to next digit position of a permutation
     }
   }
+
+  // Check if the reconstructed W and tops can have a likelihood at least = MinPMass. To avoid redundant fitting on insane permutations.
+  bool PermutationPreFitCheck() {
+    double MinPMass = 0.01;
+    double lowlimit[4];
+    double uplimit[4];
+    for (unsigned i = 0; i < 4; ++i) {
+      pair<double,double> limits = JS->ScaleLimits(BaseHypo.Jets[i].Eta(),BaseHypo.Jets[i].Pt());
+      lowlimit[i] = limits.first;
+      uplimit[i] = limits.second;
+    }
+    Hypothesis LowScaledHypo = BaseHypo;
+    LowScaledHypo.ScaleJets(lowlimit);
+    Hypothesis HighScaledHypo = BaseHypo;
+    HighScaledHypo.ScaleJets(uplimit);
+    if (max(max(HighScaledHypo.HadW().M(), LowScaledHypo.HadW().M()), BaseHypo.HadW().M()) < JS->GetWMassLowLimits(MinPMass)) return false;
+    if (min(min(HighScaledHypo.HadW().M(), LowScaledHypo.HadW().M()), BaseHypo.HadW().M()) > JS->GetWMassUpLimits(MinPMass)) return false;
+    if (max(max(HighScaledHypo.HadT().M(), LowScaledHypo.HadT().M()), BaseHypo.HadT().M()) < JS->GetTopMassLowLimits(MinPMass)) return false;
+    if (min(min(HighScaledHypo.HadT().M(), LowScaledHypo.HadT().M()), BaseHypo.HadT().M()) > JS->GetTopMassUpLimits(MinPMass)) return false;
+    if (max(max(HighScaledHypo.LepT().M(), LowScaledHypo.LepT().M()), BaseHypo.LepT().M()) < JS->GetTopMassLowLimits(MinPMass)) return false;
+    if (min(min(HighScaledHypo.LepT().M(), LowScaledHypo.LepT().M()), BaseHypo.LepT().M()) > JS->GetTopMassUpLimits(MinPMass)) return false;
+    return true;
+  }
   
   // Optimize event over all permutations
   double Optimize() {
@@ -166,6 +189,7 @@ public:
       FitRecords.clear();
       BaseHypo.ResetJets();
       BaseHypo.SetJetsFromPerm(AllJets, Perms[ip]);
+      if (!PermutationPreFitCheck()) continue;
       double PFitter = MinimizeP();
       if (PFitter < 0) continue;
 

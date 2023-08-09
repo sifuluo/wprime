@@ -221,12 +221,25 @@ public:
   }
 
   void SetUpMassFunctions() {
-    TopMassDis = new TF1("TBW","[0]*TMath::BreitWigner(x,[1],[2])",0.0,400.0);
     WMassDis = new TF1("WBW","[0]*TMath::BreitWigner(x,[1],[2])",0.0,200.0);
-    TopMassDis->SetParameters(100.,171.186,26.76);
+    TopMassDis = new TF1("TBW","[0]*TMath::BreitWigner(x,[1],[2])",0.0,400.0);
     WMassDis->SetParameters(100.,80.385,2.738);
-    TopMassDis->SetParameter(0,100./TopMassDis->Eval(171.186)); // normalized it to peak at y = 1;
+    TopMassDis->SetParameters(100.,171.186,26.76);
     WMassDis->SetParameter(0,100./WMassDis->Eval(80.385)); // normalized it to peak at y = 1;
+    TopMassDis->SetParameter(0,100./TopMassDis->Eval(171.186)); // normalized it to peak at y = 1;
+  }
+
+  double GetWMassUpLimits(double minp = 0.01) {
+    return WMassDis->GetX(minp, 80.385, 200);
+  }
+  double GetWMassLowLimits(double minp = 0.01) {
+    return WMassDis->GetX(minp, 0, 80.385);
+  }
+  double GetTopMassUpLimits(double minp = 0.01) {
+    return TopMassDis->GetX(minp, 171.186, 400);
+  }
+  double GetTopMassLowLimits(double minp = 0.01) {
+    return TopMassDis->GetX(minp, 0, 171.186);
   }
 
   void Clear() {
@@ -238,8 +251,8 @@ public:
   TFile* ScaleFile;
   vector< vector<TH1F*> > ScaleHists;
   vector< vector<TF1*> > ScaleFuncs;
-  TF1* TopMassDis = new TF1("TBW","[0]*TMath::BreitWigner(x,[1],[2])",0.0,300.0);
-  TF1* WMassDis = new TF1("WBW","[0]*TMath::BreitWigner(x,[1],[2])",0.0,200.0);
+  TF1* TopMassDis;
+  TF1* WMassDis;
 
 };
 
