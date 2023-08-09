@@ -846,6 +846,7 @@ public:
       // Before giving a general definition of all percentiles, we will define the 80th percentile of a collection of values to be the smallest value in the collection that is at least as large as 80% of all of the values.
       // The lowest element is only the 0th percentile, and cannot be anything else.
       vector<float> lhepdfws;
+      lhepdfws.clear();
       for (unsigned i = 0; i < evts->nLHEPdfWeight; ++i) {
         lhepdfws.push_back(evts->LHEPdfWeight[i]);
       }

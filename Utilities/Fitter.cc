@@ -81,6 +81,8 @@ public:
     // GetPFitter = PScale * PLep * PHadW * PHadT;
     double p = ScaledHypo.GetPFitter();
     if (p < 0 || p > 1.) cout << Form("PScale = %f, PHadW = %f, PHadT = %f, PLep = %f", ScaledHypo.PScale, ScaledHypo.PHadW, ScaledHypo.PHadT, ScaledHypo.PLep) << endl;
+
+    FitRecords.push_back(ScaledHypo.MakeRecord());  // Debug tool
     // return 1-p. So minimizer will try to get higher p, while the return value is expected to be > 0
     return (-1.0 * p + 1.);
   }
@@ -113,6 +115,7 @@ public:
       // The variating range is limited to +- 2 sigma of the fitted jet response distribution
       pair<double,double> limits = JS->ScaleLimits(BaseHypo.Jets[i].Eta(),BaseHypo.Jets[i].Pt());
       mini->SetLimitedVariable(i,Form("Scale_%i",i),1.0,0.01,limits.first,limits.second);
+      // mini->SetLimitedVariable(i,Form("Scale_%i",i),1.0,0.01,0.99,1.01);
     }
     mini->Minimize();
 
@@ -155,7 +158,12 @@ public:
     MakePermutations();
     double BestP = -1;
     BestPerm = {0,0,0,0};
+    // Debug block
+    double BestPFitter = 0;
+    vector<FitRecord> BestFitRecords;
+    // End of Debug Block
     for (unsigned ip = 0; ip < Perms.size(); ++ip) { // Loop over permutations
+      FitRecords.clear();
       BaseHypo.ResetJets();
       BaseHypo.SetJetsFromPerm(AllJets, Perms[ip]);
       double PFitter = MinimizeP();
@@ -182,50 +190,26 @@ public:
         ScaledHypo.PPtPerm = PPtPerm_l;
         ScaledHypo.WPType = 1;
       }
-      // FIXME PFitter gave different min value from the value calculated by the same functor with the scale set given by the fitter.
-      // if (fabs((PFitter - ScaledHypo.GetPFitter()) / PFitter) > 0.01) cout << "Minimizer gave PFitter = " << PFitter << ", Reproduced PFitter = " << ScaledHypo.GetPFitter() << endl;
+      
       double ThisP = ScaledHypo.PbTag * ScaledHypo.PPtPerm * PFitter;
       if (ThisP > 0 && ThisP > BestP) {
         BestP = ThisP;
         BestPerm = Perms[ip];
-        for (unsigned isc = 0; isc < 4; ++isc) {
-          BestScales[isc] = mini->X()[isc];
-        }
         BestHypo = ScaledHypo;
+        //Debug block
+        BestPFitter = PFitter;
+        BestFitRecords = FitRecords;
       }
+    }
+    // FIXME PFitter gave different min value from the value calculated by the same functor with the scale set given by the fitter.
+    if (BestP > 0 && fabs((BestPFitter - BestHypo.GetPFitter()) / BestPFitter) > 0.01) {
+      cout << "Last few trials of fitter: " << endl;
+      for (unsigned i = BestFitRecords.size() - 5; i < BestFitRecords.size(); ++i) BestFitRecords[i].Print("    Trials: ");
+      BestHypo.MakeRecord().Print("Reproduced: ");
+      cout << "Minimizer gave PFitter = " << BestPFitter << ", Reproduced PFitter = " << BestHypo.GetPFitter() << endl;
     }
     return BestP;
   }
-
-  // TLorentzVector BestWPrime() {
-  //   if (BestP < 0) return TLorentzVector();
-  //   TLorentzVector hadt = BestHypo.HadT();
-  //   TLorentzVector lept = BestHypo.LepT();
-  //   vector<TLorentzVector> wpbcands;
-  //   for (unsigned i = 0; i < AllJets.size(); ++i) {
-  //     bool used = (i == BestPerm[0] || i == BestPerm[1] || i == BestPerm[2] || i == BestPerm[3]);
-  //     if (!used) {
-  //       wpbcands.push_back(AllJets[i]);
-  //     }
-  //   }
-  //   if (wpbcands.size() == 0) cout << "No W'b Candidate" <<endl;
-  //   double dphiwpbt = 0;
-  //   for (unsigned ib = 0; ib < wpbcands.size(); ++ib) {
-  //     float dphilep = fabs(wpbcands[ib].DeltaPhi(lept));
-  //     float dphihad = fabs(wpbcands[ib].DeltaPhi(hadt));
-  //     if (dphilep > dphihad && dphilep > dphiwpbt) {
-  //       BestHypo.SetWPb(wpbcands[ib]);
-  //       BestHypo.WPType = 1;
-  //       dphiwpbt = dphilep;
-  //     }
-  //     else if (dphihad > dphilep && dphihad > dphiwpbt) {
-  //       BestHypo.SetWPb(wpbcands[ib]);
-  //       BestHypo.WPType = 0;
-  //       dphiwpbt = dphihad;
-  //     }
-  //   }
-  //   return BestHypo.WP();
-  // }
 
   Configs* conf;
   bool PUIDWP;
@@ -249,6 +233,8 @@ public:
   static JetScale* JS;
   static Hypothesis BaseHypo;
   static Hypothesis ScaledHypo;
+
+  static vector<FitRecord> FitRecords;
 };
 
 JetScale* Fitter::JS;
@@ -257,5 +243,7 @@ ROOT::Math::Functor Fitter::func;
 
 Hypothesis Fitter::BaseHypo;
 Hypothesis Fitter::ScaledHypo;
+
+vector<FitRecord> Fitter::FitRecords;
 
 #endif

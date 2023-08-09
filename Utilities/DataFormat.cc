@@ -184,6 +184,19 @@ struct RegionID{
 };
 //region identifier key: 1xyz muon region, 2xyz electron region; x=1 primary, x=2 loose; y=jet multiplicity; z=b-tag multiplicity
 
+struct FitRecord{
+  vector<double> Scales = {1,1,1,1}; // LJ0, LJ1, Hadb, Lepb
+  vector<double> M = {0,0,0}; // HadW, HadT, LepT
+  vector<double> P = {1,1,1,1,1}; // HadW, HadT, LepT, Scale, Total
+  void Print(TString pre1, TString pre2 = "") {
+    if (pre2 == "") pre2 = pre1;
+    cout << pre1;
+    cout << Form("Scales: %f, %f, %f, %f, PScale = %f, Final P = %f", Scales[0], Scales[1], Scales[2], Scales[3], P[3], P[4]) << endl;
+    cout << pre2;
+    cout << Form("Mass(Prob) -- HadW: %f(%f), HadT: %f(%f), LepT: %f(%f)", M[0], P[0], M[1], P[1], M[2], P[2]) << endl;
+  }
+};
+
 namespace StandardNames {
   TString HistName(string sampletype, string observable, string regionrange, string variation) { // eg. ttbar_WPrimeMassFL_1152_PUIDWup
     TString histname = "=SampleType=_=Observable=_=RegionRange=_=Variation=";

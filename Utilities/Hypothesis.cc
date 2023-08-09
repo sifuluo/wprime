@@ -30,7 +30,9 @@ public:
   }
 
   void ScaleJets(const double *scales) {
+    Scales = vector<double>(4,1.);
     for (unsigned i = 0; i < 4; ++i) {
+      Scales[i] = scales[i];
       MET = MET + Jets[i] - Jets[i] * scales[i];
       Jets[i] = Jets[i] * scales[i];
     }
@@ -61,10 +63,19 @@ public:
     return PScale * PLep * PHadW * PHadT;
   }
 
+  FitRecord MakeRecord() {
+    FitRecord fr;
+    fr.Scales = Scales;
+    fr.M = {HadW().M(), HadT().M(), LepT().M()};
+    fr.P = {PHadW, PHadT, PLep, PScale, GetPFitter()};
+    return fr;
+  }
+
   int WPType = -1; // 0 for FL, 1 for LL;
   double PbTag, PPtPerm, PScale, PLep, PHadW, PHadT;
   vector<TLorentzVector> Jets;
   TLorentzVector Lep, MET, Neu;
+  vector<double> Scales;
 };
 
 
