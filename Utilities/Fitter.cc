@@ -166,12 +166,12 @@ public:
     LowScaledHypo.ScaleJets(lowlimit);
     Hypothesis HighScaledHypo = BaseHypo;
     HighScaledHypo.ScaleJets(uplimit);
-    if (max(max(HighScaledHypo.HadW().M(), LowScaledHypo.HadW().M()), BaseHypo.HadW().M()) < JS->GetWMassLowLimits(MinPMass)) return false;
-    if (min(min(HighScaledHypo.HadW().M(), LowScaledHypo.HadW().M()), BaseHypo.HadW().M()) > JS->GetWMassUpLimits(MinPMass)) return false;
-    if (max(max(HighScaledHypo.HadT().M(), LowScaledHypo.HadT().M()), BaseHypo.HadT().M()) < JS->GetTopMassLowLimits(MinPMass)) return false;
-    if (min(min(HighScaledHypo.HadT().M(), LowScaledHypo.HadT().M()), BaseHypo.HadT().M()) > JS->GetTopMassUpLimits(MinPMass)) return false;
-    if (max(max(HighScaledHypo.LepT().M(), LowScaledHypo.LepT().M()), BaseHypo.LepT().M()) < JS->GetTopMassLowLimits(MinPMass)) return false;
-    if (min(min(HighScaledHypo.LepT().M(), LowScaledHypo.LepT().M()), BaseHypo.LepT().M()) > JS->GetTopMassUpLimits(MinPMass)) return false;
+    if (max(max(HighScaledHypo.HadW().M(), LowScaledHypo.HadW().M()), BaseHypo.HadW().M()) < JS->WMassMin) return false;
+    if (min(min(HighScaledHypo.HadW().M(), LowScaledHypo.HadW().M()), BaseHypo.HadW().M()) > JS->WMassMax) return false;
+    if (max(max(HighScaledHypo.HadT().M(), LowScaledHypo.HadT().M()), BaseHypo.HadT().M()) < JS->TopMassMin) return false;
+    if (min(min(HighScaledHypo.HadT().M(), LowScaledHypo.HadT().M()), BaseHypo.HadT().M()) > JS->TopMassMax) return false;
+    if (max(max(HighScaledHypo.LepT().M(), LowScaledHypo.LepT().M()), BaseHypo.LepT().M()) < JS->TopMassMin) return false;
+    if (min(min(HighScaledHypo.LepT().M(), LowScaledHypo.LepT().M()), BaseHypo.LepT().M()) > JS->TopMassMax) return false;
     return true;
   }
   

@@ -70,6 +70,7 @@ struct Configs {
   bool UseMergedAuxHist = false;
 
   bool RunFitter = false;
+  double JetScaleMinPMass = 0.01;
 
   vector<int> AcceptedRegions = {};
   void AcceptRegions(vector<int> a, vector<int> b, vector<int> c, vector<int> d) {
@@ -78,6 +79,26 @@ struct Configs {
   }
   bool IsAcceptedRegion(int r) {
     return true;
+  }
+  
+  bool FirstRun = true;
+  bool NeedRerun = false;
+  bool RerunList(vector<int>& l) {
+    for (unsigned i = 0; i < l.size(); ++i) if (l[i] == iFile) {
+      NeedRerun = true;
+      return true;
+    }
+    return false;
+  }
+  bool RerunList(int y, int st, vector<int> l) {
+    FirstRun = false;
+    if (iSampleYear == y && iSampleType == st) return RerunList(l);
+    return false;
+  }
+  bool RerunList(string y, string st, vector<int> l) {
+    FirstRun = false;
+    if (SampleYear == y && SampleType == st) return RerunList(l);
+    return false;
   }
 
   vector<string> DebugList; // Look for "conf->Debug()" in modules to see candidates.

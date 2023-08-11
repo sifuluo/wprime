@@ -227,19 +227,10 @@ public:
     TopMassDis->SetParameters(100.,171.186,26.76);
     WMassDis->SetParameter(0,100./WMassDis->Eval(80.385)); // normalized it to peak at y = 1;
     TopMassDis->SetParameter(0,100./TopMassDis->Eval(171.186)); // normalized it to peak at y = 1;
-  }
-
-  double GetWMassUpLimits(double minp = 0.01) {
-    return WMassDis->GetX(minp, 80.385, 200);
-  }
-  double GetWMassLowLimits(double minp = 0.01) {
-    return WMassDis->GetX(minp, 0, 80.385);
-  }
-  double GetTopMassUpLimits(double minp = 0.01) {
-    return TopMassDis->GetX(minp, 171.186, 400);
-  }
-  double GetTopMassLowLimits(double minp = 0.01) {
-    return TopMassDis->GetX(minp, 0, 171.186);
+    WMassMin = WMassDis->GetX(conf->JetScaleMinPMass, 0, 80.385);
+    WMassMax = WMassDis->GetX(conf->JetScaleMinPMass, 80.385, 200);
+    TopMassMin = TopMassDis->GetX(conf->JetScaleMinPMass, 0, 171.186);
+    TopMassMax = TopMassDis->GetX(conf->JetScaleMinPMass, 171.186, 400);
   }
 
   void Clear() {
@@ -253,6 +244,7 @@ public:
   vector< vector<TF1*> > ScaleFuncs;
   TF1* TopMassDis;
   TF1* WMassDis;
+  double WMassMin, WMassMax, TopMassMin, TopMassMax;
 
 };
 

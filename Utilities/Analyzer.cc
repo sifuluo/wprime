@@ -54,7 +54,16 @@ public:
     progress->SetEntryMax(mx);
   }
 
-  void SetOutput(string folder = "Validation") {
+  bool HasZombieOutput(TString ofname) {
+    TFile *ftest = new TFile(ofname,"READ");
+    bool IsZombie = false;
+    if (ftest->IsZombie()) IsZombie = true;
+    ftest->Close();
+    delete ftest;
+    return IsZombie;
+  }
+
+  bool SetOutput(string folder = "Validation") {
     string path = UserSpecifics::EOSBasePath + folder + "/";
     string subpath = Form("%s_%s/",conf->SampleYear.c_str(), conf->SampleType.c_str());
     string outname = Form("%s_%s_%i.root",conf->SampleYear.c_str(), conf->SampleType.c_str(), conf->iFile);
@@ -63,11 +72,17 @@ public:
       subpath = "outputs/";
     }
     TString ofname = path + subpath + outname;
-    ofile = new TFile(ofname,"RECREATE");
     cout << "Output will be saved to " << ofname << endl;
+    cout << "Output Status: Zombie: " << (HasZombieOutput(ofname)? "YES" : "No") << ", FirstRun: " << ((conf->FirstRun) ?  "YES" : "No") << ", NeedRerun: " << ((conf->NeedRerun) ?  "YES" : "No") << endl;
+    if (!(HasZombieOutput(ofname)) && !(conf->FirstRun) && !(conf->NeedRerun)) {
+      cout << "File skipped. Ending job" << endl;
+      return false;
+    }
+    ofile = new TFile(ofname,"RECREATE");
     ofile->cd();
     t = new TTree("t","EventTree");
     BookBranches();
+    return true;
   }
 
   virtual void BookBranches() {
@@ -123,6 +138,7 @@ public:
   Permutations *PM;
   Fitter *Ftr;
   Progress* progress;
+  
 
   std::array<int, 10> ExampleArray;
 
