@@ -18,6 +18,10 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0, bool DoMCReweight = f
   obs.push_back({"HT", "H_{T}"} );
   obs.push_back({"WPrimeMassSimpleFL", "Simple m(W'_{H})"} );
   obs.push_back({"WPrimeMassSimpleLL", "Simple m(W'_{L})"} );
+  obs.push_back({"WPrimeMass", "m(W')"} );
+  obs.push_back({"WPrimeMassFL", "m(W'_{H})"} );
+  obs.push_back({"WPrimeMassLL", "m(W'_{L})"} );
+  obs.push_back({"Likelihood", "Likelihood"} );
 
   string SampleYear = dlib.SampleYears[isampleyear];
   vector<string> SampleTypes = dlib.DatasetNames;

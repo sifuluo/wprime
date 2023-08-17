@@ -205,7 +205,7 @@ void Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
   conf->PrintProgress = true;
   conf->RunFitter = true;
   conf->UseMergedAuxHist = true;
-  conf->AcceptRegions({1,2},{1},{5,6},{1,2,3,4,5,6});
+  conf->AcceptRegions({1,2},{1},{5,6},{0,1,2,3,4,5,6});
   // conf->DebugList = {"LeptonRegion"};
   // conf->ProgressInterval = 1;
   // conf->EntryMax = 20000;

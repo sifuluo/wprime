@@ -16,6 +16,7 @@
 
 #include "Configs.cc"
 #include "DataFormat.cc"
+#include "Hypothesis.cc"
 
 using namespace std;
 
@@ -89,6 +90,9 @@ public:
       jes.push_back(jeseta);
     }
     ScaleHists = jes;
+    LeptMass = new TH1F("LeptMass","LeptMass",400,0,400);
+    HadtMass = new TH1F("HadtMass","HadtMass",400,0,400);
+    HadWMass = new TH1F("HadWMass","HadWMass",200,0,200);
   }
 
   void FillJet(double eta, double pt, double gpt, double ew = 1) {
@@ -244,6 +248,9 @@ public:
   vector< vector<TF1*> > ScaleFuncs;
   TF1* TopMassDis;
   TF1* WMassDis;
+  TH1F* LeptMass;
+  TH1F* HadtMass;
+  TH1F* HadWMass;
   double WMassMin, WMassMax, TopMassMin, TopMassMax;
 
 };

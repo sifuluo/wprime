@@ -60,8 +60,18 @@ void CreateAuxHists(int sampleyear = 3, int sampletype = 2, int ifile = -1, stri
     if (nj != 5 && nj != 6) continue;
     gh->SetGenParts(r->GenParts);
     gh->FindGenHypothesis();
-    vector<Jet> HypoJets = gh->GetTruthJets(r->GenJets, r->Jets);
-    PM->FillPerm(HypoJets, r->EventWeights[0].first);
+    gh->MatchToJets(r->GenJets, r->Jets);
+    PM->FillPerm(gh->OutJets, r->EventWeights[0].first);
+    Hypothesis TargetHypo;
+    TargetHypo.Jets.resize(5);
+    for (unsigned i = 0; i < 7; ++i) { //FIXME, Lepton and MET not included in GenHypothesis class!!!
+      TLorentzVector TrueReco = gh->OutJets[i].GetV(0);
+      TLorentzVector TrueGen = gh->OutGenJets[i].GetV(0);
+      if (i < 5) TargetHypo.Jets[i].SetPtEtaPhiM(TrueGen.Pt(), TrueReco.Eta(), TrueReco.Phi(), TrueReco.M());
+      if (i == 5)
+      if (i == 6) TargetHypo.MET.SetPtEtaPhiM(TrueGen.Pt(), TrueGen.Eta(), TrueReco.Phi(), TrueReco.M());
+    }
+    JS->HadWMass->Fill()
   }
   JS->PostProcess();
   JS->Clear();

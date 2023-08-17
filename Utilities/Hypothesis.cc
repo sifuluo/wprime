@@ -333,12 +333,16 @@ public:
   }
 
   vector<int> MatchToJets(const vector<GenJet>& gjs, const vector<Jet>& js) {
-    vector<int> genjout = vector<int> (5,-1);
-    vector<int> jout = vector<int> (5,-1);
+    OutGenJetPerm = vector<int> (5,-1);
+    OutJetPerm = vector<int> (5,-1);
+    OutGenJets = vector<GenJet> (5,GenJet());
+    OutJets = vector<Jet> (5,Jet());
     if (OutParts.size() == 0) {
       // cout << "OutPart size = " << OutParts.size() << endl;
-      jout.clear();
-      return jout;
+      OutJetPerm.clear();
+      OutGenJets.clear();
+      OutJets.clear();
+      return OutJetPerm;
     }
     for (unsigned i = 0; i < 5; ++i) {
       float mindr = 0.4;
@@ -346,54 +350,53 @@ public:
         float dr = OutParts[i].DeltaR(gjs[j]);
         if (dr < mindr) {
           mindr = dr;
-          genjout[i] = j;
+          OutGenJetPerm[i] = j;
         }
       }
-      if (genjout[i] == -1) {
-        jout.clear();
-        return jout;
+      if (OutGenJetPerm[i] == -1) {
+        OutJetPerm.clear();
+        OutGenJets.clear();
+        OutJets.clear();
+        return OutJetPerm;
       }
-      if (abs(OutParts[i].pdgId) != abs(gjs[genjout[i]].partonFlavour) && Debug) {
-        cout <<Form("GenPart %i (%i), Matched to GenJet of Flavour %i, dR = %f, pT ratio = %f", i, OutParts[i].pdgId, gjs[genjout[i]].partonFlavour, OutParts[i].DeltaR(gjs[genjout[i]]), OutParts[i].Pt() / gjs[genjout[i]].Pt()) <<endl;
+      if (abs(OutParts[i].pdgId) != abs(gjs[OutGenJetPerm[i]].partonFlavour) && Debug) {
+        cout <<Form("GenPart %i (%i), Matched to GenJet of Flavour %i, dR = %f, pT ratio = %f", i, OutParts[i].pdgId, gjs[OutGenJetPerm[i]].partonFlavour, OutParts[i].DeltaR(gjs[OutGenJetPerm[i]]), OutParts[i].Pt() / gjs[OutGenJetPerm[i]].Pt()) <<endl;
       }
     }
 
     for (unsigned i = 0; i < 5; ++i) {
+      OutGenJets[i] = gjs[OutGenJetPerm[i]];
       for (unsigned j = 0; j < js.size(); ++j) {
-        if (js[j].genJetIdx == genjout[i]) jout[i] = j;
+        if (js[j].genJetIdx == OutGenJetPerm[i]) {
+          OutJetPerm[i] = j;
+          OutJets[i] = js[j];
+        }
+      }
+      if (OutJetPerm[i] == -1) {
+        OutJetPerm.clear();
+        OutGenJets.clear();
+        OutJets.clear();
+        return OutJetPerm;
       }
     }
-    return jout;
+    return OutJetPerm;
   }
 
-  vector<Jet> GetTruthJets(const vector<GenJet>& gjs, const vector<Jet>& js) {
-    vector<Jet> out = vector<Jet> (5,Jet());
-    vector<int> outindex = MatchToJets(gjs, js);
-    if (outindex.size() == 0) {
-      out.clear();
-      return out;
-    }
-    for (unsigned i = 0; i < 5; ++i) {
-      if (outindex[i] < 0) {
-        out.clear();
-        return out;
-      }
-      out[i] = js[outindex[i]];
-    }
-    return out;
+  Hypothesis GetTargetHypo() {
+    if (OutJets)
   }
-
-  vector<GenPart> GetOutParts() {return OutParts;}
 
   bool Debug = false;
   const vector<GenPart>* gp;
   int WPType; // 0: FL, 1: LL
   vector<PartDecay> WPs, Ts, Ws;
-  vector<PartDecay> HadTDecay, LepTDecay;
   PartDecay WP, HadT, HadW, LepT, LepW, WPt, OTt;
   vector<PartDecay> OutPartDecay; // LJ1, LJ2, Hadb, Lepb, WPb, Lep, Neu;
   vector<GenPart> OutParts;
-
+  vector<GenJet> OutGenJets;
+  vector<int> OutGenJetPerm;
+  vector<Jet> OutJets;
+  vector<int> OutJetPerm;
 };
 
 #endif

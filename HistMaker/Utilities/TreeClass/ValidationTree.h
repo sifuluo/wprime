@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Thu May 11 21:56:28 2023 by ROOT version 6.24/08
+// Mon Aug 14 18:09:49 2023 by ROOT version 6.24/08
 // from TTree t/EventTree
-// found on file: /afs/cern.ch/user/s/siluo/EOS/WPrimeAnalysis/Validation/2018_ttbar.root
+// found on file: /eos/user/s/siluo/WPrimeAnalysis/Validation/2018_ttbar/2018_ttbar_287.root
 //////////////////////////////////////////////////////////
 
 #ifndef ValidationTree_h
@@ -13,6 +13,7 @@
 #include <TFile.h>
 
 // Header file for the classes stored in the TTree if any.
+#include "vector"
 #include "vector"
 
 class ValidationTree {
@@ -31,21 +32,27 @@ public :
    Float_t         LeptonPt_RU;
    Float_t         LeptonPt_RD;
    Float_t         LeptonEta;
+   Float_t         LeptonPhi;
    vector<float>   *JetPt;
    vector<float>   *JetPt_SU;
    vector<float>   *JetPt_SD;
    vector<float>   *JetPt_RU;
    vector<float>   *JetPt_RD;
    vector<float>   *JetEta;
+   vector<float>   *JetPhi;
    Float_t         METPt;
    Float_t         METPt_SU;
    Float_t         METPt_SD;
    Float_t         METPt_RU;
    Float_t         METPt_RD;
    Float_t         METPhi;
+   Float_t         dPhiMetLep;
    vector<float>   *mT;
    vector<float>   *WPrimeMassSimpleFL;
    vector<float>   *WPrimeMassSimpleLL;
+   vector<float>   *WPrimeMass;
+   vector<float>   *Likelihood;
+   vector<int>     *WPType;
    Int_t           nPU;
    Float_t         nTrueInt;
    Int_t           nPV;
@@ -60,21 +67,27 @@ public :
    TBranch        *b_LeptonPt_RU;   //!
    TBranch        *b_LeptonPt_RD;   //!
    TBranch        *b_LeptonEta;   //!
+   TBranch        *b_LeptonPhi;   //!
    TBranch        *b_JetPt;   //!
    TBranch        *b_JetPt_SU;   //!
    TBranch        *b_JetPt_SD;   //!
    TBranch        *b_JetPt_RU;   //!
    TBranch        *b_JetPt_RD;   //!
    TBranch        *b_JetEta;   //!
+   TBranch        *b_JetPhi;   //!
    TBranch        *b_METPt;   //!
    TBranch        *b_METPt_SU;   //!
    TBranch        *b_METPt_SD;   //!
    TBranch        *b_METPt_RU;   //!
    TBranch        *b_METPt_RD;   //!
    TBranch        *b_METPhi;   //!
+   TBranch        *b_dPhiMetLep;   //!
    TBranch        *b_mT;   //!
    TBranch        *b_WPrimeMassSimpleFL;   //!
    TBranch        *b_WPrimeMassSimpleLL;   //!
+   TBranch        *b_WPrimeMass;   //!
+   TBranch        *b_Likelihood;   //!
+   TBranch        *b_WPType;   //!
    TBranch        *b_nPU;   //!
    TBranch        *b_nTrueInt;   //!
    TBranch        *b_nPV;   //!
@@ -99,9 +112,9 @@ ValidationTree::ValidationTree(TTree *tree) : fChain(0)
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
    if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("/afs/cern.ch/user/s/siluo/EOS/WPrimeAnalysis/Validation/2018_ttbar.root");
+      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("/eos/user/s/siluo/WPrimeAnalysis/Validation/2018_ttbar/2018_ttbar_287.root");
       if (!f || !f->IsOpen()) {
-         f = new TFile("/afs/cern.ch/user/s/siluo/EOS/WPrimeAnalysis/Validation/2018_ttbar.root");
+         f = new TFile("/eos/user/s/siluo/WPrimeAnalysis/Validation/2018_ttbar/2018_ttbar_287.root");
       }
       f->GetObject("t",tree);
 
@@ -151,9 +164,13 @@ void ValidationTree::Init(TTree *tree)
    JetPt_RU = 0;
    JetPt_RD = 0;
    JetEta = 0;
+   JetPhi = 0;
    mT = 0;
    WPrimeMassSimpleFL = 0;
    WPrimeMassSimpleLL = 0;
+   WPrimeMass = 0;
+   Likelihood = 0;
+   WPType = 0;
    // Set branch addresses and branch pointers
    if (!tree) return;
    fChain = tree;
@@ -168,21 +185,27 @@ void ValidationTree::Init(TTree *tree)
    fChain->SetBranchAddress("LeptonPt_RU", &LeptonPt_RU, &b_LeptonPt_RU);
    fChain->SetBranchAddress("LeptonPt_RD", &LeptonPt_RD, &b_LeptonPt_RD);
    fChain->SetBranchAddress("LeptonEta", &LeptonEta, &b_LeptonEta);
+   fChain->SetBranchAddress("LeptonPhi", &LeptonPhi, &b_LeptonPhi);
    fChain->SetBranchAddress("JetPt", &JetPt, &b_JetPt);
    fChain->SetBranchAddress("JetPt_SU", &JetPt_SU, &b_JetPt_SU);
    fChain->SetBranchAddress("JetPt_SD", &JetPt_SD, &b_JetPt_SD);
    fChain->SetBranchAddress("JetPt_RU", &JetPt_RU, &b_JetPt_RU);
    fChain->SetBranchAddress("JetPt_RD", &JetPt_RD, &b_JetPt_RD);
    fChain->SetBranchAddress("JetEta", &JetEta, &b_JetEta);
+   fChain->SetBranchAddress("JetPhi", &JetPhi, &b_JetPhi);
    fChain->SetBranchAddress("METPt", &METPt, &b_METPt);
    fChain->SetBranchAddress("METPt_SU", &METPt_SU, &b_METPt_SU);
    fChain->SetBranchAddress("METPt_SD", &METPt_SD, &b_METPt_SD);
    fChain->SetBranchAddress("METPt_RU", &METPt_RU, &b_METPt_RU);
    fChain->SetBranchAddress("METPt_RD", &METPt_RD, &b_METPt_RD);
    fChain->SetBranchAddress("METPhi", &METPhi, &b_METPhi);
+   fChain->SetBranchAddress("dPhiMetLep", &dPhiMetLep, &b_dPhiMetLep);
    fChain->SetBranchAddress("mT", &mT, &b_mT);
    fChain->SetBranchAddress("WPrimeMassSimpleFL", &WPrimeMassSimpleFL, &b_WPrimeMassSimpleFL);
    fChain->SetBranchAddress("WPrimeMassSimpleLL", &WPrimeMassSimpleLL, &b_WPrimeMassSimpleLL);
+   fChain->SetBranchAddress("WPrimeMass", &WPrimeMass, &b_WPrimeMass);
+   fChain->SetBranchAddress("Likelihood", &Likelihood, &b_Likelihood);
+   fChain->SetBranchAddress("WPType", &WPType, &b_WPType);
    fChain->SetBranchAddress("nPU", &nPU, &b_nPU);
    fChain->SetBranchAddress("nTrueInt", &nTrueInt, &b_nTrueInt);
    fChain->SetBranchAddress("nPV", &nPV, &b_nPV);
