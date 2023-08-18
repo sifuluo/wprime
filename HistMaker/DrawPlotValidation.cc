@@ -5,23 +5,23 @@
 
 void DrawPlotValidation(int isampleyear = 3, int iobs = 0, bool DoMCReweight = false) {
   vector<pair<string,string> > obs;
-  obs.push_back({"LeptonPt", "Lepton p_{T}"});
-  obs.push_back({"LeptonEta", "Lepton #eta"} );
-  obs.push_back({"LeptonPhi", "Lepton #phi"} );
-  obs.push_back({"LeadingJetPt", "Leading Jet p_{T}"} );
-  obs.push_back({"LeadingJetEta", "Leading Jet #eta"} );
-  obs.push_back({"LeadingJetPhi", "Leading Jet #phi"} );
-  obs.push_back({"METPt", "#slash{E}_{T} p_{T}"} );
-  obs.push_back({"METPhi", "#slash{E}_{T} #phi"} );
-  obs.push_back({"dPhiMetLep","#Delta#phi(#slash{E}_{T},l)"});
-  obs.push_back({"mT", "m_{T}"} );
-  obs.push_back({"HT", "H_{T}"} );
-  obs.push_back({"WPrimeMassSimpleFL", "Simple m(W'_{H})"} );
-  obs.push_back({"WPrimeMassSimpleLL", "Simple m(W'_{L})"} );
-  obs.push_back({"WPrimeMass", "m(W')"} );
-  obs.push_back({"WPrimeMassFL", "m(W'_{H})"} );
-  obs.push_back({"WPrimeMassLL", "m(W'_{L})"} );
-  obs.push_back({"Likelihood", "Likelihood"} );
+  obs.push_back({"LeptonPt", "Lepton p_{T}"});  // 0
+  obs.push_back({"LeptonEta", "Lepton #eta"} );  // 1
+  obs.push_back({"LeptonPhi", "Lepton #phi"} );  // 2
+  obs.push_back({"LeadingJetPt", "Leading Jet p_{T}"} );  // 3
+  obs.push_back({"LeadingJetEta", "Leading Jet #eta"} );  // 4
+  obs.push_back({"LeadingJetPhi", "Leading Jet #phi"} );  // 5
+  obs.push_back({"METPt", "#slash{E}_{T} p_{T}"} ); // 6
+  obs.push_back({"METPhi", "#slash{E}_{T} #phi"} ); // 7
+  obs.push_back({"dPhiMetLep","#Delta#phi(#slash{E}_{T},l)"}); // 8
+  obs.push_back({"mT", "m_{T}"} );  // 9
+  obs.push_back({"HT", "H_{T}"} );  // 10
+  obs.push_back({"WPrimeMassSimpleFL", "Simple m(W'_{H})"} ); // 11
+  obs.push_back({"WPrimeMassSimpleLL", "Simple m(W'_{L})"} ); // 12
+  obs.push_back({"WPrimeMass", "m(W')"} );  // 13
+  obs.push_back({"WPrimeMassFL", "m(W'_{H})"} );  // 14
+  obs.push_back({"WPrimeMassLL", "m(W'_{L})"} );  // 15
+  obs.push_back({"Likelihood", "Likelihood"} );   //16
 
   string SampleYear = dlib.SampleYears[isampleyear];
   vector<string> SampleTypes = dlib.DatasetNames;

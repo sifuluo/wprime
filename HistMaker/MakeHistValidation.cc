@@ -171,7 +171,7 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1
       HistCol.Fill("HT",HT);
       HistCol.Fill("WPrimeMassSimpleFL",WPrimeMassSimpleFL);
       HistCol.Fill("WPrimeMassSimpleLL",WPrimeMassSimpleLL);
-      if (Likelihood >0) {
+      if (Likelihood > 0) {
         HistCol.Fill("WPrimeMass",WPrimeMass);
         if (WPType == 0) HistCol.Fill("WPrimeMassFL", WPrimeMass);
         else if (WPType == 1) HistCol.Fill("WPrimeMassLL", WPrimeMass);
