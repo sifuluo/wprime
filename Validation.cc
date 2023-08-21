@@ -209,10 +209,10 @@ void Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
   // conf->DebugList = {"LeptonRegion"};
   // conf->ProgressInterval = 1;
   // conf->EntryMax = 20000;
-  conf->RerunList("2018","ttbar",{106, 167, 301, 322, 53,126, 254, 307, 332, 6,131, 259, 312, 350, 74,133, 281, 317, 352, 87,146, 287, 320, 388, 92,148, 288, 321, 3});
-  conf->RerunList("2018","FL700",{0});
-  conf->RerunList("2018","LL800",{0});
-  conf->RerunList("2018","SingleMuon",{320});
+  // conf->RerunList("2018","ttbar",{106, 167, 301, 322, 53,126, 254, 307, 332, 6,131, 259, 312, 350, 74,133, 281, 317, 352, 87,146, 287, 320, 388, 92,148, 288, 321, 3});
+  // conf->RerunList("2018","FL700",{0});
+  // conf->RerunList("2018","LL800",{0});
+  // conf->RerunList("2018","SingleMuon",{320});
   
   ThisAnalysis *a = new ThisAnalysis(conf);
   if (!(a->SetOutput("Validation"))) return;

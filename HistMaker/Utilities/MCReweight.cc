@@ -60,7 +60,7 @@ public:
       string ds = dlib.DatasetNames[i];
       TString histname = StandardNames::HistName(ds, obs, StringRange, rm.Variations[0]);
       TH1F* h_ = (TH1F*) f->Get(histname);
-      if (dlib.Datasets[ds].Type == 0) AddData(h_);
+      if ((ds == "SingleMuon" && SourceRegionInt % 1000 == 1) || (ds == "SingleElectron" && SourceRegionInt % 1000 == 2)) AddData(h_);
       else if (ds == "ttbar") Addttbar(h_);
       else if (dlib.Datasets[ds].Type == 1) AddMC(h_);
     }

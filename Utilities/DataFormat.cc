@@ -200,10 +200,11 @@ struct FitRecord{
 namespace StandardNames {
   TString HistName(string sampletype, string observable, string regionrange, string variation) { // eg. ttbar_WPrimeMassFL_1152_PUIDWup
     TString histname = "=SampleType=_=Observable=_=RegionRange=_=Variation=";
+    if (variation == "") histname = "=SampleType=_=Observable=_=RegionRange=";
     histname.ReplaceAll("=SampleType=", sampletype);
     histname.ReplaceAll("=Observable=", observable);
     histname.ReplaceAll("=RegionRange=", regionrange);
-    histname.ReplaceAll("=Variation=", variation);
+    if (variation != "") histname.ReplaceAll("=Variation=", variation);
     return histname;
   }
   TString HistFileName(string path, string prefix, string observable, string sampletype = "", int ifile = -1) {// eg. path/2018_Validation_LeptonPt.root, where 2018_Validation is the prefix
