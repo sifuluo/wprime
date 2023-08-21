@@ -101,11 +101,11 @@ public:
   vector<TString> LatexRanges;
   // Variations is not very comfortable to be placed inside RegionManager.
   // But rest here at the momemt, as RegionManager is assured to be widely included.
-  vector<string> Variations = {"central" // 0
-  , "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown" // 1-8
-  , "EleSFup", "EleSFdown", "MuonTriggerWup", "MuonTriggerWdown", "MuonIdWup", "MuonIdWdown", "MuonIsoWup", "MuonIsoWdown" // 9-16
-  , "BjetTagCorrup", "BjetTagCorrdown", "BjetTagUncorrup", "BjetTagUncorrdown", "PUIDSFup", "PUIDSFdown", "L1PreFiringSFup", "L1PreFiringSFdown" // 17-24
-  , "PUreweightSFup", "PUreweightSFdown", "PDFWup", "PDFWdown", "LHEScaleWup", "LHEScaleWdown" // 25 - 30
+  vector<string> Variations = {"" // 0
+  , "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESUp", "JESDown", "JERUp", "JERDown" // 1-8
+  , "EleSFUp", "EleSFDown", "MuonTriggerUp", "MuonTriggerDown", "MuonIdUp", "MuonIdDown", "MuonIsoUp", "MuonIsoDown" // 9-16
+  , "BjetTagCorrUp", "BjetTagCorrDown", "BjetTagUncorrUp", "BjetTagUncorrDown", "PUIDSFUp", "PUIDSFDown", "L1PreFiringSFUp", "L1PreFiringSFDown" // 17-24
+  , "PUreweightSFUp", "PUreweightSFDown", "PDFUp", "PDFDown", "LHEScaleUp", "LHEScaleDown" // 25 - 30
   };
 
   // Temperary working version below Take the version above next time. FIXME
