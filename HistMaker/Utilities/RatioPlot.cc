@@ -509,6 +509,8 @@ public:
   vector<double> MCErrUp, MCErrLow; // [nBins]
   vector< vector<double> > SigErrUp, SigErrLow; //[iSig][nBins]
 
+  vector<double> MCUncertIntegralUp, MCUncertIntegralDown; //[iVariation]
+
   int ErrorBandFillStyle = 3002;
   TGraph* MCErrorGraph = nullptr;
   vector<TGraph*> SigErrorGraphs;

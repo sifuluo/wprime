@@ -26,13 +26,13 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0, bool DoMCReweight = f
   string SampleYear = dlib.SampleYears[isampleyear];
   vector<string> SampleTypes = dlib.DatasetNames;
   rm.TightOnlyInit();
-  rm.Variations = {"central" // 0
-  , "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown" // 1-8
-  , "EleSFup", "EleSFdown", "MuonTriggerWup", "MuonTriggerWdown", "MuonIdWup", "MuonIdWdown", "MuonIsoWup", "MuonIsoWdown" // 9-16
-  , "BjetTagCorrup", "BjetTagCorrdown", "BjetTagUncorrup", "BjetTagUncorrdown", "PUIDSFup", "PUIDSFdown", "L1PreFiringSFup", "L1PreFiringSFdown" // 17-24
-  , "PUreweightSFup", "PUreweightSFdown"
-  , "PDFWup", "PDFWdown"
-  , "LHEScaleWup", "LHEScaleWdown" // 25 - 30
+  rm.Variations = {"" // 0
+  , "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESUp", "JESDown", "JERUp", "JERDown" // 1-8
+  , "EleSFUp", "EleSFDown", "MuonTriggerUp", "MuonTriggerDown", "MuonIdUp", "MuonIdDown", "MuonIsoUp", "MuonIsoDown" // 9-16
+  , "BjetTagCorrUp", "BjetTagCorrDown", "BjetTagUncorrUp", "BjetTagUncorrDown", "PUIDSFUp", "PUIDSFDown", "L1PreFiringSFUp", "L1PreFiringSFDown" // 17-24
+  , "PUreweightSFUp", "PUreweightSFDown"
+  , "PDFUp", "PDFDown"
+  , "LHEScaleUp", "LHEScaleDown" // 25 - 30
   };
   // SampleTypes = {"FL500"};
   // vector<string> StringRanges = rm.StringRanges;
@@ -46,6 +46,7 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0, bool DoMCReweight = f
   if (DoMCReweight) HistFilePrefix += "_RW";
   string PlotNamePrefix = HistFilePrefix;
   TString filename = StandardNames::HistFileName(HistFilePath, HistFilePrefix, Observable);
+  cout << "Reading From File " << filename << endl;
   TFile* f = new TFile(filename, "READ");
   HistManager* AllPlots = new HistManager();
   // AllPlots->SetSampleTypes(SampleTypes);

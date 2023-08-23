@@ -382,9 +382,9 @@ public:
     return OutJetPerm;
   }
 
-  Hypothesis GetTargetHypo() {
-    if (OutJets)
-  }
+  // Hypothesis GetTargetHypo() {
+  //   if (OutJets)
+  // }
 
   bool Debug = false;
   const vector<GenPart>* gp;

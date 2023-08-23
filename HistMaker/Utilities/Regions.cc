@@ -19,6 +19,12 @@ public:
     IsSR = IsSR_;
     Sort();
   };
+  RegionIdRange(int b1_, bool IsSR_ = false) {
+    b2 = b1 = b1_;
+    IsSR = IsSR_;
+    Sort();
+  };
+
   int b1 = 0;
   int b2 = 0;
   vector<int> B1, B2;
@@ -35,6 +41,7 @@ public:
 
   string GetString() {
     string out = Form("%ito%i",b1,b2);
+    if (b1 == b2) out = Form("%i",b1);
     return out;
   }
 
@@ -94,7 +101,8 @@ class RegionManager{
 public:
   RegionManager() {
     // SplitInit();
-    TestInit();
+    // TestInit();
+    TightOnlyInit();
   };
   vector<RegionIdRange> Ranges;
   vector<string> StringRanges;

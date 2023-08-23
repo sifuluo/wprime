@@ -27,7 +27,6 @@ public:
 
   void Init() {
     Hists.clear();
-    // NameFormat = "=SampleType=_=Observable=_=RegionRange=_=Variation=";
     SampleTypes = dlib.DatasetNames;
     Variations = rm.Variations;
     Regions = rm.StringRanges;
@@ -128,7 +127,6 @@ public:
   vector<string> SampleTypes, Variations, Regions, Observables;
   vector<int> nbins; // [nObservables]
   vector<double> xlow, xup; // [nObservables]
-  TString NameFormat;
 
   int tmp_ist, tmp_iv, tmp_rid;
   float tmp_w;

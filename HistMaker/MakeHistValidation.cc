@@ -41,16 +41,15 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1
   else if (SampleType == "ttbar") HistFilePrefix += "_NRW";
   if (SampleType == "ZZ") return;
 
-  MCReweightManager *mcrm = new MCReweightManager("WPrimeMass");
+  MCReweightManager *mcrm = new MCReweightManager();
   if ((DoMCReweight && (SampleType == "ttbar" || SampleType == "")) || DrawMCReweight) {
     mcrm->Init();
     string idr1161 = rm.StringRanges[rm.GetRangeIndex(1161)];
     string idr1151 = rm.StringRanges[rm.GetRangeIndex(1151)];
-    string SourceObs = "WPrimeMass";
-    string SourcePath = "outputs/";
+    string SourceObs = "WPrimeMassSimpleFL";
+    string SourcePath = HistFilePath;
     string SourcePrefix = SampleYear + "_Validation";
-    TString SourceFileName = StandardNames::HistFileName(SourcePath, SourcePrefix, SourceObs);
-    mcrm->ReadFromFile(SourceFileName);
+    mcrm->ReadFromFile(SourcePath, SourcePrefix, SourceObs);
     if (DrawMCReweight) {
       TString fweightname = StandardNames::HistFileName(HistFilePath, HistFilePrefix, "ReweightSF");
       mcrm->SaveToFile(fweightname);
@@ -73,10 +72,10 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1
   HistCol.AddObservable("HT",200,0,2000);
   HistCol.AddObservable("WPrimeMassSimpleFL",100,0,2000);
   HistCol.AddObservable("WPrimeMassSimpleLL",100,0,2000);
-  HistCol.AddObservable("WPrimeMass",100,0,2000);
-  HistCol.AddObservable("WPrimeMassFL",100,0,2000);
-  HistCol.AddObservable("WPrimeMassLL",100,0,2000);
-  HistCol.AddObservable("Likelihood",100,-10,0);
+  // HistCol.AddObservable("WPrimeMass",100,0,2000);
+  // HistCol.AddObservable("WPrimeMassFL",100,0,2000);
+  // HistCol.AddObservable("WPrimeMassLL",100,0,2000);
+  // HistCol.AddObservable("Likelihood",100,-10,0);
   HistCol.CreateHistograms(HistFilePath, HistFilePrefix, SampleType, ifile);
   Progress* progress = new Progress(0,10000);
 
@@ -136,9 +135,9 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1
       }
       float WPrimeMassSimpleFL = r->WPrimeMassSimpleFL->at(0);
       float WPrimeMassSimpleLL = r->WPrimeMassSimpleLL->at(0);
-      float WPrimeMass = r->WPrimeMass->at(0);
-      float Likelihood = r->Likelihood->at(0);
-      int   WPType = r->WPType->at(0);
+      // float WPrimeMass = r->WPrimeMass->at(0);
+      // float Likelihood = r->Likelihood->at(0);
+      // int   WPType = r->WPType->at(0);
       if (iv > 0 && iv < 9) { // Variations on Physical quantities
         // "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown"
         if (iv == 1) LeptonPt = r->LeptonPt_SU;
@@ -171,13 +170,13 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1
       HistCol.Fill("HT",HT);
       HistCol.Fill("WPrimeMassSimpleFL",WPrimeMassSimpleFL);
       HistCol.Fill("WPrimeMassSimpleLL",WPrimeMassSimpleLL);
-      if (Likelihood > 0) {
-        HistCol.Fill("WPrimeMass",WPrimeMass);
-        if (WPType == 0) HistCol.Fill("WPrimeMassFL", WPrimeMass);
-        else if (WPType == 1) HistCol.Fill("WPrimeMassLL", WPrimeMass);
-        else cout << "Wrong WPType read : " << WPType << endl;
-        HistCol.Fill("Likelihood", log10(Likelihood));
-      }
+      // if (Likelihood > 0) {
+      //   HistCol.Fill("WPrimeMass",WPrimeMass);
+      //   if (WPType == 0) HistCol.Fill("WPrimeMassFL", WPrimeMass);
+      //   else if (WPType == 1) HistCol.Fill("WPrimeMassLL", WPrimeMass);
+      //   else cout << "Wrong WPType read : " << WPType << endl;
+      //   HistCol.Fill("Likelihood", log10(Likelihood));
+      // }
     }
     // checkpoint(2);
   }

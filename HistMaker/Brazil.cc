@@ -1,12 +1,53 @@
-{
+{ 
+  TString SampleYear = "2018";
+  TString Observable = "WPrimeMassSimpleFL";
+  TString Region = "2153";
 
+  TString InFileName = "Limits_" + SampleYear + "_" + Observable + "_" + Region + ".root";
+  TString OutPlotName = "LimitBrazil_" + SampleYear + "_" + Observable + "_" + Region + ".pdf";
+  TFile *f = new TFile(InFileName);
+  TTree *t = (TTree*)f->Get("limit");
+  double b_limit, b_mass;
+  Float_t b_quant;
+  t->SetBranchAddress("limit", &b_limit);
+  t->SetBranchAddress("mh", &b_mass);
+  t->SetBranchAddress("quantileExpected", &b_quant);
 
-  vector<vector<double>> vlimits;
-  vector<double> masspoints{450.,550.};
-  // double x = 244.7 / 0.33;
+  vector<double> masspoints = {300,400,500,600,700,800,900,1000,1100};
+  vector<vector<double> > vlimits = vector<vector<double> >(masspoints.size(), vector<double>(5,0));
+
+  for (unsigned ievt = 0; ievt < t->GetEntries(); ++ievt) {
+    t->GetEntry(ievt);
+    int im(-1), iv(-1);
+    for (unsigned i = 0; i < masspoints.size(); ++i) {
+      if (b_mass != masspoints[i]) continue;
+      im = i;
+    }
+    if (im < 0) cout << "No mass point found for mass = " << b_mass << endl;
+    // quantileExpected values in the tree are 0.0250000, 0.1599999, 0.5, 0.8399999, 0.9750000
+    if (b_quant <= 0) continue;
+    else if (b_quant < 0.03) iv = 0;
+    else if (b_quant < 0.2) iv = 1;
+    else if (b_quant < 0.6) iv = 2;
+    else if (b_quant < 0.9) iv = 3;
+    else if (b_quant < 1.0) iv = 4;
+    else cout << "limit quantile not found for quantile = " << b_quant << endl;
+    if (im < 0 || iv < 0) {
+      cout << "Error" << endl;
+      throw runtime_error("Index for mass/quantile not found");
+    }
+    vlimits[im][iv] = b_limit;
+  }
   vector<double> xsecs;
-  xsecs.push_back(574.1 + 574.6);
-  vlimits.push_back(vector<double>{0.0187,0.0252,0.0347,0.0482,0.0643});
+  xsecs.push_back(683.8 + 708.3);
+  xsecs.push_back(321.7 + 336.1);
+  xsecs.push_back(161.1 + 165.3);
+  xsecs.push_back(85.92 + 85.82);
+  xsecs.push_back(48.84 + 47.47);
+  xsecs.push_back(29.81 + 27.73);
+  xsecs.push_back(18.33 + 16.49);
+  xsecs.push_back(11.73 + 10.25);
+  xsecs.push_back(7.683 + 6.646);
 
   int n = vlimits.size();
   if (n == 1) {
@@ -73,7 +114,7 @@
   fr->GetXaxis()->SetTitle("Simulated W' mass");
   fr->SetMinimum(0);
   fr->SetMaximum(frameuplimit*1.05);
-  fr->GetXaxis()->SetLimits(0,1000);
+  fr->GetXaxis()->SetLimits(200,1200);
 
   gryellow->SetFillColor(kOrange);
   gryellow->SetLineColor(kOrange);
@@ -102,6 +143,6 @@
   leg->AddEntry(gryellow, "#pm 2 std. dev.","f");
   leg->Draw();
 
-  c->SaveAs("UpperLimit.pdf");
+  c->SaveAs(OutPlotName);
 
 }

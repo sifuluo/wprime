@@ -105,9 +105,11 @@ public:
     WPrimeMass->resize(9);
     Likelihood->resize(9);
     WPType->resize(9);
-    t->Branch("WPrimeMass", &WPrimeMass);
-    t->Branch("Likelihood", &Likelihood);
-    t->Branch("WPType", &WPType);
+    if (conf->RunFitter) {
+      t->Branch("WPrimeMass", &WPrimeMass);
+      t->Branch("Likelihood", &Likelihood);
+      t->Branch("WPType", &WPType);
+    }
 
     t->Branch("nPU", &nPU);
     t->Branch("nTrueInt", &nTrueInt);
@@ -171,6 +173,7 @@ public:
       TLorentzVector vWprimeLL = r->Jets[0].GetV(i) + r->Jets[1].GetV(i) + r->TheLepton.GetV(i) + r->Met.GetV(i);
       WPrimeMassSimpleFL->at(i) = vWprimeFL.M();
       WPrimeMassSimpleLL->at(i) = vWprimeLL.M();
+      if (!conf->RunFitter) continue;
       if (i == 0) {
         SetEventFitter(i);
         Likelihood->at(i) = Ftr->Optimize();
@@ -203,7 +206,7 @@ void Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
   conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/SingleMuon/2018/2B07B4C0-852B-9B4F-83FA-CA6B047542D1.root";
   conf->LocalOutput = false;
   conf->PrintProgress = true;
-  conf->RunFitter = true;
+  conf->RunFitter = false;
   conf->UseMergedAuxHist = true;
   conf->AcceptRegions({1,2},{1},{5,6},{0,1,2,3,4,5,6});
   // conf->DebugList = {"LeptonRegion"};

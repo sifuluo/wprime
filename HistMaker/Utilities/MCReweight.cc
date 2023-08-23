@@ -35,8 +35,12 @@ public:
     if (DataHist == nullptr) {
       DataHist = (TH1F*) h_->Clone();
       DataHist->SetDirectory(0);
+      cout << "init Data in region" << SourceRegion << " with hist: " << h_->GetName() << endl;
     }
-    else DataHist->Add(h_);
+    else {
+      DataHist->Add(h_);
+      cout << "Adding Data in region" << SourceRegion << " with hist: " << h_->GetName() << endl;
+    }
     nbins = h_->GetNbinsX();
   }
 
@@ -55,14 +59,22 @@ public:
     ttbarHists[iv]->SetDirectory(0);
   }
 
-  void ReadFromFile(TFile* f, string obs) {
+  void ReadFromFile(string path, string prefix, string obs) {
     for (unsigned i = 0; i < dlib.DatasetNames.size(); ++i) {
       string ds = dlib.DatasetNames[i];
+      string thisprefix = prefix;
+      if (ds == "ttbar") thisprefix += "_NRW";
+      TString fn = StandardNames::HistFileName(path, thisprefix, obs, ds);
+      TFile *f = new TFile(fn,"READ");
+      // cout << "Calculating MC reweighting from file: " << fn << endl;
+      // cout << "ds = " << ds << ", Region = " << SourceRegionInt << endl;
       TString histname = StandardNames::HistName(ds, obs, StringRange, rm.Variations[0]);
       TH1F* h_ = (TH1F*) f->Get(histname);
-      if ((ds == "SingleMuon" && SourceRegionInt % 1000 == 1) || (ds == "SingleElectron" && SourceRegionInt % 1000 == 2)) AddData(h_);
+      if ((ds == "SingleMuon" && SourceRegionInt / 1000 == 1) || (ds == "SingleElectron" && SourceRegionInt / 1000 == 2)) AddData(h_);
       else if (ds == "ttbar") Addttbar(h_);
       else if (dlib.Datasets[ds].Type == 1) AddMC(h_);
+      f->Close();
+      delete f;
     }
   }
 
@@ -156,8 +168,7 @@ public:
 
 class MCReweightManager {
 public:
-  MCReweightManager(string obs = "WPrimeMassSimpleFL") {
-    SourceObs = obs;
+  MCReweightManager() {
   };
 
   void Init() {
@@ -167,15 +178,11 @@ public:
     rws.push_back(new MCReweight(2161));
   }
 
-  void ReadFromFile(TString fname) {
-    cout << "Calculating ttbar scale factor from file " << fname << endl;
-    TFile* f = new TFile(fname);
+  void ReadFromFile(string path, string prefix, string obs) {
     for (unsigned i = 0; i < rws.size(); ++i) {
-      rws[i]->ReadFromFile(f, SourceObs);
+      rws[i]->ReadFromFile(path, prefix, obs);
       rws[i]->CreateSF1DPlot();
     }
-    f->Close();
-    delete f;
   }
 
   void SaveToFile(TString fname) {
@@ -183,6 +190,7 @@ public:
     f->cd();
     for (unsigned i = 0; i < rws.size(); ++i) {
       TH1F* h = (TH1F*)rws[i]->SF1D->Clone();
+      h->SetDirectory(f);
     }
     f->Write();
     f->Save();
@@ -204,7 +212,6 @@ public:
     return 1.0;
   }
 
-  string SourceObs;
   vector<MCReweight*> rws;
 
 };

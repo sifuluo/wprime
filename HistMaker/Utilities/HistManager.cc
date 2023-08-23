@@ -73,6 +73,7 @@ public:
         PlotGroupHists[ig].resize(Variations.size());
       }
       for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
+        if ((SampleTypes[ist] == "SingleElectron" && rm.Ranges[ir].B1[3] != 2) || (SampleTypes[ist] == "SingleMuon" && rm.Ranges[ir].B1[3] != 1)) continue;
         string gp = dlib.GetGroup(SampleTypes[ist]);
         int ig = dlib.GetGroupIndexFromGroupName(gp);
         if (ig < 0) continue;
@@ -85,9 +86,13 @@ public:
             int col = dlib.Groups[gp].Color;
             if (dlib.Groups[gp].Type == 1) PlotGroupHists[ig][iv]->SetFillColor(col);
             PlotGroupHists[ig][iv]->SetLineColor(col);
+            TString ghn = StandardNames::HistName(GroupNames[ig], Observable, Regions[ir], Variations[iv]);
+            PlotGroupHists[ig][iv]->SetName(ghn);
           }
-          else PlotGroupHists[ig][iv]->Add(h);
-          delete h;
+          else {
+            PlotGroupHists[ig][iv]->Add(h);
+          }
+          // delete h;
         }
       }
 
