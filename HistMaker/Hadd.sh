@@ -7,4 +7,4 @@ do
 hadd -f outputs/${pre}${i}.root ${p}${pre}${i}* ${p}${pre}NRW_${i}*
 hadd -f outputs/${pre}RW_${i}.root ${p}${pre}${i}* ${p}${pre}RW_${i}*
 done
-cp ${p}${pre}ReweightSF.root outputs/
+cp ${p}${pre}*ReweightSF.root outputs/

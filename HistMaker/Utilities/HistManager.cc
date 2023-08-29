@@ -146,6 +146,11 @@ public:
       ypos -= 0.05;
     }
   }
+
+  void SaveUncertContribution(int ir, TString PlotName) {
+    Plots[ir]->SaveUncertContribution(PlotName);
+  }
+
   vector<double> LegendPos = {0.65,0.65,0.9,0.9};
 
   vector<string> GroupNames;

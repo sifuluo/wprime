@@ -1,7 +1,11 @@
 { 
   TString SampleYear = "2018";
   TString Observable = "WPrimeMassSimpleFL";
-  TString Region = "2153";
+  TString Region = "1153";
+  string inputr = "";
+  cout << "Please input a region to process, such as: " << Region << endl; 
+  cin >> inputr;
+  if (inputr != "") Region = inputr;
 
   TString InFileName = "Limits_" + SampleYear + "_" + Observable + "_" + Region + ".root";
   TString OutPlotName = "LimitBrazil_" + SampleYear + "_" + Observable + "_" + Region + ".pdf";
@@ -110,8 +114,8 @@
   fr->GetYaxis()->SetTitleOffset(0.9);
   fr->GetXaxis()->SetNdivisions(512);
   fr->GetYaxis()->CenterTitle(true);
-  fr->GetYaxis()->SetTitle("95% CL_{s} limit on #sigma_{signals}");
-  fr->GetXaxis()->SetTitle("Simulated W' mass");
+  fr->GetYaxis()->SetTitle("95% CL_{s} limit on #sigma_{sig} [fb]");
+  fr->GetXaxis()->SetTitle("Simplified m(W'_{h}) [GeV]");
   fr->SetMinimum(0);
   fr->SetMaximum(frameuplimit*1.05);
   fr->GetXaxis()->SetLimits(200,1200);
@@ -133,7 +137,7 @@
 
   fr->Draw("sameaxis");
 
-  TLegend *leg = new TLegend(0.15,0.6,0.4,0.76);
+  TLegend *leg = new TLegend(0.5,0.6,0.9,0.76);
   leg->SetFillStyle(0);
   leg->SetBorderSize(0);
   leg->SetTextSize(0.041);

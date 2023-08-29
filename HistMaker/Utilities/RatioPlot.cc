@@ -11,6 +11,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <algorithm> // max,min
 
 #include "CMSStyle.cc"
@@ -143,10 +144,11 @@ public:
   }
 
 
-  void StatError(TH1F* hcentral, vector<double>& errup, vector<double>& errlow) {
-    if (hcentral == nullptr) return;
+  vector<double> StatError(TH1F* hcentral, vector<double>& errup, vector<double>& errlow) {
+    if (hcentral == nullptr) return {};
     bool doreport = false;
     bool reported = false;
+    double StatErrorIntegralNom(0), StatErrorIntegralUp(0), StatErrorIntegralDown(0);
     hcentral->SetBinErrorOption(TH1::kPoisson);
     for (unsigned i = 0; i < nbins; ++i) {
       if (hcentral->GetBinErrorUp(i + 1) != hcentral->GetBinErrorUp(i + 1)) {
@@ -158,16 +160,23 @@ public:
       }
       errup[i] = errup[i] + hcentral->GetBinErrorUp(i + 1) * hcentral->GetBinErrorUp(i + 1);
       errlow[i] = errlow[i] + hcentral->GetBinErrorLow(i + 1) * hcentral->GetBinErrorLow(i + 1);
+      StatErrorIntegralNom += hcentral->GetBinContent(i + 1);
+      StatErrorIntegralUp += (hcentral->GetBinContent(i + 1) + hcentral->GetBinErrorUp(i + 1));
+      StatErrorIntegralDown += (hcentral->GetBinContent(i + 1) - hcentral->GetBinErrorLow(i + 1));
     }
+    if (StatErrorIntegralNom != hcentral->Integral()) cout << "StatErrorIntegralNom = " << StatErrorIntegralNom << ", Integral = " << hcentral->Integral() << endl;
+    vector<double> out = {StatErrorIntegralNom, StatErrorIntegralUp, StatErrorIntegralDown};
+    return out;
   }
 
-  void SystError(TH1F* hcentral, TH1F* hvarup, TH1F* hvarlow, vector<double>& errup, vector<double>& errlow) {
-    if (hcentral == nullptr) return;
+  vector<double> SystError(TH1F* hcentral, TH1F* hvarup, TH1F* hvarlow, vector<double>& errup, vector<double>& errlow) {
+    if (hcentral == nullptr) return {};
     if (hvarup->Integral() / hcentral->Integral() > 2. || hvarup->Integral() / hcentral->Integral() < 0.5) cout << hvarup->GetName() << " ratio to central " << hcentral->GetName() << " = " <<hvarup->Integral() / hcentral->Integral() << endl;
     if (hvarlow->Integral() / hcentral->Integral() > 2. || hvarlow->Integral() / hcentral->Integral() < 0.5) cout << hvarlow->GetName() << " ratio to central " << hcentral->GetName() << " = " <<hvarlow->Integral() / hcentral->Integral() << endl;
     bool doreport = false;
     bool reportedup = false;
     bool reportedlow = false;
+    double SystErrorIntegralNom(0), SystErrorIntegralUp(0), SystErrorIntegralDown(0);
     // cout << errup[5] <<"," << errlow[5] <<endl;
     for (unsigned i = 0; i < nbins; ++i) {
       double diffup(0), difflow(0);
@@ -193,8 +202,13 @@ public:
       // if (i == 5) cout << "eu = " << eu << ", el = " << el <<endl;
       errup[i] = errup[i] + eu * eu;
       errlow[i] = errlow[i] + el * el;
+      SystErrorIntegralNom += hcentral->GetBinContent(i + 1);
+      SystErrorIntegralUp += eu;
+      SystErrorIntegralDown += el;
     }
     if (doreport) cout << errup[5] <<"," << errlow[5] <<endl;
+    vector<double> out = {SystErrorIntegralNom, SystErrorIntegralUp, SystErrorIntegralDown};
+    return out;
   }
 
   void ErrorCalc() {
@@ -202,6 +216,8 @@ public:
     MCErrLow.clear();
     SigErrUp.clear();
     SigErrLow.clear();
+    MCStatUncertIntegral.clear();
+    MCSystUncertIntegral.clear();
     MCErrUp.resize(nbins, 0);
     MCErrLow.resize(nbins, 0);
     SigErrUp.resize(SigNames.size());
@@ -210,21 +226,32 @@ public:
       SigErrUp[isig].resize(nbins, 0);
       SigErrLow[isig].resize(nbins, 0);
     }
-    for (unsigned iv = 0; iv < (VarSize+1)/2; ++iv) {
+    for (unsigned iv = 0; iv < VarSize; ++iv) {
       if (iv == 0) {
-        if (HasMC) StatError(MCSummed[0],MCErrUp,MCErrLow);
+        if (HasMC) {
+          MCStatUncertIntegral = StatError(MCSummed[0],MCErrUp,MCErrLow);
+        }
         for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
           // cout << "Stat:" <<endl;
           StatError(SigHists[isig][0], SigErrUp[isig], SigErrLow[isig]);
         }
       }
+      else if (iv % 2 == 1) continue;
       else {
-        if (HasMC) SystError(MCSummed[0], MCSummed[iv*2-1],MCSummed[iv*2], MCErrUp, MCErrLow);
+        if (HasMC) {
+          vector<double> errint = SystError(MCSummed[0], MCSummed[iv-1],MCSummed[iv], MCErrUp, MCErrLow);
+          if (MCSystUncertIntegral.size() == 0) MCSystUncertIntegral.push_back(errint[0]);
+          MCSystUncertIntegral.push_back(errint[1]);
+          MCSystUncertIntegral.push_back(errint[2]);
+        }
         for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
           // cout << "Syst " << iv << ": " << SigHists[isig][iv*2-1]->GetName()<< ", " << SigHists[isig][iv*2]->GetName() <<endl;
-          SystError(SigHists[isig][0], SigHists[isig][iv*2-1], SigHists[isig][iv*2], SigErrUp[isig], SigErrLow[isig]);
+          SystError(SigHists[isig][0], SigHists[isig][iv-1], SigHists[isig][iv], SigErrUp[isig], SigErrLow[isig]);
         }
       }
+    }
+    if (HasMC) {
+      if (MCSystUncertIntegral[0] != MCStatUncertIntegral[0]) cout << "Different nominal integrals. In stat = " << MCStatUncertIntegral[0] << ", In syst = " << MCSystUncertIntegral[0] << endl;
     }
     for (unsigned ib = 0; ib < nbins; ++ib) {
       if (HasMC) {
@@ -469,6 +496,17 @@ public:
     latex.DrawLatex(x,y,st);
   }
 
+  void SaveUncertContribution(TString pn) {
+    TString OutFileName = pn + ".txt";
+    ofstream f(OutFileName);
+    f << "StatUp = " << MCStatUncertIntegral[1] / MCStatUncertIntegral[0] - 1. << "\n";
+    f << "StatDown = " << MCStatUncertIntegral[2] / MCStatUncertIntegral[0] - 1. << "\n";
+    for (unsigned i = 1; i < VarSize; ++i) {
+      f << Variations[i] << " = " << MCSystUncertIntegral[i] / MCSystUncertIntegral[0] << "\n";
+    }
+    f.close();
+  }
+
   bool Logy, IsSR;
 
   TVirtualPad* Pad;
@@ -509,7 +547,8 @@ public:
   vector<double> MCErrUp, MCErrLow; // [nBins]
   vector< vector<double> > SigErrUp, SigErrLow; //[iSig][nBins]
 
-  vector<double> MCUncertIntegralUp, MCUncertIntegralDown; //[iVariation]
+  vector<double> MCStatUncertIntegral; //[Nom;Up;Down]
+  vector<double> MCSystUncertIntegral; //[iVariation]
 
   int ErrorBandFillStyle = 3002;
   TGraph* MCErrorGraph = nullptr;

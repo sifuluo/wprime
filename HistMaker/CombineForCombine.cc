@@ -23,7 +23,7 @@ void CombineForCombine(int isampleyear = 3) {
     }
   }
   for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
-    // string HistFilePath = "outputs/";
+    // string HistFilePath = "outputs/"; // FIXME: Everytime after MakeHistValidtion.cc A run of Hadd.sh is needed to push histograms and reweight hists together.
     string SampleType = SampleTypes[ist];
     string HistFilePath = basepath + "Hists/";
     string HistFilePrefix = SampleYear + "_Validation";

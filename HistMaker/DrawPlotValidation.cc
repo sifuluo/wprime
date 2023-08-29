@@ -59,36 +59,55 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0, bool DoMCReweight = f
   for (unsigned ir = 0; ir < rm.StringRanges.size(); ++ir) {
     TCanvas* c1 = new TCanvas("c1","c1",800,800);
     AllPlots->CreateAuxiliaryPlots(ir);
-    AllPlots->DrawPlot(ir, c1, isampleyear, true, true);
+    AllPlots->DrawPlot(ir, c1, isampleyear, false, true);
     TString PlotName = AllPlots->Plots[ir]->PlotName;
     TString pn  = "plots/" + PlotName + ".pdf";
     c1->SaveAs(pn);
+    string sr = rm.StringRanges[ir];
+    if (sr == "1153" || sr == "1163" || sr == "2153" || sr == "2163") if (DoMCReweight && iobs == 11)AllPlots->SaveUncertContribution(ir, PlotName);
     delete c1;
   }
 
 
-  if (Observable == "WPrimeMassSimpleFL" && DoMCReweight) {
+  if (iobs == 11 && DoMCReweight) {
     gStyle->SetOptFit(0000);
     TString fsfname = StandardNames::HistFileName(HistFilePath, HistFilePrefix, "ReweightSF");
     TFile *fsf = new TFile(fsfname,"READ");
     TCanvas* c1 = new TCanvas("c1","c1",800,800);
     TH1F* mcr1161sf1d = (TH1F*) fsf->Get("ttbarReweightSFFrom1161");
     TH1F* mcr1151sf1d = (TH1F*) fsf->Get("ttbarReweightSFFrom1151");
+    TH1F* mcr2161sf1d = (TH1F*) fsf->Get("ttbarReweightSFFrom2161");
+    TH1F* mcr2151sf1d = (TH1F*) fsf->Get("ttbarReweightSFFrom2151");
     TF1* mcr1161f = new TF1("mcr1161f","[0]/x+[1]*x+[2]*x*x+[3]",100,2000);
     TF1* mcr1151f = new TF1("mcr1151f","[0]/x+[1]*x+[2]*x*x+[3]",100,2000);
+    TF1* mcr2161f = new TF1("mcr2161f","[0]/x+[1]*x+[2]*x*x+[3]",100,2000);
+    TF1* mcr2151f = new TF1("mcr2151f","[0]/x+[1]*x+[2]*x*x+[3]",100,2000);
     // mcr1161f->SetParameters(1.,2.,0.1,0.1);
     // mcr1151f->SetParameters(1.,2.,0.1,0.1); // Doesn't affect the final fit parameters at all in this practice
     mcr1161sf1d->SetLineColor(2);
     mcr1151sf1d->SetLineColor(3);
+    mcr2161sf1d->SetLineColor(4);
+    mcr2151sf1d->SetLineColor(5);
     mcr1161sf1d->Fit(mcr1161f,"RM","");
     mcr1151sf1d->Fit(mcr1151f,"RM","");
+    mcr2161sf1d->Fit(mcr2161f,"RM","");
+    mcr2151sf1d->Fit(mcr2151f,"RM","");
+    TString SFPlotTitle = ";" + obs[iobs].second + ";Scale Factor";
+    mcr1161sf1d->SetTitle(SFPlotTitle);
+    mcr1151sf1d->SetTitle(SFPlotTitle);
+    mcr2161sf1d->SetTitle(SFPlotTitle);
+    mcr2151sf1d->SetTitle(SFPlotTitle);
     TLegend* leg = new TLegend(0.7,0.7,0.9,0.9);
-    leg->AddEntry(mcr1161sf1d, "1161","l");
-    leg->AddEntry(mcr1151sf1d, "1151","l");
+    leg->AddEntry(mcr1161sf1d, "#mu 6j1b","l");
+    leg->AddEntry(mcr1151sf1d, "#mu 5j1b","l");
+    leg->AddEntry(mcr2161sf1d, "e 6j1b","l");
+    leg->AddEntry(mcr2151sf1d, "e 5j1b","l");
 
     c1->cd();
     mcr1161sf1d->Draw("E1");
     mcr1151sf1d->Draw("E1same");
+    mcr2161sf1d->Draw("E1same");
+    mcr2151sf1d->Draw("E1same");
     leg->Draw();
     c1->SaveAs("plots/ReweightSF.pdf");
   }
