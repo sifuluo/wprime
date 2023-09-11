@@ -55,21 +55,27 @@ void CombineHistogramDumpster::Loop()
 
   Long64_t nentries = fChain->GetEntriesFast();
 
+  //set sample weight
+  int Year = 0;
+  int year = 0;
+  float Lumi = 0.;
+  if(YearType == "2016_APV")  {Year = 0; year = 2016; Lumi = 0.;}
+  else if(YearType == "2016") {Year = 1; year = 2016; Lumi = 41.58;}
+  else if(YearType == "2017") {Year = 2; year = 2017; Lumi = 49.81;}
+  else if(YearType == "2018") {Year = 3; year = 2017; Lumi = 67.86;}
+  float SampleWeight = 1.;
+  if(dset.Type != 0) SampleWeight = Lumi * dset.CrossSection / dset.Size[Year];
+
+  //loop over events
   Long64_t nbytes = 0, nb = 0;
   for (Long64_t jentry=0; jentry<nentries;jentry++) {
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
+    
+    //blind data in SRs
+    if(Iterator < 2 && bin % 10 >= 3) continue;
 
-    //set sample weight
-    int Year = 0;
-    float Lumi = 0.;
-    if(YearType == "2016_APV")  {Year = 0; Lumi = 0.;}
-    else if(YearType == "2016") {Year = 1; Lumi = 41.58;}
-    else if(YearType == "2017") {Year = 2; Lumi = 49.81;}
-    else if(YearType == "2018") {Year = 3; Lumi = 67.86;}
-    float SampleWeight = 1.;
-    if(dset.Type != 0) SampleWeight = Lumi * dset.CrossSection / dset.Size[Year];
     //variations of selections
     for(unsigned i = 0; i < 9; ++ i){
       if(RegionIdentifier[i] != bin) continue;
@@ -88,15 +94,21 @@ void CombineHistogramDumpster::Loop()
   }
   //save all the W' variation histograms into a file
   TFile *savefile;
-  //if(!Iterator) savefile = new TFile("TestHistograms/SimpleShapes.root","RECREATE");
-  //else savefile = new TFile("TestHistograms/SimpleShapes.root","WRITE");
   savefile = new TFile(TString::Format("TestHistograms/SimpleShapes_Bin%d_%d.root",bin,Iterator),"RECREATE");
+  TFile *SFfile;
+  //only activate for SR runs with ttbar sample
+  if(SFreg != 0 && Iterator == 2) SFfile = new TFile(TString::Format("TestHistograms/SF_Bin%d_%d.root",SFreg,year));
   savefile->cd();
   for(unsigned i = 0; i < WPrimeMass_FL.size(); ++i){
     if(dset.Type == 0){
       if(i>0) continue;
       if(Iterator <= 1) WPrimeMass_FL[i]->Write("data_obs_" + binS);
       else continue;
+    }
+    else if(Iterator == 2 && SFreg != 0){ //case of applying SF to ttbar
+      TH1F *SF = (TH1F*)SFfile->Get("SFcalc_"+variations[i]);
+      WPrimeMass_FL[i]->Multiply(SF);
+      WPrimeMass_FL[i]->Write(WPrimeMass_FL[i]->GetName());
     }
     else WPrimeMass_FL[i]->Write(WPrimeMass_FL[i]->GetName());
   }
