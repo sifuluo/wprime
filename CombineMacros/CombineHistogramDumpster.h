@@ -18,35 +18,41 @@
 
 class CombineHistogramDumpster {
 public :
-  TTree          *fChain;   //!pointer to the analyzed TTree or TChain
+  TChain          *fChain;   //!pointer to the analyzed TTree or TChain
   Int_t           fCurrent; //!current Tree number in a TChain
 
   // Fixed size dimensions of array or collections stored in the TTree if any.
 
   // Declaration of leaf types
   Int_t           RegionIdentifier[9];
-  Float_t         EventWeight[21];
+  Float_t         EventWeight[23];
   Float_t         LeptonPt;
   Float_t         LeptonPt_SU;
   Float_t         LeptonPt_SD;
   Float_t         LeptonPt_RU;
   Float_t         LeptonPt_RD;
   Float_t         LeptonEta;
+  Float_t	  LeptonPhi;
   vector<float>   *JetPt;
   vector<float>   *JetPt_SU;
   vector<float>   *JetPt_SD;
   vector<float>   *JetPt_RU;
   vector<float>   *JetPt_RD;
   vector<float>   *JetEta;
+  vector<float>   *JetPhi;
   Float_t         METPt;
   Float_t         METPt_SU;
   Float_t         METPt_SD;
   Float_t         METPt_RU;
   Float_t         METPt_RD;
   Float_t         METPhi;
+  Float_t	  dPhiMetLep;
   vector<float>   *mT;
   vector<float>   *WPrimeMassSimpleFL;
   vector<float>   *WPrimeMassSimpleLL;
+  vector<float>   *WPrimeMass;
+  vector<float>   *Likelihood;
+  vector<int>     *WPType;
   Int_t           nPU;
   Float_t         nTrueInt;
   Int_t           nPV;
@@ -61,32 +67,38 @@ public :
   TBranch        *b_LeptonPt_RU;   //!
   TBranch        *b_LeptonPt_RD;   //!
   TBranch        *b_LeptonEta;   //!
+  TBranch        *b_LeptonPhi;   //!
   TBranch        *b_JetPt;   //!
   TBranch        *b_JetPt_SU;   //!
   TBranch        *b_JetPt_SD;   //!
   TBranch        *b_JetPt_RU;   //!
   TBranch        *b_JetPt_RD;   //!
   TBranch        *b_JetEta;   //!
+  TBranch	 *b_JetPhi;  //!
   TBranch        *b_METPt;   //!
   TBranch        *b_METPt_SU;   //!
   TBranch        *b_METPt_SD;   //!
   TBranch        *b_METPt_RU;   //!
   TBranch        *b_METPt_RD;   //!
   TBranch        *b_METPhi;   //!
+  TBranch	 *b_dPhiMetLep; //!
   TBranch        *b_mT;   //!
   TBranch        *b_WPrimeMassSimpleFL;   //!
   TBranch        *b_WPrimeMassSimpleLL;   //!
+  TBranch	 *b_WPrimeMass; //!
+  TBranch	 *b_Likelihood; //!
+  TBranch	 *b_WPType; //!
   TBranch        *b_nPU;   //!
   TBranch        *b_nTrueInt;   //!
   TBranch        *b_nPV;   //!
   TBranch        *b_nPVGood;   //!
 
-  CombineHistogramDumpster(TTree *tree = 0, unsigned it_ = 99, int bin_ = 1152, TString year_ = "2018");
+  CombineHistogramDumpster(TChain *tree = 0, unsigned it_ = 99, int bin_ = 1152, TString year_ = "2018", bool ScaleTtbar_ = false);
   virtual ~CombineHistogramDumpster();
   virtual Int_t    Cut(Long64_t entry);
   virtual Int_t    GetEntry(Long64_t entry);
   virtual Long64_t LoadTree(Long64_t entry);
-  virtual void     Init(TTree *tree);
+  virtual void     Init(TChain *tree);
   virtual void     Loop();
   virtual Bool_t   Notify();
   virtual void     Show(Long64_t entry = -1);
@@ -95,12 +107,13 @@ public :
   string YearType;
   Dataset dset;
   int bin;
+  bool ScaleTtbar;
 };
 
 #endif
 
 #ifdef CombineHistogramDumpster_cxx
-CombineHistogramDumpster::CombineHistogramDumpster(TTree *tree, unsigned it_, int bin_, TString year_) : fChain(0) 
+CombineHistogramDumpster::CombineHistogramDumpster(TChain *tree, unsigned it_, int bin_, TString year_, bool ScaleTtbar_) : fChain(0) 
 {
   if(it_>39) {
     std::cout<<"iterator out of range"<<std::endl;
@@ -110,16 +123,13 @@ CombineHistogramDumpster::CombineHistogramDumpster(TTree *tree, unsigned it_, in
 // used to generate this class and read the Tree.
   if (tree == 0) {
     dset = dlib.GetDataset(it_);
-    TString FilePath = "/eos/user/s/siluo/WPrimeAnalysis/Validation/" + year_ + "_" + dset.Name + ".root";
-    TFile *f = new TFile(FilePath,"READ");
-    if (!f || !f->IsOpen()) {
-      std::cout<<"Failed to find File"<<std::endl;
-      return;
-    }
-    f->GetObject("t",tree);
+    TString FilePath = "/eos/user/s/siluo/WPrimeAnalysis/Validation/" + year_ + "_" + dset.Name + "/*.root";
+    tree = new TChain("t");
+    tree->Add(FilePath);
     Iterator = it_;
     YearType = year_;
     bin = bin_;
+    ScaleTtbar_;
   }
   Init(tree);
 }
@@ -149,7 +159,7 @@ Long64_t CombineHistogramDumpster::LoadTree(Long64_t entry)
   return centry;
 }
 
-void CombineHistogramDumpster::Init(TTree *tree)
+void CombineHistogramDumpster::Init(TChain *tree)
 {
   // The Init() function is called when the selector needs to initialize
   // a new tree or chain. Typically here the branch addresses and branch
@@ -166,9 +176,13 @@ void CombineHistogramDumpster::Init(TTree *tree)
   JetPt_RU = 0;
   JetPt_RD = 0;
   JetEta = 0;
+  JetPhi = 0;
   mT = 0;
   WPrimeMassSimpleFL = 0;
   WPrimeMassSimpleLL = 0;
+  WPrimeMass = 0;
+  Likelihood = 0;
+  WPType = 0;
   // Set branch addresses and branch pointers
   if (!tree) return;
   fChain = tree;
@@ -183,21 +197,27 @@ void CombineHistogramDumpster::Init(TTree *tree)
   fChain->SetBranchAddress("LeptonPt_RU", &LeptonPt_RU, &b_LeptonPt_RU);
   fChain->SetBranchAddress("LeptonPt_RD", &LeptonPt_RD, &b_LeptonPt_RD);
   fChain->SetBranchAddress("LeptonEta", &LeptonEta, &b_LeptonEta);
+  fChain->SetBranchAddress("LeptonPhi", &LeptonPhi, &b_LeptonPhi);
   fChain->SetBranchAddress("JetPt", &JetPt, &b_JetPt);
   fChain->SetBranchAddress("JetPt_SU", &JetPt_SU, &b_JetPt_SU);
   fChain->SetBranchAddress("JetPt_SD", &JetPt_SD, &b_JetPt_SD);
   fChain->SetBranchAddress("JetPt_RU", &JetPt_RU, &b_JetPt_RU);
   fChain->SetBranchAddress("JetPt_RD", &JetPt_RD, &b_JetPt_RD);
   fChain->SetBranchAddress("JetEta", &JetEta, &b_JetEta);
+  fChain->SetBranchAddress("JetPhi", &JetPhi, &b_JetPhi);
   fChain->SetBranchAddress("METPt", &METPt, &b_METPt);
   fChain->SetBranchAddress("METPt_SU", &METPt_SU, &b_METPt_SU);
   fChain->SetBranchAddress("METPt_SD", &METPt_SD, &b_METPt_SD);
   fChain->SetBranchAddress("METPt_RU", &METPt_RU, &b_METPt_RU);
   fChain->SetBranchAddress("METPt_RD", &METPt_RD, &b_METPt_RD);
   fChain->SetBranchAddress("METPhi", &METPhi, &b_METPhi);
+  fChain->SetBranchAddress("dPhiMetLep", &dPhiMetLep, &b_dPhiMetLep);
   fChain->SetBranchAddress("mT", &mT, &b_mT);
   fChain->SetBranchAddress("WPrimeMassSimpleFL", &WPrimeMassSimpleFL, &b_WPrimeMassSimpleFL);
   fChain->SetBranchAddress("WPrimeMassSimpleLL", &WPrimeMassSimpleLL, &b_WPrimeMassSimpleLL);
+  fChain->SetBranchAddress("WPrimeMass", &WPrimeMass, &b_WPrimeMass);
+  fChain->SetBranchAddress("Likelihood", &Likelihood, &b_Likelihood);
+  fChain->SetBranchAddress("WPType", &WPType, &b_WPType);
   fChain->SetBranchAddress("nPU", &nPU, &b_nPU);
   fChain->SetBranchAddress("nTrueInt", &nTrueInt, &b_nTrueInt);
   fChain->SetBranchAddress("nPV", &nPV, &b_nPV);

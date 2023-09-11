@@ -33,53 +33,22 @@ void CombineHistogramDumpster::Loop()
   //define bin for analysis
   TString binS = TString::Format("Wprime%d", bin);
   TString gn = dset.GroupName;
+
   //define variations
   vector<TH1F*> WPrimeMass_FL;
+
   //first variations are all weight variations and map 1:1, region variations start at index 21
   vector<TString> variations = {"" // 0
   , "electronScaleUp", "electronScaleDown", "electronResUp", "electronResDown", "JESUp", "JESDown", "JERUp", "JERDown" // 1 - 8
   , "electronUp", "electronDown", "muonTriggerUp", "muonTriggerDown", "muonIdUp", "muonIdDown", "muonIsoUp", "muonIsoDown" // 9 - 16
   , "BjetTagCorrUp", "BjetTagCorrDown", "BjetTagUncorrUp", "BjetTagUncorrDown", "PUIDUp", "PUIDDown", "L1PreFiringUp", "L1PreFiringDown" // 17 - 24
   , "PUreweightUp", "PUreweightDown", "PDFUp", "PDFDown", "LHEScaleUp", "LHEScaleDown", // 25 - 30
-
   };
-  for (unsigned i = 1; i < variations.size(); ++i) {
+
+  for (unsigned i = 0; i < variations.size(); ++i) {
     variations[i] = gn + "_" + binS + "_" + variations[i];
   }
 
-  // vector<TString> variations = {
-  //   gn + "_" + binS,                             // 0
-  //   gn + "_" + binS + "_" + "electronUp",        // 1
-  //   gn + "_" + binS + "_" + "electronDown",      // 2
-	// 	gn + "_" + binS + "_" + "muonTriggerUp",     // 3
-	// 	gn + "_" + binS + "_" + "muonTriggerDown",   // 4
-	// 	gn + "_" + binS + "_" + "muonIdUp",          // 5
-	// 	gn + "_" + binS + "_" + "muonIdDown",        // 6
-	// 	gn + "_" + binS + "_" + "muonIsoUp",         // 7
-	// 	gn + "_" + binS + "_" + "muonIsoDown",       // 8
-	// 	gn + "_" + binS + "_" + "BjetTagCorrUp",     // 9
-	// 	gn + "_" + binS + "_" + "BjetTagCorrDown",   // 10
-  //   gn + "_" + binS + "_" + "BjetTagUncorrUp",   // 11
-	// 	gn + "_" + binS + "_" + "BjetTagUncorrDown", // 12
-	// 	gn + "_" + binS + "_" + "PUIDUp",            // 13
-	// 	gn + "_" + binS + "_" + "PUIDDown",          // 14
-	// 	gn + "_" + binS + "_" + "L1PreFiringUp",     // 15
-	// 	gn + "_" + binS + "_" + "L1PreFiringDown",
-	// 	gn + "_" + binS + "_" + "PUreweightUp",
-	// 	gn + "_" + binS + "_" + "PUreweightDown",
-	// 	gn + "_" + binS + "_" + "PDFUp",
-	// 	gn + "_" + binS + "_" + "PDFDown",
-	// 	gn + "_" + binS + "_" + "LHEScaleUp",
-	// 	gn + "_" + binS + "_" + "LHEScaleDown",
-	// 	gn + "_" + binS + "_" + "electronScaleUp",
-	// 	gn + "_" + binS + "_" + "electronScaleDown",
-	// 	gn + "_" + binS + "_" + "electronResUp",
-	// 	gn + "_" + binS + "_" + "electronResDown",
-	// 	gn + "_" + binS + "_" + "JESUp",
-	// 	gn + "_" + binS + "_" + "JESDown",
-	// 	gn + "_" + binS + "_" + "JERUp",
-	// 	gn + "_" + binS + "_" + "JERDown"
-  // };
   for(unsigned i = 0; i < variations.size(); ++i) WPrimeMass_FL.push_back(new TH1F(variations[i],"W' mass, simplified, FL case; m_{W'} [GeV/c^{2}]; Events", 400, 0., 2000.));
 
   if (fChain == 0) return;
@@ -121,12 +90,12 @@ void CombineHistogramDumpster::Loop()
   TFile *savefile;
   //if(!Iterator) savefile = new TFile("TestHistograms/SimpleShapes.root","RECREATE");
   //else savefile = new TFile("TestHistograms/SimpleShapes.root","WRITE");
-  savefile = new TFile(TString::Format("TestHistograms/SimpleShapes%d.root",Iterator),"RECREATE");
+  savefile = new TFile(TString::Format("TestHistograms/SimpleShapes_Bin%d_%d.root",bin,Iterator),"RECREATE");
   savefile->cd();
   for(unsigned i = 0; i < WPrimeMass_FL.size(); ++i){
     if(dset.Type == 0){
       if(i>0) continue;
-      if(Iterator == 1) WPrimeMass_FL[i]->Write("data_obs_" + binS);
+      if(Iterator <= 1) WPrimeMass_FL[i]->Write("data_obs_" + binS);
       else continue;
     }
     else WPrimeMass_FL[i]->Write(WPrimeMass_FL[i]->GetName());
