@@ -4,7 +4,7 @@ import ROOT
 #define the input names
 signalNames = ["M$MASS"] #$MASS gets replaced by runing combine with -m option, supports only 1 signal mass at a time
 bgrNames = ["ttbar", "wjets", "single_top", "diboson"]
-binNumber = 1152 #this needs to be set
+binNumber = 1153 #this needs to be set
 yearNumber = 2018
 
 yearName = str(yearNumber)
@@ -17,7 +17,7 @@ if os.path.isdir("TestHistograms"):
 else:
   os.system("mkdir TestHistograms") #make directory, if it doesn't exist
 os.system("root -l -b -q 'runCombineHistogramDumpster.C+(" + str(binNumber) + ", " + str(yearNumber) + ")'") #This does not yet provide a year, as only 2018 is processed
-os.system("hadd -f SimpleShapes_" + binName + ".root TestHistograms/*.root") #hadd all histograms to a convenient combined file
+os.system("hadd -f SimpleShapes_" + binName + ".root TestHistograms/SimpleShapes_Bin" + str(binNumber) + "*.root") #hadd all histograms to a convenient combined file
 
 #define correlated entities for usage in card
 #https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun2#Combination_and_correlations
