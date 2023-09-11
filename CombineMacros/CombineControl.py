@@ -52,7 +52,7 @@ f.write("bin         " + binName + "\n")
 #load ROOT file, find observation number
 print("Reading observed events numbers")
 r = ROOT.TFile.Open("SimpleShapes_" + binName + ".root", "read")
-h = r.Get("data_obs_" + binName)
+h = r.Get("data_obs_" + binName + "_")
 observed = h.Integral()
 f.write("observation " + str(observed) + "\n")
 f.write("----------\n")
