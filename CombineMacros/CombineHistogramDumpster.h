@@ -93,7 +93,7 @@ public :
   TBranch        *b_nPV;   //!
   TBranch        *b_nPVGood;   //!
 
-  CombineHistogramDumpster(TChain *tree = 0, unsigned it_ = 99, int bin_ = 1152, TString year_ = "2018", bool ScaleTtbar_ = false);
+  CombineHistogramDumpster(TChain *tree = 0, unsigned it_ = 99, int bin_ = 1152, TString year_ = "2018", int SFreg_ = 0);
   virtual ~CombineHistogramDumpster();
   virtual Int_t    Cut(Long64_t entry);
   virtual Int_t    GetEntry(Long64_t entry);
@@ -107,13 +107,13 @@ public :
   string YearType;
   Dataset dset;
   int bin;
-  bool ScaleTtbar;
+  int SFreg;
 };
 
 #endif
 
 #ifdef CombineHistogramDumpster_cxx
-CombineHistogramDumpster::CombineHistogramDumpster(TChain *tree, unsigned it_, int bin_, TString year_, bool ScaleTtbar_) : fChain(0) 
+CombineHistogramDumpster::CombineHistogramDumpster(TChain *tree, unsigned it_, int bin_, TString year_, int SFreg_) : fChain(0) 
 {
   if(it_>39) {
     std::cout<<"iterator out of range"<<std::endl;
@@ -129,7 +129,7 @@ CombineHistogramDumpster::CombineHistogramDumpster(TChain *tree, unsigned it_, i
     Iterator = it_;
     YearType = year_;
     bin = bin_;
-    ScaleTtbar_;
+    SFreg = SFreg_;
   }
   Init(tree);
 }
