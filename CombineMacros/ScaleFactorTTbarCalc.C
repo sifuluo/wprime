@@ -11,11 +11,13 @@
 
 //derive ttbar SF from 2-tag regions of same multiplicity and lepton flavour, then propagate stat uncertainty envelope bin-by-bin and do syst variation histograms
 void ScaleFactorTTbarCalc(int bin=1152, int year=2018){
-  
+ 
+  TString sYear = TString::Format("%d",year);
+ 
   vector<TString> variations = {"" // 0
     , "electronScaleUp", "electronScaleDown", "electronResUp", "electronResDown", "JESUp", "JESDown", "JERUp", "JERDown" // 1 - 8
     , "electronUp", "electronDown", "muonTriggerUp", "muonTriggerDown", "muonIdUp", "muonIdDown", "muonIsoUp", "muonIsoDown" // 9 - 16
-    , "BjetTagCorrUp", "BjetTagCorrDown", "BjetTagUncorrUp", "BjetTagUncorrDown", "PUIDUp", "PUIDDown", "L1PreFiringUp", "L1PreFiringDown" // 17 - 24
+    , "BjetTagCorrUp", "BjetTagCorrDown", "BjetTagUncorr"+sYear+ "Up", "BjetTagUncorr"+sYear+ "Down", "PUIDUp", "PUIDDown", "L1PreFiringUp", "L1PreFiringDown" // 17 - 24
     , "PUreweightUp", "PUreweightDown", "PDFUp", "PDFDown", "LHEScaleUp", "LHEScaleDown", // 25 - 30
   };
 
@@ -29,7 +31,7 @@ void ScaleFactorTTbarCalc(int bin=1152, int year=2018){
     TFile *infile = new TFile(TString::Format("TestHistograms/SimpleShapes_Bin%d_%d.root",bin,i),"READ");
     Dataset dset = dlib.GetDataset(i);
     TString gn = dset.GroupName;
-    if(i<=1) dataHist = *(TH1F*)(infile->Get(TString::Format("data_obs_Wprime%d",bin)))->Clone("dataHist");
+    if(i<=1) dataHist = *(TH1F*)(infile->Get(TString::Format("data_obs_Wprime%d_",bin)))->Clone("dataHist");
     else if(i==2){
       for(unsigned j = 0; j < variations.size(); ++j) ttbarHists.push_back(*(TH1F*)(infile->Get(TString::Format(gn+"_Wprime%d_"+variations[j],bin)))->Clone(TString::Format("ttbar_%d",j)));
     }
@@ -64,7 +66,6 @@ void ScaleFactorTTbarCalc(int bin=1152, int year=2018){
     float Deriv3 = 1.;
     float FinalEnvelope = 0.;
     //scan covariance matrix
-    std::cout<<"_____"<<bc<<"_____"<<std::endl;
     for(unsigned x = 0; x < 4; ++x){
       for(unsigned y = 0; y < 4; ++y){
         float Component = 1.;
@@ -76,11 +77,8 @@ void ScaleFactorTTbarCalc(int bin=1152, int year=2018){
         else if (y == 1) Component *= Deriv1;
         else if (y == 2) Component *= Deriv2;
         else if (y == 3) Component *= Deriv3;
-	std::cout<<Component<<std::endl;
 	Component *= cov(x,y);
-	std::cout<<Component<<std::endl;
 	FinalEnvelope += Component;
-	std::cout<<"-----"<<FinalEnvelope<<"-----"<<std::endl;
       }
     }
     SFs[0].SetBinContent(i+1, fitFunction->Eval(bc));
