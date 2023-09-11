@@ -482,49 +482,9 @@ public:
       //set SF and variation for primary only, HEEP as in https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaRunIIRecommendations#HEEPV7_0
       tmp.SFs = {1., 1., 1.};
       if(PassPrimary(tmp,0) && IsMC){
-        // FIXME!!!:
-        // If nominal is not primary, the lepton will not have scale factors?
-        // As we are accepting single veto lepton event and primary alone with random number of loose leptons.
-        if(fabs(tmp.Eta()) < 1.4442){
-          if(conf->SampleYear == "2016" || conf->SampleYear == "2016apv"){
-            tmp.SFs[0] = 0.983;
-            float unc = tmp.Et() < 90 ? 0.01 : min(1 + (tmp.Et() - 90) * 0.0022, 0.03);
-            tmp.SFs[1] = 0.983 + unc;
-            tmp.SFs[2] = 0.983 - unc;
-          }
-          else if(conf->SampleYear == "2017"){
-            tmp.SFs[0] = 0.968;
-            float unc = tmp.Et() < 90 ? 0.01 : min(1 + (tmp.Et() - 90) * 0.0022, 0.03);
-            tmp.SFs[1] = 0.968 + unc;
-            tmp.SFs[2] = 0.968 - unc;
-          }
-          else if(conf->SampleYear == "2018"){
-            tmp.SFs[0] = 0.969;
-            float unc = tmp.Et() < 90 ? 0.01 : min(1 + (tmp.Et() - 90) * 0.0022, 0.03);
-            tmp.SFs[1] = 0.969 + unc;
-            tmp.SFs[2] = 0.969 - unc;
-          }
-        }
-        else{
-          if(conf->SampleYear == "2016" || conf->SampleYear == "2016apv"){
-            tmp.SFs[0] = 0.991;
-            float unc = tmp.Et() < 90 ? 0.01 : min(1 + (tmp.Et() - 90) * 0.0143, 0.04);
-            tmp.SFs[1] = 0.991 + unc;
-            tmp.SFs[2] = 0.991 - unc;
-          }
-          else if(conf->SampleYear == "2017"){
-            tmp.SFs[0] = 0.973;
-            float unc = tmp.Et() < 90 ? 0.02 : min(1 + (tmp.Et() - 90) * 0.0143, 0.05);
-            tmp.SFs[1] = 0.973 + unc;
-            tmp.SFs[2] = 0.973 - unc;
-          }
-          else if(conf->SampleYear == "2018"){
-            tmp.SFs[0] = 0.984;
-            float unc = tmp.Et() < 90 ? 0.02 : min(1 + (tmp.Et() - 90) * 0.0143, 0.05);
-            tmp.SFs[1] = 0.984 + unc;
-            tmp.SFs[2] = 0.984 - unc;
-          }
-        }
+	tmp.SF[0] = evts->Electron_scaleFactor[i];
+	tmp.SF[1] = evts->Electron_scaleFactorUp[i];
+	tmp.SF[2] = evts->Electron_scaleFactorDown[i];
       }
 
       Electrons.push_back(tmp);
