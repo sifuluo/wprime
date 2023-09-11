@@ -45,7 +45,7 @@ f.write("imax " + str(1) + "\n") #number of channels
 f.write("jmax " + str(len(bgrNames)) + "\n") #number of backgrounds
 f.write("kmax " + str(len(systNames)) + "\n") #number of nuisance parameters
 f.write("----------\n")
-f.write("shapes * * SimpleShapes_" + binName + ".root $PROCESS_$CHANNEL $PROCESS_$CHANNEL_$SYSTEMATIC\n")
+f.write("shapes * * SimpleShapes_" + binName + ".root $PROCESS_$CHANNEL_ $PROCESS_$CHANNEL_$SYSTEMATIC\n")
 f.write("----------\n")
 f.write("bin         " + binName + "\n")
 

@@ -34,6 +34,17 @@ void CombineHistogramDumpster::Loop()
   TString binS = TString::Format("Wprime%d", bin);
   TString gn = dset.GroupName;
 
+  //set sample weight
+  int Year = 0;
+  int year = 0;
+  float Lumi = 0.;
+  if(YearType == "2016_APV")  {Year = 0; year = 2016; Lumi = 0.;}
+  else if(YearType == "2016") {Year = 1; year = 2016; Lumi = 41.58;}
+  else if(YearType == "2017") {Year = 2; year = 2017; Lumi = 49.81;}
+  else if(YearType == "2018") {Year = 3; year = 2018; Lumi = 67.86;}
+  float SampleWeight = 1.;
+  if(dset.Type != 0) SampleWeight = Lumi * dset.CrossSection / dset.Size[Year];
+
   //define variations
   vector<TH1F*> WPrimeMass_FL;
 
@@ -41,7 +52,7 @@ void CombineHistogramDumpster::Loop()
   vector<TString> variations = {"" // 0
   , "electronScaleUp", "electronScaleDown", "electronResUp", "electronResDown", "JESUp", "JESDown", "JERUp", "JERDown" // 1 - 8
   , "electronUp", "electronDown", "muonTriggerUp", "muonTriggerDown", "muonIdUp", "muonIdDown", "muonIsoUp", "muonIsoDown" // 9 - 16
-  , "BjetTagCorrUp", "BjetTagCorrDown", "BjetTagUncorrUp", "BjetTagUncorrDown", "PUIDUp", "PUIDDown", "L1PreFiringUp", "L1PreFiringDown" // 17 - 24
+  , "BjetTagCorrUp", "BjetTagCorrDown", "BjetTagUncorrUp"+YearType, "BjetTagUncorrDown"+YearType, "PUIDUp", "PUIDDown", "L1PreFiringUp", "L1PreFiringDown" // 17 - 24
   , "PUreweightUp", "PUreweightDown", "PDFUp", "PDFDown", "LHEScaleUp", "LHEScaleDown", // 25 - 30
   };
 
@@ -62,7 +73,7 @@ void CombineHistogramDumpster::Loop()
   if(YearType == "2016_APV")  {Year = 0; year = 2016; Lumi = 0.;}
   else if(YearType == "2016") {Year = 1; year = 2016; Lumi = 41.58;}
   else if(YearType == "2017") {Year = 2; year = 2017; Lumi = 49.81;}
-  else if(YearType == "2018") {Year = 3; year = 2017; Lumi = 67.86;}
+  else if(YearType == "2018") {Year = 3; year = 2018; Lumi = 67.86;}
   float SampleWeight = 1.;
   if(dset.Type != 0) SampleWeight = Lumi * dset.CrossSection / dset.Size[Year];
 
@@ -87,7 +98,7 @@ void CombineHistogramDumpster::Loop()
       //EventWeight variations
       for(unsigned i = 9; i < variations.size(); ++i){
         string HistName;
-        WPrimeMass_FL[i]->Fill(WPrimeMassSimpleFL->at(0),EventWeight[i]*SampleWeight);
+        WPrimeMass_FL[i]->Fill(WPrimeMassSimpleFL->at(0),EventWeight[i-8]*SampleWeight);
       }
     }
     
@@ -102,7 +113,7 @@ void CombineHistogramDumpster::Loop()
   for(unsigned i = 0; i < WPrimeMass_FL.size(); ++i){
     if(dset.Type == 0){
       if(i>0) continue;
-      if(Iterator <= 1) WPrimeMass_FL[i]->Write("data_obs_" + binS);
+      if(Iterator <= 1) WPrimeMass_FL[i]->Write("data_obs_" + binS + "_");
       else continue;
     }
     else if(Iterator == 2 && SFreg != 0){ //case of applying SF to ttbar
