@@ -8,7 +8,7 @@ void runCombineHistogramDumpster(int bin = 1153, int year = 2018){
   else if(bin/2000 == 1) binCR+=2100;
   if((bin-binCR)/60 == 1) binCR+=62;
   else binCR+=52;
-  for(unsigned i = 0; i < 40; ++i){
+  for(unsigned i = 0; i < 22; ++i){//skip signal samples
     if(bin/1000 == 1 && i == 0) continue;
     else if(bin/2000 == 1 && i == 1) continue;
     CombineHistogramDumpster D(0, i, binCR, TString::Format("%d", year), 0);
