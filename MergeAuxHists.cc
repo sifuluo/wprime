@@ -38,6 +38,7 @@ void MergeAuxHists(int isampleyear = 3) {
   vector<vector<TH1F*> > JSHists;
   vector<vector<TH1F*> > JSHists_mu;
   vector<vector<TH1F*> > JSHists_sig;
+  TH1F *LeptMass, *HadtMass, *HadWMass;
   JSHists.resize(etabins.size());
   JSHists_mu.resize(etabins.size());
   JSHists_sig.resize(etabins.size());
@@ -66,9 +67,31 @@ void MergeAuxHists(int isampleyear = 3) {
       }
     }
   }
+  for (unsigned ist = 0; ist < JSInFiles.size(); ++ist) {
+    TH1F* h1 = (TH1F*) JSInFiles[ist]->Get("LeptMass");
+    TH1F* h2 = (TH1F*) JSInFiles[ist]->Get("HadtMass");
+    TH1F* h3 = (TH1F*) JSInFiles[ist]->Get("HadWMass");
+    h1->Scale(JSNorms[ist]);
+    h2->Scale(JSNorms[ist]);
+    h3->Scale(JSNorms[ist]);
+    if (ist == 0) {
+      LeptMass = (TH1F*) h1->Clone();
+      HadtMass = (TH1F*) h2->Clone();
+      HadWMass = (TH1F*) h3->Clone();
+      LeptMass->SetDirectory(fJS);
+      HadtMass->SetDirectory(fJS);
+      HadWMass->SetDirectory(fJS);
+    }
+    else {
+      LeptMass->Add(h1);
+      HadtMass->Add(h2);
+      HadWMass->Add(h3);
+    }
+  }
   fJS->Write();
   fJS->Save();
   
+
   vector<TFile*> bTEInFiles;
   vector<double> bTENorms;
   for (unsigned ist = 0; ist < dlib.DatasetNames.size(); ++ist) {

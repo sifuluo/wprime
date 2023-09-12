@@ -108,6 +108,12 @@ public:
     FillJet(j.Eta(), j.Pt(), g.Pt(), ew);
   }
 
+  void FillHypo(Hypothesis& h, double ew = 1) {
+    LeptMass->Fill(h.LepT().M(), ew);
+    HadtMass->Fill(h.HadT().M(), ew);
+    HadWMass->Fill(h.HadW().M(), ew);
+  }
+
   void PostProcess() {
     if (!conf->AuxHistCreation) return;
     ScaleFile->Write();
@@ -148,6 +154,14 @@ public:
     }
     // ScaleHists = jes;
     ScaleFuncs = fjes;
+    if (!conf->IgnoreMassDist) {
+      LeptMass = (TH1F*) ScaleFile->Get("LeptMass");
+      HadtMass = (TH1F*) ScaleFile->Get("HadtMass");
+      HadWMass = (TH1F*) ScaleFile->Get("HadWMass");
+      LeptMass->SetDirectory(0);
+      HadtMass->SetDirectory(0);
+      HadWMass->SetDirectory(0);
+    }
     ScaleFile->Close();
     cout << "Finished reading jet scale histograms and fitting." << endl;
     cout << "Function of etalow = " << etabins[1] << ", ptlow = " << ptbins[1][2] << ", mean = " << ScaleFuncs[1][2]->GetParameter(1) <<endl;
@@ -171,10 +185,13 @@ public:
 
   // Evaluating the likelihood of mass of a W / t
   double EvalW(TLorentzVector w) {
-    return WMassDis->Eval(w.M());
+    return HadWMassFunc->Eval(w.M());
   }
-  double EvalTop(TLorentzVector t) {
-    return TopMassDis->Eval(t.M());
+  double EvalHadTop(TLorentzVector t) {
+    return LeptMassFunc->Eval(t.M());
+  }
+  double EvalLepTop(TLorentzVector t) {
+    return LeptMassFunc->Eval(t.M());
   }
 
   double SolveNeutrinos(TLorentzVector LVLep, TLorentzVector ScaledMET, vector<TLorentzVector>& LVNeu_, bool debug_ = false) {
@@ -225,16 +242,29 @@ public:
   }
 
   void SetUpMassFunctions() {
-    WMassDis = new TF1("WBW","[0]*TMath::BreitWigner(x,[1],[2])",0.0,200.0);
-    TopMassDis = new TF1("TBW","[0]*TMath::BreitWigner(x,[1],[2])",0.0,400.0);
-    WMassDis->SetParameters(100.,80.385,2.738);
-    TopMassDis->SetParameters(100.,171.186,26.76);
-    WMassDis->SetParameter(0,100./WMassDis->Eval(80.385)); // normalized it to peak at y = 1;
-    TopMassDis->SetParameter(0,100./TopMassDis->Eval(171.186)); // normalized it to peak at y = 1;
-    WMassMin = WMassDis->GetX(conf->JetScaleMinPMass, 0, 80.385);
-    WMassMax = WMassDis->GetX(conf->JetScaleMinPMass, 80.385, 200);
-    TopMassMin = TopMassDis->GetX(conf->JetScaleMinPMass, 0, 171.186);
-    TopMassMax = TopMassDis->GetX(conf->JetScaleMinPMass, 171.186, 400);
+    HadWMassFunc = new TF1("HadWBW","[0]*TMath::BreitWigner(x,[1],[2])",0.0,200.0);
+    LeptMassFunc = new TF1("LeptBW","[0]*TMath::BreitWigner(x,[1],[2])",0.0,400.0);
+    HadtMassFunc = new TF1("HadtBW","[0]*TMath::BreitWigner(x,[1],[2])",0.0,400.0);
+    HadWMassFunc->SetParameters(100.,80.385,2.738);
+    LeptMassFunc->SetParameters(100.,171.186,26.76);
+    HadtMassFunc->SetParameters(100.,171.186,26.76);
+    if (!conf->IgnoreMassDist) {
+      HadWMass->Fit(HadWMassFunc, "RMQ0", "", 0.0,200);
+      LeptMass->Fit(LeptMassFunc, "RMQ0", "", 0.0,400);
+      HadtMass->Fit(HadtMassFunc, "RMQ0", "", 0.0,400);
+    }
+    double chadw = HadWMassFunc->GetParameter(1);
+    double clept = LeptMassFunc->GetParameter(1);
+    double chadt = HadtMassFunc->GetParameter(1);
+    HadWMassFunc->SetParameter(0,100./HadWMassFunc->Eval(chadw)); // normalized it to peak at y = 1;
+    LeptMassFunc->SetParameter(0,100./LeptMassFunc->Eval(clept)); // normalized it to peak at y = 1;
+    HadtMassFunc->SetParameter(0,100./HadtMassFunc->Eval(chadt)); // normalized it to peak at y = 1;
+    HadWMassMin = HadWMassFunc->GetX(conf->JetScaleMinPMass, 0, chadw);
+    HadWMassMax = HadWMassFunc->GetX(conf->JetScaleMinPMass, chadw, 200);
+    LeptMassMin = LeptMassFunc->GetX(conf->JetScaleMinPMass, 0, clept);
+    LeptMassMax = LeptMassFunc->GetX(conf->JetScaleMinPMass, clept, 400);
+    HadtMassMin = HadtMassFunc->GetX(conf->JetScaleMinPMass, 0, chadt);
+    HadtMassMax = HadtMassFunc->GetX(conf->JetScaleMinPMass, chadt, 400);
   }
 
   void Clear() {
@@ -246,12 +276,9 @@ public:
   TFile* ScaleFile;
   vector< vector<TH1F*> > ScaleHists;
   vector< vector<TF1*> > ScaleFuncs;
-  TF1* TopMassDis;
-  TF1* WMassDis;
-  TH1F* LeptMass;
-  TH1F* HadtMass;
-  TH1F* HadWMass;
-  double WMassMin, WMassMax, TopMassMin, TopMassMax;
+  TF1 *LeptMassFunc, *HadtMassFunc, *HadWMassFunc;
+  TH1F *LeptMass, *HadtMass, *HadWMass;
+  double HadWMassMin, HadWMassMax, LeptMassMin, LeptMassMax, HadtMassMin, HadtMassMax;
 
 };
 

@@ -10,7 +10,7 @@ using namespace std;
 class Hypothesis {
 public:
   Hypothesis() {
-
+    
   };
 
   void ResetJets() {
@@ -38,6 +38,9 @@ public:
     }
   }
 
+  TLorentzVector LepW() {
+    return Lep + Neu;
+  }
   TLorentzVector LepT() {
     return Lep + Neu + Jets[3];
   }
@@ -72,7 +75,7 @@ public:
   }
 
   int WPType = -1; // 0 for FL, 1 for LL;
-  double PbTag, PPtPerm, PScale, PLep, PHadW, PHadT;
+  double PbTag, PPtPerm, PWPrimedR, PScale, PLep, PHadW, PHadT;
   vector<TLorentzVector> Jets;
   TLorentzVector Lep, MET, Neu;
   vector<double> Scales;
@@ -122,6 +125,7 @@ class GenHypothesis{
 public:
   GenHypothesis(int t_ = -1) {
     WPType = t_;
+    TotalTrials = NoPart = NoGen = NoReco = 0;
   };
 
   void Reset() {
@@ -138,6 +142,7 @@ public:
     LepW.Reset();
     OutPartDecay = vector<PartDecay>(7,PartDecay());
     OutParts.clear();
+    ValidPart = ValidGen = ValidReco = true;
   }
 
   void SetGenParts(vector<GenPart>& gp_) {
@@ -146,6 +151,7 @@ public:
     for (unsigned i = 0; i < gp->size(); ++i) {
       if (gp->at(i).index != (int)i) cout << "GenParticle index Inconsistent with its location in stored vector, please check" << endl;
     }
+    FindGenHypothesis();
   }
 
   int pid(int i) {
@@ -197,6 +203,7 @@ public:
 
   void FindGenHypothesis() {
     Reset();
+    TotalTrials++;
     for (unsigned i = 0; i < gp->size(); ++i) {
       if (abspid(i) == 34 && !IsDuplicated(i,WPs)) {
         PartDecay p_ = CompletePart(i);
@@ -323,16 +330,22 @@ public:
       OutPartDecay[5].Print("Lep");
       OutPartDecay[6].Print("Neu");
     }
-
+    ValidPart = true;
     for (unsigned i = 0; i < OutPartDecay.size(); ++i) {
       // GenPart gp_ = gp->at(OutPartDecay[i].last);
       // cout << Form("%i th part decay pid = %i, part pid = %i", i, pid(OutPartDecay[i].last), gp_.pdgId) <<endl;
       OutParts.push_back(gp->at(OutPartDecay[i].last));
+      if (OutParts[i].Pt() == 0) {
+        ValidPart = ValidGen = ValidReco = false;
+        cout << "OutPart " << i << " not found";
+        OutPartDecay[i].Print("--");
+      }
     }
     // cout << "OutPartDecay size = " << OutPartDecay.size() << ", OutParts size = " << OutParts.size() << endl;
   }
 
   vector<int> MatchToJets(const vector<GenJet>& gjs, const vector<Jet>& js) {
+    ValidGen = ValidReco = true;
     OutGenJetPerm = vector<int> (5,-1);
     OutJetPerm = vector<int> (5,-1);
     OutGenJets = vector<GenJet> (5,GenJet());
@@ -342,11 +355,15 @@ public:
       OutJetPerm.clear();
       OutGenJets.clear();
       OutJets.clear();
+      ValidGen = ValidReco = false;
+      NoPart++;
       return OutJetPerm;
     }
     for (unsigned i = 0; i < 5; ++i) {
       float mindr = 0.4;
+      OutGenJetPerm[i] = -1;
       for (unsigned j = 0; j < gjs.size(); ++j) {
+        if (gjs[j].Pt() == 0) continue;
         float dr = OutParts[i].DeltaR(gjs[j]);
         if (dr < mindr) {
           mindr = dr;
@@ -357,6 +374,8 @@ public:
         OutJetPerm.clear();
         OutGenJets.clear();
         OutJets.clear();
+        ValidGen = ValidReco = false;
+        NoGen++;
         return OutJetPerm;
       }
       if (abs(OutParts[i].pdgId) != abs(gjs[OutGenJetPerm[i]].partonFlavour) && Debug) {
@@ -366,20 +385,110 @@ public:
 
     for (unsigned i = 0; i < 5; ++i) {
       OutGenJets[i] = gjs[OutGenJetPerm[i]];
+      OutJetPerm[i] = -1;
       for (unsigned j = 0; j < js.size(); ++j) {
+        if (js[j].Pt() == 0) continue;
         if (js[j].genJetIdx == OutGenJetPerm[i]) {
           OutJetPerm[i] = j;
           OutJets[i] = js[j];
         }
       }
+      // if (OutJetPerm[i] == -1) { // In 1000 events, the successes increased from 230 to 231. Very minimal increase
+      //   for (unsigned j = 0; j < js.size(); ++j) {
+      //     if (js[j].Pt() == 0) continue;
+      //     if (js[j].DeltaR(OutGenJets[i]) < 0.4) {
+      //       OutJetPerm[i] = j;
+      //       OutJets[i] = js[j];
+      //     }
+      //   }
+      // }
       if (OutJetPerm[i] == -1) {
         OutJetPerm.clear();
-        OutGenJets.clear();
         OutJets.clear();
+        ValidReco = false;
+        NoReco++;
         return OutJetPerm;
       }
     }
+    Successes++;
     return OutJetPerm;
+  }
+
+  Lepton MatchToLeptons(const vector<Lepton>& leps) {
+    float mindr = 0.4;
+    OutLep = Lepton();
+    for (unsigned il = 0; il < leps.size(); ++il) {
+      float dr = leps[il].DeltaR(OutParts[5]);
+      if (dr < mindr) {
+        mindr = dr;
+        OutLep = leps[il];
+      }
+    }
+    return OutLep;
+  }
+
+  void CreateHypothesisSet(TLorentzVector TheLep, TLorentzVector RecoMet) {
+    GenPartHypo.Jets.resize(5);
+    GenHypo.Jets.resize(5);
+    RecoHypo.Jets.resize(5);
+    TarRecoHypo.Jets.resize(5);
+    RecoHypo.Lep = TarRecoHypo.Lep = TheLep;
+    RecoHypo.Neu = TarRecoHypo.Neu = RecoMet;
+    for (unsigned i = 0; i < 5; ++i) {
+      GenPartHypo.Jets[i] = OutParts[i];
+      GenHypo.Jets[i] = OutGenJets[i];
+      RecoHypo.Jets[i] = OutJets[i];
+      TarRecoHypo.Jets[i].SetPtEtaPhiM(OutGenJets[i].Pt(), OutJets[i].Eta(), OutJets[i].Phi(), OutJets[i].M());
+      TarRecoHypo.Neu = TarRecoHypo.Neu + RecoHypo.Jets[i] - TarRecoHypo.Jets[i];
+    }
+    GenPartHypo.Lep = OutParts[5];
+    GenPartHypo.Neu = OutParts[6];
+    GenHypo.Lep =  OutParts[5];
+    GenHypo.Neu = OutParts[6];
+  }
+
+  void Summarize() {
+    cout << "Total trials: " << TotalTrials << ", ";
+    cout << "NoPart: " << NoPart << ", NoGen: " << NoGen << ", NoReco: " << NoReco << ", Successes: " << Successes << endl;
+  }
+
+  void ValidateOutput() {
+    if (!ValidPart) {
+      cout << "Incomplete Parts" << endl << endl;
+      return;
+    }
+    if (GenPartHypo.HadW().M() > 82. || GenPartHypo.HadW().M() < 78.) {
+      cout << "GenPartHypo HadW = " << GenPartHypo.HadW().M();
+      cout << ", Jet0 Pt = " << OutParts[0].Pt() << ", Jet1 Pt = " << OutParts[1].Pt() << endl;
+    }
+    if (GenPartHypo.LepW().M() > 82. || GenPartHypo.LepW().M() < 78.) cout << "GenPartHypo LepW = " << GenPartHypo.LepW().M() << endl;
+    if (GenPartHypo.HadT().M() > 180. || GenPartHypo.HadT().M() < 160.) cout << "GenPartHypo HadT = " << GenPartHypo.HadT().M() << endl;
+    if (GenPartHypo.LepT().M() > 180. || GenPartHypo.LepT().M() < 160.) cout << "GenPartHypo LepT = " << GenPartHypo.LepT().M() << endl;
+    return; // Fix Gen first
+    if (!ValidGen) {
+      cout << "Incomplete Gen" << endl << endl;
+      return;
+    }
+    if (GenHypo.HadW().M() > 90. || GenHypo.HadW().M() < 70.) cout << "GenHypo HadW = " << GenHypo.HadW().M() << endl;
+    if (GenHypo.LepW().M() > 90. || GenHypo.LepW().M() < 70.) cout << "GenHypo LepW = " << GenHypo.LepW().M() << endl;
+    if (GenHypo.HadT().M() > 180. || GenHypo.HadT().M() < 160.) cout << "GenHypo HadT = " << GenHypo.HadT().M() << endl;
+    if (GenHypo.LepT().M() > 180. || GenHypo.LepT().M() < 160.) cout << "GenHypo LepT = " << GenHypo.LepT().M() << endl;
+    
+    if (!ValidReco) {
+      cout << "Incomplete Reco" << endl << endl;
+      return;
+    }
+    TLorentzVector tmp = RecoHypo.Lep;
+    if (RecoHypo.Lep.Pt() == 0) {
+      RecoHypo.Lep = OutParts[5];
+      cout << "RecoHypo Lep Not Found" << endl;
+    }
+    if (RecoHypo.HadW().M() > 100. || RecoHypo.HadW().M() < 60.) cout << "RecoHypo HadW = " << RecoHypo.HadW().M() << endl;
+    if (RecoHypo.LepW().M() > 100. || RecoHypo.LepW().M() < 60.) cout << "RecoHypo LepW = " << RecoHypo.LepW().M() << endl;
+    if (RecoHypo.HadT().M() > 200. || RecoHypo.HadT().M() < 140.) cout << "RecoHypo HadT = " << RecoHypo.HadT().M() << endl;
+    if (RecoHypo.LepT().M() > 200. || RecoHypo.LepT().M() < 140.) cout << "RecoHypo LepT = " << RecoHypo.LepT().M() << endl;
+    RecoHypo.Lep = tmp;
+    cout << endl;
   }
 
   // Hypothesis GetTargetHypo() {
@@ -389,6 +498,7 @@ public:
   bool Debug = false;
   const vector<GenPart>* gp;
   int WPType; // 0: FL, 1: LL
+  bool ValidPart, ValidGen, ValidReco;
   vector<PartDecay> WPs, Ts, Ws;
   PartDecay WP, HadT, HadW, LepT, LepW, WPt, OTt;
   vector<PartDecay> OutPartDecay; // LJ1, LJ2, Hadb, Lepb, WPb, Lep, Neu;
@@ -396,7 +506,12 @@ public:
   vector<GenJet> OutGenJets;
   vector<int> OutGenJetPerm;
   vector<Jet> OutJets;
+  Lepton OutLep;
   vector<int> OutJetPerm;
+
+  Hypothesis GenPartHypo, GenHypo, RecoHypo, TarRecoHypo;
+
+  int TotalTrials, NoPart, NoGen, NoReco, Successes;
 };
 
 #endif

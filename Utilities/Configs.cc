@@ -21,6 +21,9 @@ struct Configs {
     SampleType = dlib.DatasetNames[ist_];
     Type = dlib.Datasets[SampleType].Type;
     IsMC = Type > 0;
+    TString st = SampleType;
+    if (st.Contains("FL")) WPType = 0;
+    else if (st.Contains("LL")) WPType = 1;
   };
 
   ~Configs() {
@@ -34,6 +37,7 @@ struct Configs {
   string SampleType; // Should be SampleName actually
   bool IsMC;
   int Type; // 0: Data, 1: MC, 2: Signal
+  int WPType; // 0: FL(Hadronic) 1: LL(Leptonic)
 
   // iFile >=0 will be index of files in the text file containing the path to files
   // if iFile < 0, a InputFile must be specified to be run on.
@@ -70,6 +74,7 @@ struct Configs {
   bool UseMergedAuxHist = false;
 
   bool RunFitter = false;
+  bool IgnoreMassDist = true;
   double JetScaleMinPMass = 0.01;
 
   vector<int> AcceptedRegions = {};

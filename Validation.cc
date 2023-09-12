@@ -206,7 +206,7 @@ void Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
   conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/SingleMuon/2018/2B07B4C0-852B-9B4F-83FA-CA6B047542D1.root";
   conf->LocalOutput = false;
   conf->PrintProgress = true;
-  conf->RunFitter = false;
+  conf->RunFitter = true;
   conf->UseMergedAuxHist = true;
   conf->AcceptRegions({1,2},{1},{5,6},{0,1,2,3,4,5,6});
   // conf->DebugList = {"LeptonRegion"};
@@ -220,7 +220,7 @@ void Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
   ThisAnalysis *a = new ThisAnalysis(conf);
   if (!(a->SetOutput("Validation"))) return;
   for (Long64_t iEvent = 0; iEvent < a->GetEntryMax(); ++iEvent) {
-    if (a->ReadEvent(iEvent)) continue;
+    if (a->ReadEvent(iEvent) < 0) continue;
     if (!a->WithinROI()) continue;
     // a->r->BranchSizeCheck();
     a->FillBranchContent();

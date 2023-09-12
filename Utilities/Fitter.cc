@@ -67,15 +67,15 @@ public:
     // Otherwise if at least one neutrino solution is reached, PNeu will always be = 1
     if (PNeu < 0) return (-1.0 * PNeu + 1.);
     // Comparing likelihood of recontructing a top with either neutrino solutions
-    ScaledHypo.PLep = JS->EvalTop(ScaledHypo.Lep + Neus[0] + ScaledHypo.Jets[3]);
+    ScaledHypo.PLep = JS->EvalLepTop(ScaledHypo.Lep + Neus[0] + ScaledHypo.Jets[3]);
     ScaledHypo.Neu = Neus[0];
-    double PLep1 = JS->EvalTop(ScaledHypo.Lep + Neus[1] + ScaledHypo.Jets[3]);
+    double PLep1 = JS->EvalLepTop(ScaledHypo.Lep + Neus[1] + ScaledHypo.Jets[3]);
     if (ScaledHypo.PLep < PLep1) {
       ScaledHypo.PLep = PLep1;
       ScaledHypo.Neu = Neus[1];
     }
     ScaledHypo.PHadW = JS->EvalW(ScaledHypo.HadW());
-    ScaledHypo.PHadT = JS->EvalTop(ScaledHypo.HadT());
+    ScaledHypo.PHadT = JS->EvalHadTop(ScaledHypo.HadT());
 
     ScaledHypo.PScale = ScaleLikelihood(scales);
     // GetPFitter = PScale * PLep * PHadW * PHadT;
@@ -166,12 +166,12 @@ public:
     LowScaledHypo.ScaleJets(lowlimit);
     Hypothesis HighScaledHypo = BaseHypo;
     HighScaledHypo.ScaleJets(uplimit);
-    if (max(max(HighScaledHypo.HadW().M(), LowScaledHypo.HadW().M()), BaseHypo.HadW().M()) < JS->WMassMin) return false;
-    if (min(min(HighScaledHypo.HadW().M(), LowScaledHypo.HadW().M()), BaseHypo.HadW().M()) > JS->WMassMax) return false;
-    if (max(max(HighScaledHypo.HadT().M(), LowScaledHypo.HadT().M()), BaseHypo.HadT().M()) < JS->TopMassMin) return false;
-    if (min(min(HighScaledHypo.HadT().M(), LowScaledHypo.HadT().M()), BaseHypo.HadT().M()) > JS->TopMassMax) return false;
-    if (max(max(HighScaledHypo.LepT().M(), LowScaledHypo.LepT().M()), BaseHypo.LepT().M()) < JS->TopMassMin) return false;
-    if (min(min(HighScaledHypo.LepT().M(), LowScaledHypo.LepT().M()), BaseHypo.LepT().M()) > JS->TopMassMax) return false;
+    if (max(max(HighScaledHypo.HadW().M(), LowScaledHypo.HadW().M()), BaseHypo.HadW().M()) < JS->HadWMassMin) return false;
+    if (min(min(HighScaledHypo.HadW().M(), LowScaledHypo.HadW().M()), BaseHypo.HadW().M()) > JS->HadWMassMax) return false;
+    if (max(max(HighScaledHypo.HadT().M(), LowScaledHypo.HadT().M()), BaseHypo.HadT().M()) < JS->HadtMassMin) return false;
+    if (min(min(HighScaledHypo.HadT().M(), LowScaledHypo.HadT().M()), BaseHypo.HadT().M()) > JS->HadtMassMax) return false;
+    if (max(max(HighScaledHypo.LepT().M(), LowScaledHypo.LepT().M()), BaseHypo.LepT().M()) < JS->LeptMassMin) return false;
+    if (min(min(HighScaledHypo.LepT().M(), LowScaledHypo.LepT().M()), BaseHypo.LepT().M()) > JS->LeptMassMax) return false;
     return true;
   }
   
@@ -202,20 +202,24 @@ public:
       // Evaluating permutation likelihood based on their pT order and bTagging status.
       double PbTag_h = PermEval->GetbTagPermLikelihood(AllbTags, Perms[ip], massh, 0);
       double PPtPerm_h = PermEval->GetPtPermLikelihood(AllJets, Perms[ip], massh, 0);
+      double PWPrimedR_h = PermEval->GetWPrimedRLikelihood(ScaledHypo.HadT(), ScaledHypo.WPb());
       double PbTag_l = PermEval->GetbTagPermLikelihood(AllbTags, Perms[ip], massl, 1);
       double PPtPerm_l = PermEval->GetPtPermLikelihood(AllJets, Perms[ip], massl, 1);
-      if (PbTag_h * PPtPerm_h > PbTag_l * PPtPerm_l) {
+      double PWPrimedR_l = PermEval->GetWPrimedRLikelihood(ScaledHypo.LepT(), ScaledHypo.WPb());
+      if (PbTag_h * PPtPerm_h * PWPrimedR_h > PbTag_l * PPtPerm_l * PWPrimedR_l) {
         ScaledHypo.PbTag = PbTag_h;
         ScaledHypo.PPtPerm = PPtPerm_h;
+        ScaledHypo.PWPrimedR = PWPrimedR_h;
         ScaledHypo.WPType = 0;
       }
       else {
         ScaledHypo.PbTag = PbTag_l;
         ScaledHypo.PPtPerm = PPtPerm_l;
+        ScaledHypo.PWPrimedR = PWPrimedR_l;
         ScaledHypo.WPType = 1;
       }
       
-      double ThisP = ScaledHypo.PbTag * ScaledHypo.PPtPerm * PFitter;
+      double ThisP = ScaledHypo.PbTag * ScaledHypo.PPtPerm * ScaledHypo.PWPrimedR * PFitter;
       if (ThisP > 0 && ThisP > BestP) {
         BestP = ThisP;
         BestPerm = Perms[ip];

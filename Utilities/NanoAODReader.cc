@@ -136,7 +136,7 @@ public:
       ReadPileup();
     }
     ReadJets();
-    if (conf->bTagEffHistCreation) return 1;
+    if (conf->bTagEffHistCreation) return 0;
     ReadTriggers();
     ReadLeptons();
     ReadMET();
@@ -191,6 +191,7 @@ public:
 
   void ReadJets() {
     Jets.clear();
+    AllJets.clear();
     if (!PassedHEMCut) return;
     int emptysequence = 0;
     if (evts->nJet > evts->nJetMax) cout << "Error: nJet = " << evts->nJet << " at iEvent = " << iEvent << endl;
@@ -210,7 +211,7 @@ public:
       tmp.JERup().SetPtEtaPhiM(evts->Jet_pt_jerUp[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jerUp[i]);
       tmp.JERdown().SetPtEtaPhiM(evts->Jet_pt_jerDown[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jerDown[i]);
       tmp.JetId = evts->Jet_jetId[i];
-
+      if (conf->AuxHistCreation) AllJets.push_back(tmp);
       if (!PassCommon(tmp)) continue;
 
       //set PUID flags
@@ -949,7 +950,7 @@ public:
   int run, luminosityBlock;
   vector<GenPart> GenParts;
   vector<GenJet> GenJets;
-  vector<Jet> Jets;
+  vector<Jet> Jets, AllJets;
   vector<Trigger> Triggers;
   vector<Lepton> Leptons;
   Lepton TheLepton;

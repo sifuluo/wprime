@@ -162,14 +162,19 @@ public:
     PermFile = new TFile(FileName,"RECREATE");
     TString PtPermHistName = "PtPerm_" + conf->SampleYear + "_" + conf->SampleType;
     TString bTagPermHistName = "bTagPerm_" + conf->SampleYear + "_" + conf->SampleType;
+    // TString WPrimedRHistName = "WPrimedR_" + conf->SampleYear + "_" + conf->SampleType;
+    TString WPrimedRHistName = "WPrimedR";
     PtPermHist = new TH1F(PtPermHistName, PtPermHistName, 60,0,60);
     bTagPermHist = new TH1F(bTagPermHistName, bTagPermHistName, 40,0,40);
+    WPrimedRHist = new TH1F(WPrimedRHistName, WPrimedRHistName, 100,0,10);
   }
 
   void FillPerm(vector<Jet>& js, double ew = 1) {
     if (js.size() != 5) return;
     PtPermHist->Fill(GetPtPermIndex(js), ew);
     bTagPermHist->Fill(GetbTagPermIndex(js), ew);
+    // if (conf->WPType == 0) WPrimedRHist->Fill(js[4].DeltaR(js[0] + js[1] + js[2]));
+    // else if (conf->WPType == 1) WPrimedRHist->Fill(js[4].DeltaR())
   }
   
   void PostProcess() {
@@ -204,14 +209,19 @@ public:
       PtPermHists.push_back(h1);
       bTagPermHists.push_back(h2);
     }
+    TString WPrimedRFileName = conf->AuxHistBasePath + "WPrimedR_2018_FL500.root";
+    WPrimedRFile = new TFile(WPrimedRFileName,"READ");
+    WPrimedRHist = (TH1F*) WPrimedRFile->Get("WPrimedR");
+    WPrimedRHist->SetDirectory(0);
+    WPrimedRHist->Scale(1./WPrimedRHist->GetMaximum());
   }
 
   int LocateHist(double mass, int WPType) {
     int im = floor(mass / 100.);
-    if ((mass - im * 100.) >= 50.) im++;
+    if ((mass - im * 100.) >= 50.) im++; // Round up mass to int on the hundred digit
     if (im < 3) im = 3;
-    if (im > 11) im = 11;
-    im -= 3;
+    if (im > 11) im = 11; // Limit to the mass range
+    im -= 3; // Solve into index
     if (WPType == 1) im += 9; // "LL"
     return im; 
   }
@@ -236,12 +246,16 @@ public:
     return bTagPermHists[LocateHist(mass, WPType)]->GetBinContent(PtPermHists[LocateHist(mass, WPType)]->FindBin(GetbTagPermIndex(js)));
   }
 
+  double GetWPrimedRLikelihood(TLorentzVector t, TLorentzVector b) {
+    return WPrimedRHist->GetBinContent(WPrimedRHist->FindBin(t.DeltaR(b)));
+  }
+
   Configs* conf;
   string SampleType;
   TString FileName;
   TFile* PermFile;
-  TH1F* PtPermHist;
-  TH1F* bTagPermHist;
+  TFile* WPrimedRFile;
+  TH1F *PtPermHist, *bTagPermHist, *WPrimedRHist;
   vector<TH1F*> PtPermHists, bTagPermHists;
   vector<int> PtPerms;
 };
