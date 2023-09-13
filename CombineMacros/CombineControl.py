@@ -4,8 +4,10 @@ import ROOT
 #define the input names
 signalNames = ["M$MASS"] #$MASS gets replaced by runing combine with -m option, supports only 1 signal mass at a time
 bgrNames = ["ttbar", "wjets", "single_top", "diboson"]
-binNumber = 1152 #this needs to be set
+binNumber = 1153 #this needs to be set
 yearNumber = 2018
+
+yearName = str(yearNumber)
 binName = "Wprime" + str(binNumber)
 
 #First, generate the shape variation histograms
@@ -15,12 +17,26 @@ if os.path.isdir("TestHistograms"):
 else:
   os.system("mkdir TestHistograms") #make directory, if it doesn't exist
 os.system("root -l -b -q 'runCombineHistogramDumpster.C+(" + str(binNumber) + ", " + str(yearNumber) + ")'") #This does not yet provide a year, as only 2018 is processed
-os.system("hadd -f SimpleShapes_" + binName + ".root TestHistograms/*.root") #hadd all histograms to a convenient combined file
+os.system("hadd -f SimpleShapes_" + binName + ".root TestHistograms/SimpleShapes_Bin" + str(binNumber) + "*.root") #hadd all histograms to a convenient combined file
+
+#define correlated entities for usage in card
+#https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun2#Combination_and_correlations
+lumiCorrVal = "0.0"
+lumiStatVal = "0.0"
+if yearNumber == 2016:
+  lumiCorrVal = "0.6"
+  lumiStatVal = "1.0"
+if yearNumber == 2017:
+  lumiCorrVal = "0.9"
+  lumiStatVal = "2.0"
+if yearNumber == 2018:
+  lumiCorrVal = "2.0"
+  lumiStatVal = "1.5"
 
 #define all the systematic names, types, and values
-systNames = ["lumi", "electron", "muonTrigger", "muonId", "muonIso", "BjetTagCorr", "BjetTagUncorr", "PUID",  "L1PreFiring", "PUreweight", "PDF",  "LHEScale", "electronScale", "electronRes", "JES",  "JER"]
-systTypes = ["lnN",  "shape"   , "shape"      , "shape",  "shape",   "shape",       "shape",         "shape", "shape",       "shape",      "shape","shape",    "shape",         "shape",       "shape","shape"] 
-systVals  = ["1.025","1"       , "1",           "1",      "1",       "1",           "1",             "1",     "1",           "1",          "1",    "1",        "1",             "1",           "1",    "1"]
+systNames = ["lumiCorr",  "lumiStat"+yearName, "electron", "muonTrigger", "muonId", "muonIso", "BjetTagCorr", "BjetTagUncorr"+yearName, "PUID",  "L1PreFiring", "PUreweight", "PDF",   "LHEScale", "electronScale", "electronRes", "JES",   "JER"]
+systTypes = ["lnN",       "lnN",               "shape",    "shape",       "shape",  "shape",   "shape",       "shape",                  "shape", "shape",       "shape",      "shape", "shape",    "shape",         "shape",       "shape", "shape"] 
+systVals  = [lumiCorrVal, lumiStatVal,         "1",        "1",           "1",      "1",       "1",           "1",                      "1",     "1",           "1",          "1",     "1",        "1",             "1",           "1",     "1"]
 
 #write the actual combine card
 print("Creating Combine card file")
@@ -29,14 +45,14 @@ f.write("imax " + str(1) + "\n") #number of channels
 f.write("jmax " + str(len(bgrNames)) + "\n") #number of backgrounds
 f.write("kmax " + str(len(systNames)) + "\n") #number of nuisance parameters
 f.write("----------\n")
-f.write("shapes * * SimpleShapes_" + binName + ".root $PROCESS_$CHANNEL $PROCESS_$CHANNEL_$SYSTEMATIC\n")
+f.write("shapes * * SimpleShapes_" + binName + ".root $PROCESS_$CHANNEL_ $PROCESS_$CHANNEL_$SYSTEMATIC\n")
 f.write("----------\n")
 f.write("bin         " + binName + "\n")
 
 #load ROOT file, find observation number
 print("Reading observed events numbers")
 r = ROOT.TFile.Open("SimpleShapes_" + binName + ".root", "read")
-h = r.Get("data_obs_" + binName)
+h = r.Get("data_obs_" + binName + "_")
 observed = h.Integral()
 f.write("observation " + str(observed) + "\n")
 f.write("----------\n")

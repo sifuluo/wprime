@@ -33,74 +33,49 @@ void CombineHistogramDumpster::Loop()
   //define bin for analysis
   TString binS = TString::Format("Wprime%d", bin);
   TString gn = dset.GroupName;
+
+  //set sample weight
+  int Year = 0;
+  int year = 0;
+  float Lumi = 0.;
+  if(YearType == "2016_APV")  {Year = 0; year = 2016; Lumi = 0.;}
+  else if(YearType == "2016") {Year = 1; year = 2016; Lumi = 41.58;}
+  else if(YearType == "2017") {Year = 2; year = 2017; Lumi = 49.81;}
+  else if(YearType == "2018") {Year = 3; year = 2018; Lumi = 67.86;}
+  float SampleWeight = 1.;
+  if(dset.Type != 0) SampleWeight = Lumi * dset.CrossSection / dset.Size[Year];
+
   //define variations
   vector<TH1F*> WPrimeMass_FL;
+
   //first variations are all weight variations and map 1:1, region variations start at index 21
   vector<TString> variations = {"" // 0
   , "electronScaleUp", "electronScaleDown", "electronResUp", "electronResDown", "JESUp", "JESDown", "JERUp", "JERDown" // 1 - 8
   , "electronUp", "electronDown", "muonTriggerUp", "muonTriggerDown", "muonIdUp", "muonIdDown", "muonIsoUp", "muonIsoDown" // 9 - 16
-  , "BjetTagCorrUp", "BjetTagCorrDown", "BjetTagUncorrUp", "BjetTagUncorrDown", "PUIDUp", "PUIDDown", "L1PreFiringUp", "L1PreFiringDown" // 17 - 24
+  , "BjetTagCorrUp", "BjetTagCorrDown", "BjetTagUncorr"+YearType+"Up", "BjetTagUncorr"+YearType+"Down", "PUIDUp", "PUIDDown", "L1PreFiringUp", "L1PreFiringDown" // 17 - 24
   , "PUreweightUp", "PUreweightDown", "PDFUp", "PDFDown", "LHEScaleUp", "LHEScaleDown", // 25 - 30
-
   };
-  for (unsigned i = 1; i < variations.size(); ++i) {
+
+  for (unsigned i = 0; i < variations.size(); ++i) {
     variations[i] = gn + "_" + binS + "_" + variations[i];
   }
 
-  // vector<TString> variations = {
-  //   gn + "_" + binS,                             // 0
-  //   gn + "_" + binS + "_" + "electronUp",        // 1
-  //   gn + "_" + binS + "_" + "electronDown",      // 2
-	// 	gn + "_" + binS + "_" + "muonTriggerUp",     // 3
-	// 	gn + "_" + binS + "_" + "muonTriggerDown",   // 4
-	// 	gn + "_" + binS + "_" + "muonIdUp",          // 5
-	// 	gn + "_" + binS + "_" + "muonIdDown",        // 6
-	// 	gn + "_" + binS + "_" + "muonIsoUp",         // 7
-	// 	gn + "_" + binS + "_" + "muonIsoDown",       // 8
-	// 	gn + "_" + binS + "_" + "BjetTagCorrUp",     // 9
-	// 	gn + "_" + binS + "_" + "BjetTagCorrDown",   // 10
-  //   gn + "_" + binS + "_" + "BjetTagUncorrUp",   // 11
-	// 	gn + "_" + binS + "_" + "BjetTagUncorrDown", // 12
-	// 	gn + "_" + binS + "_" + "PUIDUp",            // 13
-	// 	gn + "_" + binS + "_" + "PUIDDown",          // 14
-	// 	gn + "_" + binS + "_" + "L1PreFiringUp",     // 15
-	// 	gn + "_" + binS + "_" + "L1PreFiringDown",
-	// 	gn + "_" + binS + "_" + "PUreweightUp",
-	// 	gn + "_" + binS + "_" + "PUreweightDown",
-	// 	gn + "_" + binS + "_" + "PDFUp",
-	// 	gn + "_" + binS + "_" + "PDFDown",
-	// 	gn + "_" + binS + "_" + "LHEScaleUp",
-	// 	gn + "_" + binS + "_" + "LHEScaleDown",
-	// 	gn + "_" + binS + "_" + "electronScaleUp",
-	// 	gn + "_" + binS + "_" + "electronScaleDown",
-	// 	gn + "_" + binS + "_" + "electronResUp",
-	// 	gn + "_" + binS + "_" + "electronResDown",
-	// 	gn + "_" + binS + "_" + "JESUp",
-	// 	gn + "_" + binS + "_" + "JESDown",
-	// 	gn + "_" + binS + "_" + "JERUp",
-	// 	gn + "_" + binS + "_" + "JERDown"
-  // };
   for(unsigned i = 0; i < variations.size(); ++i) WPrimeMass_FL.push_back(new TH1F(variations[i],"W' mass, simplified, FL case; m_{W'} [GeV/c^{2}]; Events", 400, 0., 2000.));
 
   if (fChain == 0) return;
 
   Long64_t nentries = fChain->GetEntriesFast();
 
+  //loop over events
   Long64_t nbytes = 0, nb = 0;
   for (Long64_t jentry=0; jentry<nentries;jentry++) {
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
+    
+    //blind data in SRs
+    if(Iterator < 2 && bin % 10 >= 3) continue;
 
-    //set sample weight
-    int Year = 0;
-    float Lumi = 0.;
-    if(YearType == "2016_APV")  {Year = 0; Lumi = 0.;}
-    else if(YearType == "2016") {Year = 1; Lumi = 41.58;}
-    else if(YearType == "2017") {Year = 2; Lumi = 49.81;}
-    else if(YearType == "2018") {Year = 3; Lumi = 67.86;}
-    float SampleWeight = 1.;
-    if(dset.Type != 0) SampleWeight = Lumi * dset.CrossSection / dset.Size[Year];
     //variations of selections
     for(unsigned i = 0; i < 9; ++ i){
       if(RegionIdentifier[i] != bin) continue;
@@ -112,22 +87,28 @@ void CombineHistogramDumpster::Loop()
       //EventWeight variations
       for(unsigned i = 9; i < variations.size(); ++i){
         string HistName;
-        WPrimeMass_FL[i]->Fill(WPrimeMassSimpleFL->at(0),EventWeight[i]*SampleWeight);
+        WPrimeMass_FL[i]->Fill(WPrimeMassSimpleFL->at(0),EventWeight[i-8]*SampleWeight);
       }
     }
     
   }
   //save all the W' variation histograms into a file
   TFile *savefile;
-  //if(!Iterator) savefile = new TFile("TestHistograms/SimpleShapes.root","RECREATE");
-  //else savefile = new TFile("TestHistograms/SimpleShapes.root","WRITE");
-  savefile = new TFile(TString::Format("TestHistograms/SimpleShapes%d.root",Iterator),"RECREATE");
+  savefile = new TFile(TString::Format("TestHistograms/SimpleShapes_Bin%d_%d.root",bin,Iterator),"RECREATE");
+  TFile *SFfile;
+  //only activate for SR runs with ttbar sample
+  if(SFreg != 0 && Iterator == 2) SFfile = new TFile(TString::Format("TestHistograms/SF_Bin%d_%d.root",SFreg,year));
   savefile->cd();
   for(unsigned i = 0; i < WPrimeMass_FL.size(); ++i){
     if(dset.Type == 0){
       if(i>0) continue;
-      if(Iterator == 1) WPrimeMass_FL[i]->Write("data_obs_" + binS);
+      if(Iterator <= 1) WPrimeMass_FL[i]->Write("data_obs_" + binS + "_");
       else continue;
+    }
+    else if(Iterator == 2 && SFreg != 0){ //case of applying SF to ttbar
+      TH1F *SF = (TH1F*)SFfile->Get("SFcalc_"+variations[i]);
+      WPrimeMass_FL[i]->Multiply(SF);
+      WPrimeMass_FL[i]->Write(WPrimeMass_FL[i]->GetName());
     }
     else WPrimeMass_FL[i]->Write(WPrimeMass_FL[i]->GetName());
   }
