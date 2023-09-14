@@ -13,7 +13,7 @@
 #include "Utilities/Permutations.cc"
 #include "Utilities/Hypothesis.cc"
 
-void CreateAuxHists(int sampleyear = 3, int sampletype = 2, int ifile = -1, string infile = "All") {
+void CreateAuxHists(int sampleyear = 3, int sampletype = 22, int ifile = -1, string infile = "All") {
   dlib.AppendAndrewDatasets();
   // infile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/wprime_500/2017/003C756A-BC7B-5A48-8F2E-A61D3CDC7C32.root";
   // sampletype = dlib.AddDataset_NGTCXS("WP500");
@@ -63,8 +63,12 @@ void CreateAuxHists(int sampleyear = 3, int sampletype = 2, int ifile = -1, stri
     gh->CreateHypothesisSet(r->TheLepton, r->Met);
     PM->FillPerm(gh->OutJets, r->EventWeights[0].first);
     Hypothesis Tar = gh->TarRecoHypo;
-    Tar.Neu = gh->OutParts[6]; // Use Gen-Level neutrino as to replace the met.
-    JS->FillHypo(Tar, r->EventWeights[0].first);
+    vector<TLorentzVector> Neus;
+    if (JS->SolveNeutrinos(Tar.Lep, Tar.Neu, Neus) == 1) {
+      if (fabs(172.186 - (Tar.Lep + Neus[0] + Tar.Jets[3]).M()) < fabs(172.186 - (Tar.Lep + Neus[1] + Tar.Jets[3]).M())) Tar.Neu = Neus[0];
+      else Tar.Neu = Neus[1];
+      JS->FillHypo(Tar, r->EventWeights[0].first);
+    }
   }
   JS->PostProcess();
   JS->Clear();

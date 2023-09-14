@@ -50,6 +50,9 @@ public:
   TLorentzVector HadT() {
     return Jets[0] + Jets[1] + Jets[2];
   }
+  TLorentzVector WPb() {
+    return Jets[4];
+  }
   TLorentzVector WPH() {
     return HadT() + Jets[4];
   }

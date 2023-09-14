@@ -28,7 +28,7 @@ public:
     if (conf->AuxHistCreation && conf->IsMC) CreateScaleHists();
     else {
       ReadScaleHists();
-      SetUpMassFunctions();
+      SetUpMassDist();
     }
   };
 
@@ -161,6 +161,9 @@ public:
       LeptMass->SetDirectory(0);
       HadtMass->SetDirectory(0);
       HadWMass->SetDirectory(0);
+      LeptMass->Scale(1./LeptMass->GetMaximum());
+      HadtMass->Scale(1./HadtMass->GetMaximum());
+      HadWMass->Scale(1./HadWMass->GetMaximum());
     }
     ScaleFile->Close();
     cout << "Finished reading jet scale histograms and fitting." << endl;
@@ -185,13 +188,25 @@ public:
 
   // Evaluating the likelihood of mass of a W / t
   double EvalW(TLorentzVector w) {
-    return HadWMassFunc->Eval(w.M());
+    if (conf->IgnoreMassDist) return HadWMassFunc->Eval(w.M()) / HadWMassFunc->GetMaximum();
+    return EvalFromHist(w.M(),0);
   }
   double EvalHadTop(TLorentzVector t) {
-    return LeptMassFunc->Eval(t.M());
+    if (conf->IgnoreMassDist) return HadtMassFunc->Eval(t.M()) / HadtMassFunc->GetMaximum();
+    return EvalFromHist(t.M(),1);
   }
   double EvalLepTop(TLorentzVector t) {
-    return LeptMassFunc->Eval(t.M());
+    if (conf->IgnoreMassDist) return LeptMassFunc->Eval(t.M()) / LeptMassFunc->GetMaximum();
+    return EvalFromHist(t.M(),2);
+  }
+  double EvalFromHist(double x, int ih) {
+    TH1F* h;
+    if (ih == 0) h = HadWMass;
+    else if (ih == 1) h = HadtMass;
+    else if (ih == 2) h = LeptMass;
+    int b = h->FindBin(x);
+    if (x < h->GetBinCenter(b)) b--;
+    return (h->GetBinContent(b+1) - h->GetBinContent(b)) * ((x - h->GetBinCenter(b)) / h->GetBinWidth(1)) + h->GetBinContent(b);
   }
 
   double SolveNeutrinos(TLorentzVector LVLep, TLorentzVector ScaledMET, vector<TLorentzVector>& LVNeu_, bool debug_ = false) {
@@ -241,30 +256,71 @@ public:
     return 1; // Neutrino solutions are achieved, return 1
   }
 
-  void SetUpMassFunctions() {
+  void SetUpMassDist() {
     HadWMassFunc = new TF1("HadWBW","[0]*TMath::BreitWigner(x,[1],[2])",0.0,200.0);
     LeptMassFunc = new TF1("LeptBW","[0]*TMath::BreitWigner(x,[1],[2])",0.0,400.0);
     HadtMassFunc = new TF1("HadtBW","[0]*TMath::BreitWigner(x,[1],[2])",0.0,400.0);
-    HadWMassFunc->SetParameters(100.,80.385,2.738);
-    LeptMassFunc->SetParameters(100.,171.186,26.76);
-    HadtMassFunc->SetParameters(100.,171.186,26.76);
-    if (!conf->IgnoreMassDist) {
-      HadWMass->Fit(HadWMassFunc, "RMQ0", "", 0.0,200);
-      LeptMass->Fit(LeptMassFunc, "RMQ0", "", 0.0,400);
-      HadtMass->Fit(HadtMassFunc, "RMQ0", "", 0.0,400);
+    if (conf->IgnoreMassDist) {
+      HadWMassFunc->SetParameters(100.,80.385,2.738);
+      LeptMassFunc->SetParameters(100.,171.186,26.76);
+      HadtMassFunc->SetParameters(100.,171.186,26.76);
     }
-    double chadw = HadWMassFunc->GetParameter(1);
-    double clept = LeptMassFunc->GetParameter(1);
-    double chadt = HadtMassFunc->GetParameter(1);
-    HadWMassFunc->SetParameter(0,100./HadWMassFunc->Eval(chadw)); // normalized it to peak at y = 1;
-    LeptMassFunc->SetParameter(0,100./LeptMassFunc->Eval(clept)); // normalized it to peak at y = 1;
-    HadtMassFunc->SetParameter(0,100./HadtMassFunc->Eval(chadt)); // normalized it to peak at y = 1;
-    HadWMassMin = HadWMassFunc->GetX(conf->JetScaleMinPMass, 0, chadw);
-    HadWMassMax = HadWMassFunc->GetX(conf->JetScaleMinPMass, chadw, 200);
-    LeptMassMin = LeptMassFunc->GetX(conf->JetScaleMinPMass, 0, clept);
-    LeptMassMax = LeptMassFunc->GetX(conf->JetScaleMinPMass, clept, 400);
-    HadtMassMin = HadtMassFunc->GetX(conf->JetScaleMinPMass, 0, chadt);
-    HadtMassMax = HadtMassFunc->GetX(conf->JetScaleMinPMass, chadt, 400);
+    else {
+      HadWMassFunc->SetParameter(0,HadWMassFunc->GetParameter(0) * HadWMass->GetMaximum() / HadWMassFunc->GetMaximum());
+      LeptMassFunc->SetParameter(0,LeptMassFunc->GetParameter(0) * LeptMass->GetMaximum() / LeptMassFunc->GetMaximum());
+      HadtMassFunc->SetParameter(0,HadtMassFunc->GetParameter(0) * HadtMass->GetMaximum() / HadtMassFunc->GetMaximum());
+      HadWMass->Fit(HadWMassFunc, "RMQ0", "", HadWMass->GetMean() - 2.0 * HadWMass->GetStdDev(), HadWMass->GetMean() + 2.0 * HadWMass->GetStdDev());
+      LeptMass->Fit(LeptMassFunc, "RMQ0", "", LeptMass->GetMean() - 2.0 * LeptMass->GetStdDev(), LeptMass->GetMean() + 2.0 * LeptMass->GetStdDev());
+      HadtMass->Fit(HadtMassFunc, "RMQ0", "", HadtMass->GetMean() - 2.0 * HadtMass->GetStdDev(), HadtMass->GetMean() + 2.0 * HadtMass->GetStdDev());
+    }
+    HadWMassFunc->SetParameter(0,HadWMassFunc->GetParameter(0)/HadWMassFunc->GetMaximum()); // normalized it to peak at y = 1;
+    LeptMassFunc->SetParameter(0,LeptMassFunc->GetParameter(0)/LeptMassFunc->GetMaximum()); // normalized it to peak at y = 1;
+    HadtMassFunc->SetParameter(0,HadtMassFunc->GetParameter(0)/HadtMassFunc->GetMaximum()); // normalized it to peak at y = 1;
+    if (conf->IgnoreMassDist) {
+      double chadw = HadWMassFunc->GetParameter(1);
+      double clept = LeptMassFunc->GetParameter(1);
+      double chadt = HadtMassFunc->GetParameter(1);
+      HadWMassMin = HadWMassFunc->GetX(conf->JetScaleMinPMass, 0, chadw);
+      HadWMassMax = HadWMassFunc->GetX(conf->JetScaleMinPMass, chadw, 200);
+      LeptMassMin = LeptMassFunc->GetX(conf->JetScaleMinPMass, 0, clept);
+      LeptMassMax = LeptMassFunc->GetX(conf->JetScaleMinPMass, clept, 400);
+      HadtMassMin = HadtMassFunc->GetX(conf->JetScaleMinPMass, 0, chadt);
+      HadtMassMax = HadtMassFunc->GetX(conf->JetScaleMinPMass, chadt, 400);
+    }
+    else {
+      for (unsigned ih = 0; ih < 3; ++ih) {
+        TH1F* h;
+        if (ih == 0) h = HadWMass;
+        else if (ih == 1) h = HadtMass;
+        else if (ih == 2) h = LeptMass;
+        int cbin = h->GetMaximumBin();
+        double mmin(0), mmax(0);
+        for (int i = 0; i < cbin; ++i) {
+          if (h->GetBinContent(cbin - i) < conf->JetScaleMinPMass) {
+            mmin = h->GetBinLowEdge(cbin - i);
+            break;
+          }
+        }
+        for (i = cbin; i < h->GetNbinsX(); ++i) {
+          if (h->GetBinContent(i) < conf->JetScaleMinPMass) {
+            mmax = h->GetBinLowEdge(i + 1);
+            break;
+          }
+        }
+        if (ih == 0) {
+          HadWMassMin = mmin;
+          HadWMassMax = mmax;
+        }
+        else if (ih == 1) {
+          HadtMassMin = mmin;
+          HadtMassMax = mmax;
+        }
+        else if (ih == 2) {
+          LeptMassMin = mmin;
+          LeptMassMax = mmax;
+        }
+      }
+    }
   }
 
   void Clear() {
