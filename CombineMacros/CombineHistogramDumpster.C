@@ -56,11 +56,12 @@ void CombineHistogramDumpster::Loop()
   , "PUreweightUp", "PUreweightDown", "PDFUp", "PDFDown", "LHEScaleUp", "LHEScaleDown", // 25 - 30
   };
 
+  vector<TString> variationsName;
   for (unsigned i = 0; i < variations.size(); ++i) {
-    variations[i] = gn + "_" + binS + "_" + variations[i];
+    variationsName.push_back(gn + "_" + binS + "_" + variations[i]);
   }
 
-  for(unsigned i = 0; i < variations.size(); ++i) WPrimeMass_FL.push_back(new TH1F(variations[i],"W' mass, simplified, FL case; m_{W'} [GeV/c^{2}]; Events", 400, 0., 2000.));
+  for(unsigned i = 0; i < variations.size(); ++i) WPrimeMass_FL.push_back(new TH1F(variationsName[i],"W' mass, simplified, FL case; m_{W'} [GeV/c^{2}]; Events", 400, 0., 2000.));
 
   if (fChain == 0) return;
 
@@ -81,6 +82,7 @@ void CombineHistogramDumpster::Loop()
       if(RegionIdentifier[i] != bin) continue;
       string HistName;
       WPrimeMass_FL[i]->Fill(WPrimeMassSimpleFL->at(i),EventWeight[0]*SampleWeight);
+      //WPrimeMass_FL[i]->Fill(WPrimeMass->at(i),EventWeight[0]*SampleWeight);
     }
     //Muon type variations, for a test
     if(RegionIdentifier[0] == bin){
@@ -88,6 +90,7 @@ void CombineHistogramDumpster::Loop()
       for(unsigned i = 9; i < variations.size(); ++i){
         string HistName;
         WPrimeMass_FL[i]->Fill(WPrimeMassSimpleFL->at(0),EventWeight[i-8]*SampleWeight);
+	//WPrimeMass_FL[i]->Fill(WPrimeMass->at(0),EventWeight[i-8]*SampleWeight);
       }
     }
     

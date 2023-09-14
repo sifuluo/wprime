@@ -25,7 +25,7 @@ void ScaleFactorTTbarCalc(int bin=1152, int year=2018){
   vector<TH1F> ttbarHists, NonTtbarHists;
 
   //loop over samples, organizing data, ttbar, and non-ttbar with variations
-  for(unsigned i = 0; i < 40; ++i){
+  for(unsigned i = 0; i < 22; ++i){
     if(bin/1000 == 1 && i == 0) continue;
     if(bin/2000 == 1 && i == 1) continue;
     TFile *infile = new TFile(TString::Format("TestHistograms/SimpleShapes_Bin%d_%d.root",bin,i),"READ");
