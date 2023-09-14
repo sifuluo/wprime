@@ -67,8 +67,9 @@ void CreateAuxHists(int sampleyear = 3, int sampletype = 22, int ifile = -1, str
     if (JS->SolveNeutrinos(Tar.Lep, Tar.Neu, Neus) == 1) {
       if (fabs(172.186 - (Tar.Lep + Neus[0] + Tar.Jets[3]).M()) < fabs(172.186 - (Tar.Lep + Neus[1] + Tar.Jets[3]).M())) Tar.Neu = Neus[0];
       else Tar.Neu = Neus[1];
-      JS->FillHypo(Tar, r->EventWeights[0].first);
     }
+    else Tar.Neu = TLorentzVector();
+    JS->FillHypo(Tar, r->EventWeights[0].first);
   }
   JS->PostProcess();
   JS->Clear();

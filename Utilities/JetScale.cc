@@ -109,7 +109,7 @@ public:
   }
 
   void FillHypo(Hypothesis& h, double ew = 1) {
-    LeptMass->Fill(h.LepT().M(), ew);
+    if (h.Neu.Pt() != 0) LeptMass->Fill(h.LepT().M(), ew);
     HadtMass->Fill(h.HadT().M(), ew);
     HadWMass->Fill(h.HadW().M(), ew);
   }
@@ -301,7 +301,7 @@ public:
             break;
           }
         }
-        for (i = cbin; i < h->GetNbinsX(); ++i) {
+        for (int i = cbin; i < h->GetNbinsX(); ++i) {
           if (h->GetBinContent(i) < conf->JetScaleMinPMass) {
             mmax = h->GetBinLowEdge(i + 1);
             break;

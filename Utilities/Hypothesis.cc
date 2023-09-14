@@ -451,8 +451,9 @@ public:
   }
 
   void Summarize() {
+    cout << endl;
     cout << "Total trials: " << TotalTrials << ", ";
-    cout << "NoPart: " << NoPart << ", NoGen: " << NoGen << ", NoReco: " << NoReco << ", Successes: " << Successes << endl;
+    cout << "NoPart: " << NoPart << ", NoGen: " << NoGen << ", NoReco: " << NoReco << ", Successes: " << Successes << "(" << ((float)Successes) / ((float)TotalTrials) << "%)" << endl;
   }
 
   void ValidateOutput() {
