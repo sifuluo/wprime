@@ -265,19 +265,9 @@ public:
       HadWMassFunc->SetParameters(100.,80.385,2.738);
       LeptMassFunc->SetParameters(100.,171.186,26.76);
       HadtMassFunc->SetParameters(100.,171.186,26.76);
-    }
-    else {
-      HadWMassFunc->SetParameter(0,HadWMassFunc->GetParameter(0) * HadWMass->GetMaximum() / HadWMassFunc->GetMaximum());
-      LeptMassFunc->SetParameter(0,LeptMassFunc->GetParameter(0) * LeptMass->GetMaximum() / LeptMassFunc->GetMaximum());
-      HadtMassFunc->SetParameter(0,HadtMassFunc->GetParameter(0) * HadtMass->GetMaximum() / HadtMassFunc->GetMaximum());
-      HadWMass->Fit(HadWMassFunc, "RMQ0", "", HadWMass->GetMean() - 2.0 * HadWMass->GetStdDev(), HadWMass->GetMean() + 2.0 * HadWMass->GetStdDev());
-      LeptMass->Fit(LeptMassFunc, "RMQ0", "", LeptMass->GetMean() - 2.0 * LeptMass->GetStdDev(), LeptMass->GetMean() + 2.0 * LeptMass->GetStdDev());
-      HadtMass->Fit(HadtMassFunc, "RMQ0", "", HadtMass->GetMean() - 2.0 * HadtMass->GetStdDev(), HadtMass->GetMean() + 2.0 * HadtMass->GetStdDev());
-    }
-    HadWMassFunc->SetParameter(0,HadWMassFunc->GetParameter(0)/HadWMassFunc->GetMaximum()); // normalized it to peak at y = 1;
-    LeptMassFunc->SetParameter(0,LeptMassFunc->GetParameter(0)/LeptMassFunc->GetMaximum()); // normalized it to peak at y = 1;
-    HadtMassFunc->SetParameter(0,HadtMassFunc->GetParameter(0)/HadtMassFunc->GetMaximum()); // normalized it to peak at y = 1;
-    if (!conf->UseMassDist) {
+      HadWMassFunc->SetParameter(0,HadWMassFunc->GetParameter(0)/HadWMassFunc->GetMaximum()); // normalized it to peak at y = 1;
+      LeptMassFunc->SetParameter(0,LeptMassFunc->GetParameter(0)/LeptMassFunc->GetMaximum()); // normalized it to peak at y = 1;
+      HadtMassFunc->SetParameter(0,HadtMassFunc->GetParameter(0)/HadtMassFunc->GetMaximum()); // normalized it to peak at y = 1;
       double chadw = HadWMassFunc->GetParameter(1);
       double clept = LeptMassFunc->GetParameter(1);
       double chadt = HadtMassFunc->GetParameter(1);
@@ -289,6 +279,12 @@ public:
       HadtMassMax = HadtMassFunc->GetX(conf->JetScaleMinPMass, chadt, 400);
     }
     else {
+      // HadWMassFunc->SetParameter(0,HadWMassFunc->GetParameter(0) * HadWMass->GetMaximum() / HadWMassFunc->GetMaximum());
+      // LeptMassFunc->SetParameter(0,LeptMassFunc->GetParameter(0) * LeptMass->GetMaximum() / LeptMassFunc->GetMaximum());
+      // HadtMassFunc->SetParameter(0,HadtMassFunc->GetParameter(0) * HadtMass->GetMaximum() / HadtMassFunc->GetMaximum());
+      // HadWMass->Fit(HadWMassFunc, "RMQ0", "", HadWMass->GetMean() - 2.0 * HadWMass->GetStdDev(), HadWMass->GetMean() + 2.0 * HadWMass->GetStdDev());
+      // LeptMass->Fit(LeptMassFunc, "RMQ0", "", LeptMass->GetMean() - 2.0 * LeptMass->GetStdDev(), LeptMass->GetMean() + 2.0 * LeptMass->GetStdDev());
+      // HadtMass->Fit(HadtMassFunc, "RMQ0", "", HadtMass->GetMean() - 2.0 * HadtMass->GetStdDev(), HadtMass->GetMean() + 2.0 * HadtMass->GetStdDev());
       for (unsigned ih = 0; ih < 3; ++ih) {
         TH1F* h;
         if (ih == 0) h = HadWMass;
