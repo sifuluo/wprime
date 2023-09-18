@@ -154,7 +154,7 @@ public:
     }
     // ScaleHists = jes;
     ScaleFuncs = fjes;
-    if (!conf->IgnoreMassDist) {
+    if (!!conf->UseMassDist) {
       LeptMass = (TH1F*) ScaleFile->Get("LeptMass");
       HadtMass = (TH1F*) ScaleFile->Get("HadtMass");
       HadWMass = (TH1F*) ScaleFile->Get("HadWMass");
@@ -188,15 +188,15 @@ public:
 
   // Evaluating the likelihood of mass of a W / t
   double EvalW(TLorentzVector w) {
-    if (conf->IgnoreMassDist) return HadWMassFunc->Eval(w.M()) / HadWMassFunc->GetMaximum();
+    if (!conf->UseMassDist) return HadWMassFunc->Eval(w.M()) / HadWMassFunc->GetMaximum();
     return EvalFromHist(w.M(),0);
   }
   double EvalHadTop(TLorentzVector t) {
-    if (conf->IgnoreMassDist) return HadtMassFunc->Eval(t.M()) / HadtMassFunc->GetMaximum();
+    if (!conf->UseMassDist) return HadtMassFunc->Eval(t.M()) / HadtMassFunc->GetMaximum();
     return EvalFromHist(t.M(),1);
   }
   double EvalLepTop(TLorentzVector t) {
-    if (conf->IgnoreMassDist) return LeptMassFunc->Eval(t.M()) / LeptMassFunc->GetMaximum();
+    if (!conf->UseMassDist) return LeptMassFunc->Eval(t.M()) / LeptMassFunc->GetMaximum();
     return EvalFromHist(t.M(),2);
   }
   double EvalFromHist(double x, int ih) {
@@ -204,6 +204,7 @@ public:
     if (ih == 0) h = HadWMass;
     else if (ih == 1) h = HadtMass;
     else if (ih == 2) h = LeptMass;
+    else return 0;
     int b = h->FindBin(x);
     if (x < h->GetBinCenter(b)) b--;
     return (h->GetBinContent(b+1) - h->GetBinContent(b)) * ((x - h->GetBinCenter(b)) / h->GetBinWidth(1)) + h->GetBinContent(b);
@@ -260,7 +261,7 @@ public:
     HadWMassFunc = new TF1("HadWBW","[0]*TMath::BreitWigner(x,[1],[2])",0.0,200.0);
     LeptMassFunc = new TF1("LeptBW","[0]*TMath::BreitWigner(x,[1],[2])",0.0,400.0);
     HadtMassFunc = new TF1("HadtBW","[0]*TMath::BreitWigner(x,[1],[2])",0.0,400.0);
-    if (conf->IgnoreMassDist) {
+    if (!conf->UseMassDist) {
       HadWMassFunc->SetParameters(100.,80.385,2.738);
       LeptMassFunc->SetParameters(100.,171.186,26.76);
       HadtMassFunc->SetParameters(100.,171.186,26.76);
@@ -276,7 +277,7 @@ public:
     HadWMassFunc->SetParameter(0,HadWMassFunc->GetParameter(0)/HadWMassFunc->GetMaximum()); // normalized it to peak at y = 1;
     LeptMassFunc->SetParameter(0,LeptMassFunc->GetParameter(0)/LeptMassFunc->GetMaximum()); // normalized it to peak at y = 1;
     HadtMassFunc->SetParameter(0,HadtMassFunc->GetParameter(0)/HadtMassFunc->GetMaximum()); // normalized it to peak at y = 1;
-    if (conf->IgnoreMassDist) {
+    if (!conf->UseMassDist) {
       double chadw = HadWMassFunc->GetParameter(1);
       double clept = LeptMassFunc->GetParameter(1);
       double chadt = HadtMassFunc->GetParameter(1);

@@ -74,7 +74,7 @@ struct Configs {
   bool UseMergedAuxHist = false;
 
   bool RunFitter = false;
-  bool IgnoreMassDist = true;
+  bool UseMassDist = false;
   double JetScaleMinPMass = 0.01;
 
   vector<int> AcceptedRegions = {};

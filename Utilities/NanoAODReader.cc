@@ -274,6 +274,7 @@ public:
           bTSFsUncorr[0] = {1, 1, 1};
           bTSFsUncorr[1] = {evts->Jet_bTagScaleFactorLooseUpCorrelated[i], evts->Jet_bTagScaleFactorMediumUpCorrelated[i], evts->Jet_bTagScaleFactorTightUpCorrelated[i]};
           bTSFsUncorr[2] = {evts->Jet_bTagScaleFactorLooseDownCorrelated[i], evts->Jet_bTagScaleFactorMediumDownCorrelated[i], evts->Jet_bTagScaleFactorTightDownCorrelated[i]};
+          bTSFsUncorr[0] = {(bTSFsUncorr[1][0] + bTSFsUncorr[2][0]) / 2.0, (bTSFsUncorr[1][1] + bTSFsUncorr[2][1]) / 2.0, (bTSFsUncorr[1][2] + bTSFsUncorr[2][2]) / 2.0}
         }
         if (conf->Compare_bTagSF) {
           R_BTSF->CompareScaleFactors(tmp, bTSFsCorr);
