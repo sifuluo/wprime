@@ -819,6 +819,7 @@ public:
         for(unsigned j = 0; j < Jets.size(); ++j){
           BjetWCorr.variations[i] *= Jets[j].bJetSFweightsCorr[i][bTagWP];
           BjetWUncorr.variations[i] *= Jets[j].bJetSFweightsUncorr[i][bTagWP];
+          if (i > 0) BjetWUncorr.variations[i] *= 1. / Jets[j].bJetSFweightsCorr[0][bTagWP]; // Fix for Corr and Uncorr nominal are combined
           PUIDW.variations[i] *= Jets[j].PUIDSFweights[i][PUIDWP];
         }
       }
