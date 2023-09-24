@@ -55,6 +55,7 @@ public:
   void CreateHistograms(string path, string prefix, string st = "", int ifile = -1) {
     Hists.clear();
     Hists.resize(Observables.size());
+    cout << "Output is saved as: " << StandardNames::HistFileName(path, prefix, "Obs", st, ifile) << endl;
     for (unsigned io = 0; io < Observables.size(); ++io) {
       Hists[io].resize(SampleTypes.size());
       TString fn = StandardNames::HistFileName(path, prefix, Observables[io], st, ifile);

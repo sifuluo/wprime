@@ -116,6 +116,7 @@ public:
     if (type_ == 0 && iv == 0) AddData(h_);
     else if (type_ == 1) AddMC(n_, h_, iv);
     else if (type_ == 2) AddSig(n_, h_, iv);
+    if (h_->GetNbinsX() <= 0) cout << n_ << " nbins = " << h_->GetNbinsX()<< endl;
     if (nbins == 0) {
       nbins = h_->GetNbinsX();
       xlow = h_->GetXaxis()->GetXmin();
@@ -326,10 +327,12 @@ public:
   void CreateRatioPlots() {
     if (!HasMC) return;
     ExpOverMC.resize(SigNames.size());
-    for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
-      ExpOverMC[isig] = (TH1F*)SigHists[isig][0]->Clone();
-      ExpOverMC[isig]->Add(MCSummed[0]);
-      ExpOverMC[isig]->Divide(MCSummed[0]);
+    if (HasSig) {
+      for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
+        ExpOverMC[isig] = (TH1F*)SigHists[isig][0]->Clone();
+        ExpOverMC[isig]->Add(MCSummed[0]);
+        ExpOverMC[isig]->Divide(MCSummed[0]);
+      }
     }
     if (!IsSR && HasData) {
       DataOverMC = (TH1F*)DataHist->Clone();
@@ -476,7 +479,7 @@ public:
     MCErrorRatioGraph->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
     MCErrorRatioGraph->Draw("af");
 
-    if (HasMC) {  
+    if (HasMC && HasSig) {  
       if (!IsSR && HasData) DataOverMC->Draw("same");
       for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
         ExpOverMC[isig]->Draw("same hist ][");

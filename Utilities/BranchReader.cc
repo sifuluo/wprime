@@ -21,8 +21,8 @@ public:
   static const unsigned nGenPartMax = 250;
   static const unsigned nGenJetMax = 35;
   static const unsigned nJetMax = 35;
-  static const unsigned nElectronMax = 20;
-  static const unsigned nMuonMax = 23;
+  static const unsigned nElectronMax = 30;
+  static const unsigned nMuonMax = 30;
   static const unsigned nTrigObjMax = 61;
   static const unsigned nSFMax = 64;
   static const unsigned nLHEPdfWeightMax = 200;

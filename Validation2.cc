@@ -201,14 +201,14 @@ public:
   }
 };
 
-void Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
+void Validation2(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
   Configs *conf = new Configs(isampleyear, isampletype, ifile);
   conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/SingleMuon/2018/2B07B4C0-852B-9B4F-83FA-CA6B047542D1.root";
   conf->LocalOutput = false;
   conf->PrintProgress = true;
   // conf->RunFitter = true;
   conf->UseMergedAuxHist = true;
-  conf->AcceptRegions({1,2},{1},{2},{1});
+  conf->AcceptRegions({1},{1},{2},{1});
   // conf->DebugList = {"LeptonRegion"};
   // conf->ProgressInterval = 1;
   // conf->EntryMax = 20000;

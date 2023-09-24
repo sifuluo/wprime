@@ -42,6 +42,9 @@ public:
 
   void SetSampleTypes(vector<string> sts) {
     SampleTypes = sts;
+    // for (unsigned i = 0; i < SampleTypes.size(); ++i) {
+
+    // }
   }
   
   void SetPrefix(string prefix) {
@@ -97,13 +100,16 @@ public:
       }
 
       for (unsigned ig = 0; ig < GroupNames.size(); ++ig) {
+        string gn = GroupNames[ig];
+        bool gpadded = false;
         for (unsigned iv = 0; iv < Variations.size(); ++iv) {
           if (PlotGroupHists[ig][iv] == nullptr) continue;
+          gpadded = true;
           if (NormalizePlot) PlotGroupHists[ig][iv]->Scale(1./PlotGroupHists[ig][iv]->Integral());
-          string gn = GroupNames[ig];
           Plots[ir]->AddHist(gn, PlotGroupHists[ig][iv], dlib.Groups[gn].Type,iv);
           delete PlotGroupHists[ig][iv];
         }
+        // if (gpadded) cout << "Added " << gn << " with type = " << dlib.Groups[gn].Type << endl;
       }
       Plots[ir]->SetLogy(DoLogy);
       Plots[ir]->Legend(LegendPos);
