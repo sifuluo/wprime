@@ -20,22 +20,29 @@ public:
     }
   };
 
+  Permutations() {
+    InitPtPerms();
+    cout << "PtPerms are as following: " << endl;
+    PrintPtPerms();
+  }
+
   void InitPtPerms() { // Ordered as LJ0, LJ1, Hadb, Lepb, WPb
     PtPerms.clear();
     // sequence of ix affects the order of permutations
     // Taking i0 to be the first because WPb is most likely to be the leading jet.
     // So all such cases will end up together in the first part of distribution.
-    for (unsigned i0 = 0; i0 < 5; ++i0) {
-      for (unsigned i1 = 0; i1 < 5; ++i1) {
+    for (unsigned i0 = 0; i0 < 5; ++i0) { // WPb
+      for (unsigned i1 = 0; i1 < 5; ++i1) { // Hadb
         if (i1 == i0) continue;
-        for (unsigned i2 = 0; i2 < 5; ++i2) {
+        for (unsigned i2 = 0; i2 < 5; ++i2) { // Lepb
           if (i2 == i1 || i2 == i0) continue;
-          for (unsigned i3 = 0; i3 < 5; ++i3) {
+          for (unsigned i3 = 0; i3 < 5; ++i3) { // LJ0
             if (i3 == i2 || i3 == i1 || i3 == i0) continue;
             for (unsigned i4 = i3 + 1; i4 < 5; ++i4) { // LJ1 is always lower in pT than LJ0
               if (i4 == i2 || i4 == i1 || i4 == i0) continue;
               int ThisPerm = i3 * 10000 + i4 * 1000 + i1 * 100 + i2 * 10 + i0 * 1; // (Order is LJ0, LJ1, Hadb, Lepb, WPb)
-              PtPerms.push_back(ThisPerm % 1000);
+              PtPerms.push_back(ThisPerm);
+              // PtPerms.push_back(ThisPerm % 10000);
             }
           }
         }
@@ -106,27 +113,59 @@ public:
     vector<int> tpv = ConvertPermToVector(trueperm);
     return ComparePerm(pv, tpv);
   }
+
   int ComparePerm(vector<int> pv, vector<int> tpv) {
-    if (pv == tpv) return 0; // Perfectly picked all jets
-    if (pv[3] == tpv[2] && pv[2] == tpv[3]) { // top b's swapped
-      return 1;
-    }
-    if (pv[3] == tpv[4] || pv[2] == tpv[4]) { // W'b assigned to a top
-      return 2;
-    }
-    if (pv[0] == tpv[2] || pv[0] == tpv[3] || pv[0] == tpv[4] || pv[1] == tpv[2] || pv[1] == tpv[3] || pv[1] == tpv[4]) { // A b assigned to hadronic W
-      return 3;
-    }
-    vector<bool> WithinTrueJets = vector<bool>(5,false);
+    if (pv == tpv) return 0;
+    int out = 0;
+    vector<bool> WithinTrueJets = vector<bool>(5,false); // Check if the permutation digits are the same ones.
     for (unsigned i = 0; i < 5; ++i) {
       for (unsigned j = 0; j < 5; ++i) {
         if (pv[i] == tpv[j]) WithinTrueJets[i] = true;
       }
     }
     for (unsigned i = 0; i < 5; ++i) { // A jet is taking a jet not from the hypothesis
-      if (!WithinTrueJets[i]) return i + 4;
+      if (!WithinTrueJets[i]) out += -1 * pow(2, (4 - i)); // Binary is enough to hold the information
     }
-    return 9; // Other circumstances
+    // if (out < 0) return out; // No need to proceed since the permutations digits are not all the same.
+    if (out < 0) return -1;
+
+    bool WPbCorrect = tpv[4] == pv[4];
+    bool WPbToHadb = tpv[4] == pv[2];
+    bool WPbToLepb = tpv[4] == pv[3];
+    bool WPbToLJ = tpv[4] == pv[0] || tpv[4] == pv[1];
+    bool HadbCorrect = tpv[2] == pv[2];
+    bool HadbToLepb = tpv[2] == pv[3];
+    bool HadbToWPb = tpv[2] == pv[4];
+    bool HadbToLJ = tpv[2] == pv[0] || tpv[2] == pv[1];
+    bool LepbCorrect = tpv[3] == pv[3];
+    bool LepbToHadb = tpv[3] == pv[2];
+    bool LepbToWPb = tpv[3] == pv[4];
+    bool LepbToLJ = tpv[3] == pv[0] || tpv[2] == pv[1];
+
+    bool WPbToTopb = WPbToHadb || WPbToLepb;
+    // Either topb is ...
+    bool TopbCorrect = HadbCorrect || LepbCorrect;
+    bool TopbSwap = HadbToLepb || LepbToHadb;
+    bool TopbToWPb = HadbToWPb || LepbToWPb;
+    bool TopbToLJ = HadbToLJ || LepbToLJ;
+    
+    // Code is already human readable. No need for explanation for return codes.
+    if (WPbCorrect && HadbToLepb && LepbToHadb) return 1;
+    if (WPbCorrect && TopbToLJ && TopbCorrect) return 2;
+    if (WPbCorrect && TopbToLJ && TopbSwap) return 2;
+    if (WPbCorrect && HadbToLJ && LepbToLJ) return 2;
+
+    if (WPbToTopb && TopbToWPb && TopbCorrect) return 3;
+    if (WPbToTopb && TopbToWPb && TopbSwap) return 3;    
+    if (WPbToTopb && TopbToLJ && TopbCorrect) return 4;
+    if (WPbToTopb && TopbToLJ && TopbSwap) return 4;
+    if (WPbToTopb && HadbToLJ && LepbToLJ) return 4;
+
+    if (WPbToLJ && HadbCorrect && LepbCorrect) return 5;
+    if (WPbToLJ && HadbToLepb && LepbToHadb) return 5;
+    if (WPbToLJ && TopbToLJ && TopbCorrect) return 6;
+    if (WPbToLJ && TopbToLJ && TopbSwap) return 6;
+    return 9; // Other undefined circumstances
   }
 
   int GetbTagPermIndex(vector<Jet>& js) { // Input as in default Jets order: LJ0, LJ1, Hadb, Lepb, WPb
