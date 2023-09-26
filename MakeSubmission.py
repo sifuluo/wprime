@@ -14,11 +14,18 @@ EOSPath = "/eos/user/s/siluo/WPrimeAnalysis/"
 EOSSubFolderName = "Validation"
 
 with open("Utilities/UserSpecificsSkeleton.cc","r") as skeleton:
-  EOSPathFile = "Utilities/UserSpecifics.cc"
-  fout = open(EOSPathFile,"w")
+  NewFile = "Utilities/UserSpecifics.cc"
+  fout = open(NewFile,"w")
   # EOSLines = skeleton.read()
   for el in skeleton:
     el = el.replace("Replacement_EOSBasePath",EOSPath)
+    fout.write(el)
+
+with open("Submits/SubmitTemplate.sh","r") as skeleton:
+  NewFile = "Submit/Submit.sh"
+  fout = open(NewFile,"w")
+  for el in skeleton:
+    el = el.replace("__cwd__",os.getcwd())
     fout.write(el)
 
 if not os.path.exists("Submits"):

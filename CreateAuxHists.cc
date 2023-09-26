@@ -61,7 +61,6 @@ void CreateAuxHists(int sampleyear = 3, int sampletype = 22, int ifile = -1, str
     if (!gh->ValidReco || !gh->ValidGen) continue;
     gh->MatchToLeptons(r->Leptons);
     gh->CreateHypothesisSet(r->TheLepton, r->Met);
-    PM->FillPerm(gh->OutJets, r->EventWeights[0].first);
     Hypothesis Tar = gh->TarRecoHypo;
     vector<TLorentzVector> Neus;
     if (JS->SolveNeutrinos(Tar.Lep, Tar.Neu, Neus) == 1) {
@@ -69,6 +68,7 @@ void CreateAuxHists(int sampleyear = 3, int sampletype = 22, int ifile = -1, str
       else Tar.Neu = Neus[1];
     }
     else Tar.Neu = TLorentzVector();
+    PM->FillHypo(Tar, gh->OutJets, r->EventWeights[0].first);
     JS->FillHypo(Tar, r->EventWeights[0].first);
   }
   JS->PostProcess();

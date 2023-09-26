@@ -5,8 +5,9 @@
 #include "TH1.h"
 #include "TMath.h"
 
-#include "DataFormat.cc"
 #include "Configs.cc"
+#include "DataFormat.cc"
+#include "Hypothesis.cc"
 
 class Permutations {
 public:
@@ -212,12 +213,16 @@ public:
     WPrimedRHist = new TH1F(WPrimedRHistName, WPrimedRHistName, 100,0,10);
   }
 
-  void FillPerm(vector<Jet>& js, double ew = 1) {
-    if (js.size() != 5) return;
+  void FillJets(vector<Jet>& js, double ew = 1) {
     PtPermHist->Fill(GetPtPermIndex(js), ew);
     bTagPermHist->Fill(GetbTagPermIndex(js), ew);
-    // if (conf->WPType == 0) WPrimedRHist->Fill(js[4].DeltaR(js[0] + js[1] + js[2]));
-    // else if (conf->WPType == 1) WPrimedRHist->Fill(js[4].DeltaR())
+  }
+  
+  void FillHypo(Hypothesis& h, vector<Jet>& js, double ew = 1) {
+    PtPermHist->Fill(GetPtPermIndex(h.Jets), ew);
+    bTagPermHist->Fill(GetbTagPermIndex(js), ew);
+    if (conf->WPType == 0) WPrimedRHist->Fill(h.WPb().DeltaR(h.HadT()));
+    else if (conf->WPType == 1) WPrimedRHist->Fill(h.WPb().DeltaR(h.LepT()));
   }
   
   void PostProcess() {

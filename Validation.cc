@@ -50,8 +50,10 @@ public:
   float nTrueInt;
   int nPV, nPVGood;
 
-  int PermIndex;
-  vector<int> *WPType;
+  int TruePerm;
+  float TruePermLikelihood;
+  vector<float> *PermScales, *TruePermScales, *TruePermSolvedScales;
+  vector<int> *WPType, *Perm;
   vector<float> *WPrimeMassSimpleFL, *WPrimeMassSimpleLL, *Likelihood, *WPrimeMass;
 
   void BookBranches() {
@@ -116,7 +118,15 @@ public:
     t->Branch("WPrimeMassSimpleFL", &WPrimeMassSimpleFL);
     t->Branch("WPrimeMassSimpleLL", &WPrimeMassSimpleLL);
 
-    t->Branch("PermIndex", &PermIndex);
+    PermScales = new vector<float>;
+    TruePermScales = new vector<float>;
+    TruePermSolvedScales = new vector<float>;
+    t->Branch("Perm", &Perm);
+    t->Branch("PermScales", PermScales);
+    t->Branch("TruePerm", &TruePerm);
+    t->Branch("TruePermLikelihood", &TruePermLikelihood);
+    t->Branch("TruePermSolvedScales", &TruePermSolvedScales);
+    t->Branch("TruePermScales",&TruePermScales);
 
     WPrimeMass = new vector<float>; // central , EleSU, EleSD, EleRU, EleRD, JetSU, JetSD, JetRU, JetRD
     Likelihood = new vector<float>; // central , EleSU, EleSD, EleRU, EleRD, JetSU, JetSD, JetRU, JetRD
