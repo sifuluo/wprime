@@ -73,6 +73,11 @@ public:
   int GetPtPerm(vector<double> &jspt) {
     if (jspt.size() != 5) cout << "Perm Index is designed only for 5 jets" <<endl;
     vector<pair<int, double> > ipts;
+    if (jspt[1] > jspt[0]) {
+      double t = jspt[0];
+      jspt[0] = jspt[1];
+      jspt[1] = t;
+    }
     for (unsigned i = 0; i < 5; ++i) {
       ipts.push_back(pair<int,double>(i, jspt[i]));
     }
@@ -86,7 +91,7 @@ public:
   }
   int GetPtPermIndex(int p) {
     for (unsigned i = 0; i < PtPerms.size(); ++i) {
-      if (PtPerms[i] == p) return i;
+      if (PtPerms[i] % 1000 == p % 1000) return i; // The last three is already enough to determine the two light jets.
     }
     cout << "PtPerm = " << p << " not found" <<endl;
     return -1;

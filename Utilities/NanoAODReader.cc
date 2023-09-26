@@ -483,9 +483,9 @@ public:
       //set SF and variation for primary only, HEEP as in https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaRunIIRecommendations#HEEPV7_0
       tmp.SFs = {1., 1., 1.};
       if(PassPrimary(tmp,0) && IsMC){
-	tmp.SF[0] = evts->Electron_scaleFactor[i];
-	tmp.SF[1] = evts->Electron_scaleFactorUp[i];
-	tmp.SF[2] = evts->Electron_scaleFactorDown[i];
+        tmp.SFs[0] = evts->Electron_scaleFactor[i];
+        tmp.SFs[1] = evts->Electron_scaleFactorUp[i];
+        tmp.SFs[2] = evts->Electron_scaleFactorDown[i];
       }
 
       Electrons.push_back(tmp);
