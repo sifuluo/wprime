@@ -36,11 +36,12 @@ public:
 
   std::array<int,9> RegionIdentifier;
   std::array<float,30> EventWeight; // Size of Array subject to change
+  float HEMWeight;
 
   float LeptonPt, LeptonPt_SU, LeptonPt_SD, LeptonPt_RU, LeptonPt_RD, LeptonEta, LeptonPhi;
 
-  vector<float> *JetPt, *JetPt_SU, *JetPt_SD, *JetPt_RU, *JetPt_RD, *JetEta, *JetPhi;
-  float METPt, METPt_SU, METPt_SD, METPt_RU, METPt_RD, METPhi;
+  vector<float> *JetPt, *JetPt_SU, *JetPt_SD, *JetPt_RU, *JetPt_RD, *JetEta, *JetPhi, *JetM, *JetM_SU, *JetM_SD, *JetM_RU, *JetM_RD;
+  float METPt, METPt_SU, METPt_SD, METPt_RU, METPt_RD, METPhi, METPhi_SU, METPhi_SD, METPhi_RU, METPhi_RD;
   float dPhiMetLep;
 
   vector<float> *mT;
@@ -49,12 +50,14 @@ public:
   float nTrueInt;
   int nPV, nPVGood;
 
+  int PermIndex;
   vector<int> *WPType;
   vector<float> *WPrimeMassSimpleFL, *WPrimeMassSimpleLL, *Likelihood, *WPrimeMass;
 
   void BookBranches() {
     t->Branch("RegionIdentifier", &RegionIdentifier);
     t->Branch("EventWeight", &EventWeight);
+    t->Branch("HEMWeight", &HEMWeight);
 
     t->Branch("LeptonPt",&LeptonPt);
     t->Branch("LeptonPt_SU",&LeptonPt_SU);
@@ -69,11 +72,21 @@ public:
     JetPt_SD = new vector<float>;
     JetPt_RU = new vector<float>;
     JetPt_RD = new vector<float>;
+    JetM = new vector<float>;
+    JetM_SU = new vector<float>;
+    JetM_SD = new vector<float>;
+    JetM_RU = new vector<float>;
+    JetM_RD = new vector<float>;
     t->Branch("JetPt",&JetPt);
     t->Branch("JetPt_SU",&JetPt_SU);
     t->Branch("JetPt_SD",&JetPt_SD);
     t->Branch("JetPt_RU",&JetPt_RU);
     t->Branch("JetPt_RD",&JetPt_RD);
+    t->Branch("JetM",&JetM);
+    t->Branch("JetM_SU",&JetM_SU);
+    t->Branch("JetM_SD",&JetM_SD);
+    t->Branch("JetM_RU",&JetM_RU);
+    t->Branch("JetM_RD",&JetM_RD);
     JetEta = new vector<float>;
     t->Branch("JetEta",&JetEta);
     JetPhi = new vector<float>;
@@ -85,6 +98,10 @@ public:
     t->Branch("METPt_RU",&METPt_RU);
     t->Branch("METPt_RD",&METPt_RD);
     t->Branch("METPhi", &METPhi);
+    t->Branch("METPhi_SU",&METPhi_SU);
+    t->Branch("METPhi_SD",&METPhi_SD);
+    t->Branch("METPhi_RU",&METPhi_RU);
+    t->Branch("METPhi_RD",&METPhi_RD);
 
     t->Branch("dPhiMetLep", &dPhiMetLep);
 
@@ -98,6 +115,8 @@ public:
     WPrimeMassSimpleLL->resize(9);
     t->Branch("WPrimeMassSimpleFL", &WPrimeMassSimpleFL);
     t->Branch("WPrimeMassSimpleLL", &WPrimeMassSimpleLL);
+
+    t->Branch("PermIndex", &PermIndex);
 
     WPrimeMass = new vector<float>; // central , EleSU, EleSD, EleRU, EleRD, JetSU, JetSD, JetRU, JetRD
     Likelihood = new vector<float>; // central , EleSU, EleSD, EleRU, EleRD, JetSU, JetSD, JetRU, JetRD

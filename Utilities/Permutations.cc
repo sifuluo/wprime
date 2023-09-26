@@ -85,7 +85,6 @@ public:
     return p;
   }
   int GetPtPermIndex(int p) {
-    p = p % 1000;
     for (unsigned i = 0; i < PtPerms.size(); ++i) {
       if (PtPerms[i] == p) return i;
     }
