@@ -8,20 +8,32 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0, bool DoMCReweight = f
   obs.push_back({"LeptonPt", "Lepton p_{T}"});  // 0
   obs.push_back({"LeptonEta", "Lepton #eta"} );  // 1
   obs.push_back({"LeptonPhi", "Lepton #phi"} );  // 2
-  obs.push_back({"LeadingJetPt", "Leading Jet p_{T}"} );  // 3
-  obs.push_back({"LeadingJetEta", "Leading Jet #eta"} );  // 4
-  obs.push_back({"LeadingJetPhi", "Leading Jet #phi"} );  // 5
-  obs.push_back({"METPt", "#slash{E}_{T} p_{T}"} ); // 6
-  obs.push_back({"METPhi", "#slash{E}_{T} #phi"} ); // 7
-  obs.push_back({"dPhiMetLep","#Delta#phi(#slash{E}_{T},l)"}); // 8
-  obs.push_back({"mT", "m_{T}"} );  // 9
-  obs.push_back({"HT", "H_{T}"} );  // 10
-  obs.push_back({"WPrimeMassSimpleFL", "Simple m(W'_{H})"} ); // 11
-  obs.push_back({"WPrimeMassSimpleLL", "Simple m(W'_{L})"} ); // 12
-  obs.push_back({"WPrimeMass", "m(W')"} );  // 13
-  obs.push_back({"WPrimeMassFL", "m(W'_{H})"} );  // 14
-  obs.push_back({"WPrimeMassLL", "m(W'_{L})"} );  // 15
-  obs.push_back({"Likelihood", "Likelihood"} );   //16
+  obs.push_back({"Jet0Pt", "Jet[0] p_{T}"} );  // 3
+  obs.push_back({"Jet0Eta", "Jet[0] #eta"} );  // 4
+  obs.push_back({"Jet0Phi", "Jet[0] #phi"} );  // 5
+  obs.push_back({"Jet1Pt", "Jet[1] p_{T}"} );  // 6
+  obs.push_back({"Jet1Eta", "Jet[1] #eta"} );  // 7
+  obs.push_back({"Jet1Phi", "Jet[1] #phi"} );  // 8
+  obs.push_back({"Jet2Pt", "Jet[2] p_{T}"} );  // 9
+  obs.push_back({"Jet2Eta", "Jet[2] #eta"} );  // 10
+  obs.push_back({"Jet2Phi", "Jet[2] #phi"} );  // 11
+  obs.push_back({"Jet3Pt", "Jet[3] p_{T}"} );  // 12
+  obs.push_back({"Jet3Eta", "Jet[3] #eta"} );  // 13
+  obs.push_back({"Jet3Phi", "Jet[3] #phi"} );  // 14
+  obs.push_back({"Jet4Pt", "Jet[4] p_{T}"} );  // 15
+  obs.push_back({"Jet4Eta", "Jet[4] #eta"} );  // 16
+  obs.push_back({"Jet4Phi", "Jet[4] #phi"} );  // 17
+  obs.push_back({"METPt", "#slash{E}_{T} p_{T}"} ); // 18
+  obs.push_back({"METPhi", "#slash{E}_{T} #phi"} ); // 19
+  obs.push_back({"dPhiMetLep","#Delta#phi(#slash{E}_{T},l)"}); // 20
+  obs.push_back({"mT", "m_{T}"} );  // 21
+  obs.push_back({"HT", "H_{T}"} );  // 22
+  obs.push_back({"WPrimeMassSimpleFL", "Simple m(W'_{H})"} ); // 23
+  obs.push_back({"WPrimeMassSimpleLL", "Simple m(W'_{L})"} ); // 24
+  // obs.push_back({"WPrimeMass", "m(W')"} );  // 25
+  // obs.push_back({"WPrimeMassFL", "m(W'_{H})"} );  // 26
+  // obs.push_back({"WPrimeMassLL", "m(W'_{L})"} );  // 27
+  // obs.push_back({"Likelihood", "Likelihood"} );   // 28
 
   string SampleYear = dlib.SampleYears[isampleyear];
   vector<string> SampleTypes = dlib.DatasetNames;
@@ -54,17 +66,19 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0, bool DoMCReweight = f
   AllPlots->SetTitles(ObservablesXTitle);
   AllPlots->SetPrefix(PlotNamePrefix);
   AllPlots->SetObservable(Observable);
+  AllPlots->SetDrawSensitivity(true);
+  AllPlots->SetDrawPurity(true);
   AllPlots->ReadHistograms(f);
 
   for (unsigned ir = 0; ir < rm.StringRanges.size(); ++ir) {
     TCanvas* c1 = new TCanvas("c1","c1",800,800);
     AllPlots->CreateAuxiliaryPlots(ir);
-    AllPlots->DrawPlot(ir, c1, isampleyear, false, true);
+    AllPlots->DrawPlot(ir, c1, isampleyear);
     TString PlotName = AllPlots->Plots[ir]->PlotName;
     TString pn  = "plots/" + PlotName + ".pdf";
     c1->SaveAs(pn);
     string sr = rm.StringRanges[ir];
-    if (sr == "1153" || sr == "1163" || sr == "2153" || sr == "2163") if (DoMCReweight && iobs == 11)AllPlots->SaveUncertContribution(ir, PlotName);
+    if (sr == "1153" || sr == "1163" || sr == "2153" || sr == "2163") if (DoMCReweight && iobs == 11) AllPlots->SaveUncertContribution(ir, PlotName);
     delete c1;
   }
 

@@ -117,28 +117,34 @@ public:
     WPrimeMassSimpleLL->resize(9);
     t->Branch("WPrimeMassSimpleFL", &WPrimeMassSimpleFL);
     t->Branch("WPrimeMassSimpleLL", &WPrimeMassSimpleLL);
-
-    PermScales = new vector<float>;
+    
     TruePermScales = new vector<float>;
     TruePermSolvedScales = new vector<float>;
-    t->Branch("Perm", &Perm);
-    t->Branch("PermScales", PermScales);
-    t->Branch("TruePerm", &TruePerm);
-    t->Branch("TruePermLikelihood", &TruePermLikelihood);
-    t->Branch("TruePermSolvedScales", &TruePermSolvedScales);
-    t->Branch("TruePermScales",&TruePermScales);
 
+    Perm = new vector<int>;
+    PermScales = new vector<float>;
     WPrimeMass = new vector<float>; // central , EleSU, EleSD, EleRU, EleRD, JetSU, JetSD, JetRU, JetRD
     Likelihood = new vector<float>; // central , EleSU, EleSD, EleRU, EleRD, JetSU, JetSD, JetRU, JetRD
     WPType = new vector<int>; // central , EleSU, EleSD, EleRU, EleRD, JetSU, JetSD, JetRU, JetRD
-    WPrimeMass->resize(9);
-    Likelihood->resize(9);
-    WPType->resize(9);
     if (conf->RunFitter) {
-      t->Branch("WPrimeMass", &WPrimeMass);
-      t->Branch("Likelihood", &Likelihood);
-      t->Branch("WPType", &WPType);
+      Perm->resize(9);
+      PermScales->resize(9 * 4);
+      WPrimeMass->resize(9);
+      Likelihood->resize(9);
+      WPType->resize(9);
+      TruePermScales->resize(4);
+      TruePermSolvedScales->resize(4);
     }
+    t->Branch("TruePerm", &TruePerm);
+    t->Branch("TruePermLikelihood", &TruePermLikelihood);
+    t->Branch("TruePermScales",&TruePermScales);
+    t->Branch("TruePermSolvedScales", &TruePermSolvedScales);
+
+    t->Branch("Perm", &Perm);
+    t->Branch("PermScales", PermScales);
+    t->Branch("WPrimeMass", &WPrimeMass);
+    t->Branch("Likelihood", &Likelihood);
+    t->Branch("WPType", &WPType);
 
     t->Branch("nPU", &nPU);
     t->Branch("nTrueInt", &nTrueInt);
@@ -207,6 +213,8 @@ public:
         SetEventFitter(i);
         Likelihood->at(i) = Ftr->Optimize();
         if (Likelihood->at(i) < 0) continue;
+        Perm->at(i) = Ftr->BestPerm[0] * 10000 + Ftr->BestPerm[1] * 1000 + Ftr->BestPerm[2] * 100 + Ftr->BestPerm[3] * 10 + Ftr->BestPerm[4];
+        for (int j = 0; j < 4; ++j) PermScales->at(i * 4 + j) = Ftr->BestHypo.Scales[j];
         WPType->at(i) = Ftr->BestHypo.WPType;
         WPrimeMass->at(i) = Ftr->BestHypo.WP().M();
       }
@@ -242,10 +250,16 @@ void Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
   // conf->DebugList = {"LeptonRegion"};
   // conf->ProgressInterval = 1;
   // conf->EntryMax = 20000;
-  // conf->RerunList("2018","ttbar",{106, 167, 301, 322, 53,126, 254, 307, 332, 6,131, 259, 312, 350, 74,133, 281, 317, 352, 87,146, 287, 320, 388, 92,148, 288, 321, 3});
-  // conf->RerunList("2018","FL700",{0});
-  // conf->RerunList("2018","LL800",{0});
-  // conf->RerunList("2018","SingleMuon",{320});
+  conf->RerunList("2018","ttbar",{2,339,344,354});
+  conf->RerunList("2018","FL400",{0});
+  conf->RerunList("2018","single_antitop_tchan",{128});
+  conf->RerunList("2018","SingleMuon",{136,185,357});
+  conf->RerunList("2018","SingleElectron",{100,144,290,501,517});
+  conf->RerunList("2018","single_top_tchan",{102});
+  conf->RerunList("2018","single_top_tw",{13});
+  conf->RerunList("2018","wjets_HT_600_800",{31});
+  conf->RerunList("2018","wjets_HT_70_100",{56});
+  conf->RerunList("2018","WZTo3LNu",{8});
   
   ThisAnalysis *a = new ThisAnalysis(conf);
   if (!(a->SetOutput("Validation"))) return;

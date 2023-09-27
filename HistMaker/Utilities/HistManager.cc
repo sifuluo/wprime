@@ -59,6 +59,13 @@ public:
   void SetRegions(vector<string> rs) {
     Regions = rs;
   }
+
+  void SetDrawSensitivity(bool b) {
+    DrawSensitivity = b;
+  }
+  void SetDrawPurity(bool b) {
+    DrawPurity = b;
+  }
   
   // Reading Histograms
   void ReadHistograms(TFile *f) {
@@ -83,7 +90,10 @@ public:
         for (unsigned iv = 0; iv < Variations.size(); ++iv){
           TString hn = StandardNames::HistName(SampleTypes[ist], Observable, Regions[ir], Variations[iv]);
           TH1F* h = (TH1F*) f->Get(hn);
-          if (h == nullptr) continue;
+          if (h == nullptr) {
+            // cout << hn << " is nullptr" <<endl;
+            continue;
+          }
           if (PlotGroupHists[ig][iv] == nullptr) { // First hist for the group
             PlotGroupHists[ig][iv] = (TH1F*) h->Clone();
             int col = dlib.Groups[gp].Color;
@@ -131,7 +141,7 @@ public:
     Plots[ir]->SetMaximum(max);
   }
 
-  void DrawPlot(int ir, TVirtualPad* p_, int year, bool drawsens = false, bool drawpurity = false) {
+  void DrawPlot(int ir, TVirtualPad* p_, int year) {
     Plots[ir]->SetPad(p_);
     Plots[ir]->DrawPlot(year);
     Plots[ir]->UPad->cd();
@@ -143,11 +153,11 @@ public:
     float ypos = LegendPos[1] - 0.025;
     latex.DrawLatex(xpos, ypos, rm.LatexRanges[ir]);
     ypos -= 0.05;
-    if (drawsens) {
+    if (DrawSensitivity) {
       latex.DrawLatex(xpos, ypos, Plots[ir]->GetSensitivityLatex());
       ypos -= 0.05;
     }
-    if (drawpurity) {
+    if (DrawPurity) {
       latex.DrawLatex(xpos, ypos, Plots[ir]->GetMCPurityLatex());
       ypos -= 0.05;
     }
@@ -167,5 +177,7 @@ public:
   vector<RatioPlot*> Plots; // [Region]
   bool NormalizePlot = false;
   bool DoLogy = true;
+  bool DrawSensitivity = false;
+  bool DrawPurity = false;
 };
 #endif
