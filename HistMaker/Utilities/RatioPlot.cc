@@ -388,6 +388,7 @@ public:
       TH1F* hsig = SigHists[i][0];
       TH1F* hbg = MCSummed[0];
       for (unsigned i = 1; i <= nbins; ++i) {
+        if (hbg->GetBinContent(i) < 10.) continue;
         SensSum = hsig->GetBinContent(i) * hsig->GetBinContent(i) / (hsig->GetBinContent(i) + hbg->GetBinContent(i));
       }
     }
@@ -479,7 +480,7 @@ public:
     MCErrorRatioGraph->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
     MCErrorRatioGraph->Draw("af");
 
-    if (HasMC && HasSig) {  
+    if (HasMC) {  
       if (!IsSR && HasData) DataOverMC->Draw("same");
       for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
         ExpOverMC[isig]->Draw("same hist ][");

@@ -28,12 +28,13 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0, bool DoMCReweight = f
   obs.push_back({"dPhiMetLep","#Delta#phi(#slash{E}_{T},l)"}); // 20
   obs.push_back({"mT", "m_{T}"} );  // 21
   obs.push_back({"HT", "H_{T}"} );  // 22
-  obs.push_back({"WPrimeMassSimpleFL", "Simple m(W'_{H})"} ); // 23
-  obs.push_back({"WPrimeMassSimpleLL", "Simple m(W'_{L})"} ); // 24
-  // obs.push_back({"WPrimeMass", "m(W')"} );  // 25
-  // obs.push_back({"WPrimeMassFL", "m(W'_{H})"} );  // 26
-  // obs.push_back({"WPrimeMassLL", "m(W'_{L})"} );  // 27
-  // obs.push_back({"Likelihood", "Likelihood"} );   // 28
+  obs.push_back({"ST","ST"}); // 23
+  obs.push_back({"WPrimeMassSimpleFL", "Simple m(W'_{H})"} ); // 24
+  obs.push_back({"WPrimeMassSimpleLL", "Simple m(W'_{L})"} ); // 25
+  // obs.push_back({"WPrimeMass", "m(W')"} );  // 26
+  // obs.push_back({"WPrimeMassFL", "m(W'_{H})"} );  // 27
+  // obs.push_back({"WPrimeMassLL", "m(W'_{L})"} );  // 28
+  // obs.push_back({"Likelihood", "Likelihood"} );   // 29
 
   string SampleYear = dlib.SampleYears[isampleyear];
   vector<string> SampleTypes = dlib.DatasetNames;
