@@ -2,6 +2,7 @@
 #include "Utilities/DrawDataFormat.cc"
 #include "Utilities/MCReweight.cc"
 #include "../Utilities/ProgressBar.cc"
+#include "../Utilities/ErrorLogDetector.cc"
 // #include "../Utilities/Configs.cc" // For checkpoints
 
 #include <math.h>
@@ -22,6 +23,7 @@ public:
 
 void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1, bool DoMCReweight = false, bool DrawMCReweight = false) {
   if (isampletype != 2 && DoMCReweight) return;
+  if (ErrorLogDetected(isampleyear, isampletype, ifile) == 1) return;
   rm.TightOnlyInit();
   string basepath = "/eos/user/s/siluo/WPrimeAnalysis/Validation/";
   string itpath = "";
@@ -62,14 +64,21 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1
   HistCol.AddObservable("LeptonPt",50,0,500);
   HistCol.AddObservable("LeptonEta",90,-4.5,4.5);
   HistCol.AddObservable("LeptonPhi",90,-4.5,4.5);
-  HistCol.AddObservable("LeadingJetPt",100,0,1000);
-  HistCol.AddObservable("LeadingJetEta",90,-4.5,4.5);
-  HistCol.AddObservable("LeadingJetPhi",90,-4.5,4.5);
+  for (unsigned ij = 0; ij < 5; ++ij) {
+    HistCol.AddObservable(Form("Jet%iPt",ij),100,0,1000);
+    HistCol.AddObservable(Form("Jet%iEta",ij),90,-4.5,4.5);
+    HistCol.AddObservable(Form("Jet%iPhi",ij),90,-4.5,4.5);
+    for (unsigned ij2 = ij + 1; ij2 < 5; ++ij2) {
+      string ob = Form("dR(Jet%i,Jet%i)",ij, ij2);
+      HistCol.AddObservable(ob, 45, 0, 45);
+    }
+  }
   HistCol.AddObservable("METPt",100,0,2000);
   HistCol.AddObservable("METPhi",64,-3.2,3.2);
   HistCol.AddObservable("dPhiMetLep",90,-4.5,4.5);
   HistCol.AddObservable("mT",100,0,2000);
   HistCol.AddObservable("HT",200,0,2000);
+  HistCol.AddObservable("ST",200,0,2000);
   HistCol.AddObservable("WPrimeMassSimpleFL",100,0,2000);
   HistCol.AddObservable("WPrimeMassSimpleLL",100,0,2000);
   // HistCol.AddObservable("WPrimeMass",100,0,2000);
@@ -122,9 +131,13 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1
       float LeptonPt = r->LeptonPt;
       float LeptonEta = r->LeptonEta;
       float LeptonPhi = r->LeptonPhi;
-      float LeadingJetPt = r->JetPt->at(0);
-      float LeadingJetEta = r->JetEta->at(0);
-      float LeadingJetPhi = r->JetPhi->at(0);
+      vector<TLorentzVector> Jets;
+      Jets.clear();
+      for (unsigned ij = 0; ij < 5; ++ij) {
+        TLorentzVector j;
+        j.SetPtEtaPhiM(r->JetPt->at(ij), r->JetEta->at(ij), r->JetPhi->at(ij), 0);
+        Jets.push_back(j);
+      }
       float METPt = r->METPt;
       float METPhi = r->METPhi;
       float dPhiMetLep = r->dPhiMetLep;
@@ -133,6 +146,10 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1
       for (unsigned ij = 0; ij < r->JetPt->size(); ++ij) {
         HT += r->JetPt->at(ij);
       }
+      float ST = HT;
+      ST += LeptonPt;
+      ST += METPt;
+
       float WPrimeMassSimpleFL = r->WPrimeMassSimpleFL->at(0);
       float WPrimeMassSimpleLL = r->WPrimeMassSimpleLL->at(0);
       // float WPrimeMass = r->WPrimeMass->at(0);
@@ -144,10 +161,14 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1
         if (iv == 2) LeptonPt = r->LeptonPt_SD;
         if (iv == 3) LeptonPt = r->LeptonPt_RU;
         if (iv == 4) LeptonPt = r->LeptonPt_RD;
-        if (iv == 5) LeadingJetPt = r->JetPt_SU->at(0);
-        if (iv == 6) LeadingJetPt = r->JetPt_SD->at(0);
-        if (iv == 7) LeadingJetPt = r->JetPt_RU->at(0);
-        if (iv == 8) LeadingJetPt = r->JetPt_RD->at(0);
+        for (unsigned ij = 0; ij < 5; ++ij) {
+          float TarPt = 0;
+          if (iv == 5) TarPt = r->JetPt_SU->at(ij);
+          if (iv == 6) TarPt = r->JetPt_SD->at(ij);
+          if (iv == 7) TarPt = r->JetPt_RU->at(ij);
+          if (iv == 8) TarPt = r->JetPt_RD->at(ij);
+          Jets[ij] = Jets[ij] * (TarPt / Jets[ij].Pt());
+        }
         mT = r->mT->at(iv);
         WPrimeMassSimpleFL = r->WPrimeMassSimpleFL->at(iv);
         WPrimeMassSimpleLL = r->WPrimeMassSimpleLL->at(iv);
@@ -160,14 +181,21 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1
       HistCol.Fill("LeptonPt", LeptonPt);
       HistCol.Fill("LeptonEta",LeptonEta);
       HistCol.Fill("LeptonPhi",LeptonPhi);
-      HistCol.Fill("LeadingJetPt",LeadingJetPt);
-      HistCol.Fill("LeadingJetEta",LeadingJetEta);
-      HistCol.Fill("LeadingJetPhi",LeadingJetPhi);
+      for (unsigned ij = 0; ij < 5; ++ij) {
+        HistCol.Fill(Form("Jet%iPt", ij), Jets[ij].Pt());
+        HistCol.Fill(Form("Jet%iEta", ij), Jets[ij].Eta());
+        HistCol.Fill(Form("Jet%iPhi", ij), Jets[ij].Phi());
+        for (unsigned ij2 = ij + 1; ij2 < 5; ++ij2) {
+          string ob = Form("dR(Jet%i,Jet%i)",ij, ij2);
+          HistCol.Fill(ob, Jets[ij].DeltaR(Jets[ij2]));
+        }
+      }
       HistCol.Fill("METPt",METPt);
       HistCol.Fill("METPhi",METPhi);
       HistCol.Fill("dPhiMetLep",dPhiMetLep);
       HistCol.Fill("mT",mT);
       HistCol.Fill("HT",HT);
+      HistCol.Fill("ST",ST);
       HistCol.Fill("WPrimeMassSimpleFL",WPrimeMassSimpleFL);
       HistCol.Fill("WPrimeMassSimpleLL",WPrimeMassSimpleLL);
       // if (Likelihood > 0) {

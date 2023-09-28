@@ -5,8 +5,9 @@
 #include "TH1.h"
 #include "TMath.h"
 
-#include "DataFormat.cc"
 #include "Configs.cc"
+#include "DataFormat.cc"
+#include "Hypothesis.cc"
 
 class Permutations {
 public:
@@ -20,22 +21,29 @@ public:
     }
   };
 
+  Permutations() {
+    InitPtPerms();
+    cout << "PtPerms are as following: " << endl;
+    PrintPtPerms();
+  }
+
   void InitPtPerms() { // Ordered as LJ0, LJ1, Hadb, Lepb, WPb
     PtPerms.clear();
     // sequence of ix affects the order of permutations
     // Taking i0 to be the first because WPb is most likely to be the leading jet.
     // So all such cases will end up together in the first part of distribution.
-    for (unsigned i0 = 0; i0 < 5; ++i0) {
-      for (unsigned i1 = 0; i1 < 5; ++i1) {
+    for (unsigned i0 = 0; i0 < 5; ++i0) { // WPb
+      for (unsigned i1 = 0; i1 < 5; ++i1) { // Hadb
         if (i1 == i0) continue;
-        for (unsigned i2 = 0; i2 < 5; ++i2) {
+        for (unsigned i2 = 0; i2 < 5; ++i2) { // Lepb
           if (i2 == i1 || i2 == i0) continue;
-          for (unsigned i3 = 0; i3 < 5; ++i3) {
+          for (unsigned i3 = 0; i3 < 5; ++i3) { // LJ0
             if (i3 == i2 || i3 == i1 || i3 == i0) continue;
             for (unsigned i4 = i3 + 1; i4 < 5; ++i4) { // LJ1 is always lower in pT than LJ0
               if (i4 == i2 || i4 == i1 || i4 == i0) continue;
               int ThisPerm = i3 * 10000 + i4 * 1000 + i1 * 100 + i2 * 10 + i0 * 1; // (Order is LJ0, LJ1, Hadb, Lepb, WPb)
-              PtPerms.push_back(ThisPerm % 1000);
+              PtPerms.push_back(ThisPerm);
+              // PtPerms.push_back(ThisPerm % 10000);
             }
           }
         }
@@ -66,6 +74,11 @@ public:
   int GetPtPerm(vector<double> &jspt) {
     if (jspt.size() != 5) cout << "Perm Index is designed only for 5 jets" <<endl;
     vector<pair<int, double> > ipts;
+    if (jspt[1] > jspt[0]) {
+      double t = jspt[0];
+      jspt[0] = jspt[1];
+      jspt[1] = t;
+    }
     for (unsigned i = 0; i < 5; ++i) {
       ipts.push_back(pair<int,double>(i, jspt[i]));
     }
@@ -78,9 +91,8 @@ public:
     return p;
   }
   int GetPtPermIndex(int p) {
-    p = p % 1000;
     for (unsigned i = 0; i < PtPerms.size(); ++i) {
-      if (PtPerms[i] == p) return i;
+      if (PtPerms[i] % 1000 == p % 1000) return i; // The last three is already enough to determine the two light jets.
     }
     cout << "PtPerm = " << p << " not found" <<endl;
     return -1;
@@ -106,27 +118,59 @@ public:
     vector<int> tpv = ConvertPermToVector(trueperm);
     return ComparePerm(pv, tpv);
   }
+
   int ComparePerm(vector<int> pv, vector<int> tpv) {
-    if (pv == tpv) return 0; // Perfectly picked all jets
-    if (pv[3] == tpv[2] && pv[2] == tpv[3]) { // top b's swapped
-      return 1;
-    }
-    if (pv[3] == tpv[4] || pv[2] == tpv[4]) { // W'b assigned to a top
-      return 2;
-    }
-    if (pv[0] == tpv[2] || pv[0] == tpv[3] || pv[0] == tpv[4] || pv[1] == tpv[2] || pv[1] == tpv[3] || pv[1] == tpv[4]) { // A b assigned to hadronic W
-      return 3;
-    }
-    vector<bool> WithinTrueJets = vector<bool>(5,false);
+    if (pv == tpv) return 0;
+    int out = 0;
+    vector<bool> WithinTrueJets = vector<bool>(5,false); // Check if the permutation digits are the same ones.
     for (unsigned i = 0; i < 5; ++i) {
       for (unsigned j = 0; j < 5; ++i) {
         if (pv[i] == tpv[j]) WithinTrueJets[i] = true;
       }
     }
     for (unsigned i = 0; i < 5; ++i) { // A jet is taking a jet not from the hypothesis
-      if (!WithinTrueJets[i]) return i + 4;
+      if (!WithinTrueJets[i]) out += -1 * pow(2, (4 - i)); // Binary is enough to hold the information
     }
-    return 9; // Other circumstances
+    // if (out < 0) return out; // No need to proceed since the permutations digits are not all the same.
+    if (out < 0) return -1;
+
+    bool WPbCorrect = tpv[4] == pv[4];
+    bool WPbToHadb = tpv[4] == pv[2];
+    bool WPbToLepb = tpv[4] == pv[3];
+    bool WPbToLJ = tpv[4] == pv[0] || tpv[4] == pv[1];
+    bool HadbCorrect = tpv[2] == pv[2];
+    bool HadbToLepb = tpv[2] == pv[3];
+    bool HadbToWPb = tpv[2] == pv[4];
+    bool HadbToLJ = tpv[2] == pv[0] || tpv[2] == pv[1];
+    bool LepbCorrect = tpv[3] == pv[3];
+    bool LepbToHadb = tpv[3] == pv[2];
+    bool LepbToWPb = tpv[3] == pv[4];
+    bool LepbToLJ = tpv[3] == pv[0] || tpv[2] == pv[1];
+
+    bool WPbToTopb = WPbToHadb || WPbToLepb;
+    // Either topb is ...
+    bool TopbCorrect = HadbCorrect || LepbCorrect;
+    bool TopbSwap = HadbToLepb || LepbToHadb;
+    bool TopbToWPb = HadbToWPb || LepbToWPb;
+    bool TopbToLJ = HadbToLJ || LepbToLJ;
+    
+    // Code is already human readable. No need for explanation for return codes.
+    if (WPbCorrect && HadbToLepb && LepbToHadb) return 1;
+    if (WPbCorrect && TopbToLJ && TopbCorrect) return 2;
+    if (WPbCorrect && TopbToLJ && TopbSwap) return 2;
+    if (WPbCorrect && HadbToLJ && LepbToLJ) return 2;
+
+    if (WPbToTopb && TopbToWPb && TopbCorrect) return 3;
+    if (WPbToTopb && TopbToWPb && TopbSwap) return 3;    
+    if (WPbToTopb && TopbToLJ && TopbCorrect) return 4;
+    if (WPbToTopb && TopbToLJ && TopbSwap) return 4;
+    if (WPbToTopb && HadbToLJ && LepbToLJ) return 4;
+
+    if (WPbToLJ && HadbCorrect && LepbCorrect) return 5;
+    if (WPbToLJ && HadbToLepb && LepbToHadb) return 5;
+    if (WPbToLJ && TopbToLJ && TopbCorrect) return 6;
+    if (WPbToLJ && TopbToLJ && TopbSwap) return 6;
+    return 9; // Other undefined circumstances
   }
 
   int GetbTagPermIndex(vector<Jet>& js) { // Input as in default Jets order: LJ0, LJ1, Hadb, Lepb, WPb
@@ -162,14 +206,23 @@ public:
     PermFile = new TFile(FileName,"RECREATE");
     TString PtPermHistName = "PtPerm_" + conf->SampleYear + "_" + conf->SampleType;
     TString bTagPermHistName = "bTagPerm_" + conf->SampleYear + "_" + conf->SampleType;
+    // TString WPrimedRHistName = "WPrimedR_" + conf->SampleYear + "_" + conf->SampleType;
+    TString WPrimedRHistName = "WPrimedR";
     PtPermHist = new TH1F(PtPermHistName, PtPermHistName, 60,0,60);
     bTagPermHist = new TH1F(bTagPermHistName, bTagPermHistName, 40,0,40);
+    WPrimedRHist = new TH1F(WPrimedRHistName, WPrimedRHistName, 100,0,10);
   }
 
-  void FillPerm(vector<Jet>& js, double ew = 1) {
-    if (js.size() != 5) return;
+  void FillJets(vector<Jet>& js, double ew = 1) {
     PtPermHist->Fill(GetPtPermIndex(js), ew);
     bTagPermHist->Fill(GetbTagPermIndex(js), ew);
+  }
+  
+  void FillHypo(Hypothesis& h, vector<Jet>& js, double ew = 1) {
+    PtPermHist->Fill(GetPtPermIndex(h.Jets), ew);
+    bTagPermHist->Fill(GetbTagPermIndex(js), ew);
+    if (conf->WPType == 0) WPrimedRHist->Fill(h.WPb().DeltaR(h.HadT()));
+    else if (conf->WPType == 1) WPrimedRHist->Fill(h.WPb().DeltaR(h.LepT()));
   }
   
   void PostProcess() {
@@ -204,14 +257,19 @@ public:
       PtPermHists.push_back(h1);
       bTagPermHists.push_back(h2);
     }
+    TString WPrimedRFileName = conf->AuxHistBasePath + "WPrimedR_2018_FL500.root";
+    WPrimedRFile = new TFile(WPrimedRFileName,"READ");
+    WPrimedRHist = (TH1F*) WPrimedRFile->Get("WPrimedR");
+    WPrimedRHist->SetDirectory(0);
+    WPrimedRHist->Scale(1./WPrimedRHist->GetMaximum());
   }
 
   int LocateHist(double mass, int WPType) {
     int im = floor(mass / 100.);
-    if ((mass - im * 100.) >= 50.) im++;
+    if ((mass - im * 100.) >= 50.) im++; // Round up mass to int on the hundred digit
     if (im < 3) im = 3;
-    if (im > 11) im = 11;
-    im -= 3;
+    if (im > 11) im = 11; // Limit to the mass range
+    im -= 3; // Solve into index
     if (WPType == 1) im += 9; // "LL"
     return im; 
   }
@@ -236,12 +294,16 @@ public:
     return bTagPermHists[LocateHist(mass, WPType)]->GetBinContent(PtPermHists[LocateHist(mass, WPType)]->FindBin(GetbTagPermIndex(js)));
   }
 
+  double GetWPrimedRLikelihood(TLorentzVector t, TLorentzVector b) {
+    return WPrimedRHist->GetBinContent(WPrimedRHist->FindBin(t.DeltaR(b)));
+  }
+
   Configs* conf;
   string SampleType;
   TString FileName;
   TFile* PermFile;
-  TH1F* PtPermHist;
-  TH1F* bTagPermHist;
+  TFile* WPrimedRFile;
+  TH1F *PtPermHist, *bTagPermHist, *WPrimedRHist;
   vector<TH1F*> PtPermHists, bTagPermHists;
   vector<int> PtPerms;
 };

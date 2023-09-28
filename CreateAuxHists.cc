@@ -13,7 +13,7 @@
 #include "Utilities/Permutations.cc"
 #include "Utilities/Hypothesis.cc"
 
-void CreateAuxHists(int sampleyear = 3, int sampletype = 2, int ifile = -1, string infile = "All") {
+void CreateAuxHists(int sampleyear = 3, int sampletype = 22, int ifile = -1, string infile = "All") {
   dlib.AppendAndrewDatasets();
   // infile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/wprime_500/2017/003C756A-BC7B-5A48-8F2E-A61D3CDC7C32.root";
   // sampletype = dlib.AddDataset_NGTCXS("WP500");
@@ -24,19 +24,17 @@ void CreateAuxHists(int sampleyear = 3, int sampletype = 2, int ifile = -1, stri
   }
   Configs* conf = new Configs(sampleyear, sampletype, ifile);
   conf->DASInput = false;
+  conf->bTagEffHistCreation = false;
   conf->AuxHistCreation = true;
   // conf->ProgressInterval = 1;
   conf->InputFile = infile;
-  // conf->EntryMax = 2000000;
+  // conf->EntryMax = 1000;
 
   NanoAODReader* r = new NanoAODReader(conf);
   bTagEff* bTE = new bTagEff(conf);
   r->SetbTag(bTE);
   JetScale *JS = new JetScale(conf);
-  GenHypothesis *gh = new GenHypothesis();
-  TString st = conf->SampleType;
-  if (st.Contains("FL")) gh->WPType = 0;
-  else if (st.Contains("LL")) gh->WPType = 1;
+  GenHypothesis *gh = new GenHypothesis(conf->WPType);
   Permutations *PM = new Permutations(conf);
   
   Long64_t nentries = r->GetEntries();
@@ -44,7 +42,7 @@ void CreateAuxHists(int sampleyear = 3, int sampletype = 2, int ifile = -1, stri
   Progress* progress = new Progress(nentries,conf->ProgressInterval);
   for (unsigned ievt = 0; ievt < nentries; ++ievt) {
     progress->Print(ievt);
-    if (!(r->ReadEvent(ievt))) continue;
+    if (r->ReadEvent(ievt) < 0) continue;
     r->BranchSizeCheck();
     if (conf->EntryMax > 0 && ievt == conf->EntryMax) break;
     //check jet multiplicity
@@ -59,24 +57,25 @@ void CreateAuxHists(int sampleyear = 3, int sampletype = 2, int ifile = -1, stri
 
     if (nj != 5 && nj != 6) continue;
     gh->SetGenParts(r->GenParts);
-    gh->FindGenHypothesis();
     gh->MatchToJets(r->GenJets, r->Jets);
-    PM->FillPerm(gh->OutJets, r->EventWeights[0].first);
-    Hypothesis TargetHypo;
-    TargetHypo.Jets.resize(5);
-    for (unsigned i = 0; i < 7; ++i) { //FIXME, Lepton and MET not included in GenHypothesis class!!!
-      TLorentzVector TrueReco = gh->OutJets[i].GetV(0);
-      TLorentzVector TrueGen = gh->OutGenJets[i].GetV(0);
-      if (i < 5) TargetHypo.Jets[i].SetPtEtaPhiM(TrueGen.Pt(), TrueReco.Eta(), TrueReco.Phi(), TrueReco.M());
-      if (i == 5)
-      if (i == 6) TargetHypo.MET.SetPtEtaPhiM(TrueGen.Pt(), TrueGen.Eta(), TrueReco.Phi(), TrueReco.M());
+    if (!gh->ValidReco || !gh->ValidGen) continue;
+    gh->MatchToLeptons(r->Leptons);
+    gh->CreateHypothesisSet(r->TheLepton, r->Met);
+    Hypothesis Tar = gh->TarRecoHypo;
+    vector<TLorentzVector> Neus;
+    if (JS->SolveNeutrinos(Tar.Lep, Tar.Neu, Neus) == 1) {
+      if (fabs(172.186 - (Tar.Lep + Neus[0] + Tar.Jets[3]).M()) < fabs(172.186 - (Tar.Lep + Neus[1] + Tar.Jets[3]).M())) Tar.Neu = Neus[0];
+      else Tar.Neu = Neus[1];
     }
-    JS->HadWMass->Fill()
+    else Tar.Neu = TLorentzVector();
+    PM->FillHypo(Tar, gh->OutJets, r->EventWeights[0].first);
+    JS->FillHypo(Tar, r->EventWeights[0].first);
   }
   JS->PostProcess();
   JS->Clear();
   PM->PostProcess();
   PM->Clear();
+  gh->Summarize();
   
   progress->JobEnd();
 

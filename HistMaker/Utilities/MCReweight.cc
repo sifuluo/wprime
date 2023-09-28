@@ -171,11 +171,11 @@ public:
   MCReweightManager() {
   };
 
-  void Init() {
-    rws.push_back(new MCReweight(1151));
-    rws.push_back(new MCReweight(1161));
-    rws.push_back(new MCReweight(2151));
-    rws.push_back(new MCReweight(2161));
+  void Init(int nbtag = 1) {
+    rws.push_back(new MCReweight(1150 + nbtag));
+    rws.push_back(new MCReweight(1160 + nbtag));
+    rws.push_back(new MCReweight(2150 + nbtag));
+    rws.push_back(new MCReweight(2160 + nbtag));
   }
 
   void ReadFromFile(string path, string prefix, string obs) {

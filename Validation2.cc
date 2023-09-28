@@ -26,7 +26,6 @@
 #include <map>
 
 #include "Utilities/Analyzer.cc"
-#include "Utilities/ErrorLogDetector.cc"
 
 class ThisAnalysis : public Analyzer {
 public:
@@ -37,12 +36,11 @@ public:
 
   std::array<int,9> RegionIdentifier;
   std::array<float,30> EventWeight; // Size of Array subject to change
-  float HEMWeight;
 
   float LeptonPt, LeptonPt_SU, LeptonPt_SD, LeptonPt_RU, LeptonPt_RD, LeptonEta, LeptonPhi;
 
-  vector<float> *JetPt, *JetPt_SU, *JetPt_SD, *JetPt_RU, *JetPt_RD, *JetEta, *JetPhi, *JetM, *JetM_SU, *JetM_SD, *JetM_RU, *JetM_RD;
-  float METPt, METPt_SU, METPt_SD, METPt_RU, METPt_RD, METPhi, METPhi_SU, METPhi_SD, METPhi_RU, METPhi_RD;
+  vector<float> *JetPt, *JetPt_SU, *JetPt_SD, *JetPt_RU, *JetPt_RD, *JetEta, *JetPhi;
+  float METPt, METPt_SU, METPt_SD, METPt_RU, METPt_RD, METPhi;
   float dPhiMetLep;
 
   vector<float> *mT;
@@ -51,16 +49,12 @@ public:
   float nTrueInt;
   int nPV, nPVGood;
 
-  int TruePerm;
-  float TruePermLikelihood;
-  vector<float> *PermScales, *TruePermScales, *TruePermSolvedScales;
-  vector<int> *WPType, *Perm;
+  vector<int> *WPType;
   vector<float> *WPrimeMassSimpleFL, *WPrimeMassSimpleLL, *Likelihood, *WPrimeMass;
 
   void BookBranches() {
     t->Branch("RegionIdentifier", &RegionIdentifier);
     t->Branch("EventWeight", &EventWeight);
-    t->Branch("HEMWeight", &HEMWeight);
 
     t->Branch("LeptonPt",&LeptonPt);
     t->Branch("LeptonPt_SU",&LeptonPt_SU);
@@ -75,21 +69,11 @@ public:
     JetPt_SD = new vector<float>;
     JetPt_RU = new vector<float>;
     JetPt_RD = new vector<float>;
-    JetM = new vector<float>;
-    JetM_SU = new vector<float>;
-    JetM_SD = new vector<float>;
-    JetM_RU = new vector<float>;
-    JetM_RD = new vector<float>;
     t->Branch("JetPt",&JetPt);
     t->Branch("JetPt_SU",&JetPt_SU);
     t->Branch("JetPt_SD",&JetPt_SD);
     t->Branch("JetPt_RU",&JetPt_RU);
     t->Branch("JetPt_RD",&JetPt_RD);
-    t->Branch("JetM",&JetM);
-    t->Branch("JetM_SU",&JetM_SU);
-    t->Branch("JetM_SD",&JetM_SD);
-    t->Branch("JetM_RU",&JetM_RU);
-    t->Branch("JetM_RD",&JetM_RD);
     JetEta = new vector<float>;
     t->Branch("JetEta",&JetEta);
     JetPhi = new vector<float>;
@@ -101,10 +85,6 @@ public:
     t->Branch("METPt_RU",&METPt_RU);
     t->Branch("METPt_RD",&METPt_RD);
     t->Branch("METPhi", &METPhi);
-    t->Branch("METPhi_SU",&METPhi_SU);
-    t->Branch("METPhi_SD",&METPhi_SD);
-    t->Branch("METPhi_RU",&METPhi_RU);
-    t->Branch("METPhi_RD",&METPhi_RD);
 
     t->Branch("dPhiMetLep", &dPhiMetLep);
 
@@ -118,34 +98,18 @@ public:
     WPrimeMassSimpleLL->resize(9);
     t->Branch("WPrimeMassSimpleFL", &WPrimeMassSimpleFL);
     t->Branch("WPrimeMassSimpleLL", &WPrimeMassSimpleLL);
-    
-    TruePermScales = new vector<float>;
-    TruePermSolvedScales = new vector<float>;
 
-    Perm = new vector<int>;
-    PermScales = new vector<float>;
     WPrimeMass = new vector<float>; // central , EleSU, EleSD, EleRU, EleRD, JetSU, JetSD, JetRU, JetRD
     Likelihood = new vector<float>; // central , EleSU, EleSD, EleRU, EleRD, JetSU, JetSD, JetRU, JetRD
     WPType = new vector<int>; // central , EleSU, EleSD, EleRU, EleRD, JetSU, JetSD, JetRU, JetRD
+    WPrimeMass->resize(9);
+    Likelihood->resize(9);
+    WPType->resize(9);
     if (conf->RunFitter) {
-      Perm->resize(9);
-      PermScales->resize(9 * 4);
-      WPrimeMass->resize(9);
-      Likelihood->resize(9);
-      WPType->resize(9);
-      TruePermScales->resize(4);
-      TruePermSolvedScales->resize(4);
+      t->Branch("WPrimeMass", &WPrimeMass);
+      t->Branch("Likelihood", &Likelihood);
+      t->Branch("WPType", &WPType);
     }
-    t->Branch("TruePerm", &TruePerm);
-    t->Branch("TruePermLikelihood", &TruePermLikelihood);
-    t->Branch("TruePermScales",&TruePermScales);
-    t->Branch("TruePermSolvedScales", &TruePermSolvedScales);
-
-    t->Branch("Perm", &Perm);
-    t->Branch("PermScales", PermScales);
-    t->Branch("WPrimeMass", &WPrimeMass);
-    t->Branch("Likelihood", &Likelihood);
-    t->Branch("WPType", &WPType);
 
     t->Branch("nPU", &nPU);
     t->Branch("nTrueInt", &nTrueInt);
@@ -214,8 +178,6 @@ public:
         SetEventFitter(i);
         Likelihood->at(i) = Ftr->Optimize();
         if (Likelihood->at(i) < 0) continue;
-        Perm->at(i) = Ftr->BestPerm[0] * 10000 + Ftr->BestPerm[1] * 1000 + Ftr->BestPerm[2] * 100 + Ftr->BestPerm[3] * 10 + Ftr->BestPerm[4];
-        for (int j = 0; j < 4; ++j) PermScales->at(i * 4 + j) = Ftr->BestHypo.Scales[j];
         WPType->at(i) = Ftr->BestHypo.WPType;
         WPrimeMass->at(i) = Ftr->BestHypo.WP().M();
       }
@@ -239,33 +201,24 @@ public:
   }
 };
 
-void Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
+void Validation2(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
   Configs *conf = new Configs(isampleyear, isampletype, ifile);
   conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/SingleMuon/2018/2B07B4C0-852B-9B4F-83FA-CA6B047542D1.root";
   conf->LocalOutput = false;
   conf->PrintProgress = true;
   // conf->RunFitter = true;
   conf->UseMergedAuxHist = true;
-  conf->AcceptRegions({1,2},{1},{5,6},{0,1,2,3,4,5,6});
-  conf->UseMassDist = true;
+  conf->AcceptRegions({1},{1},{2},{1});
   // conf->DebugList = {"LeptonRegion"};
   // conf->ProgressInterval = 1;
   // conf->EntryMax = 20000;
-  // if (!conf->FirstRun) {
-  //   conf->RerunList("2018","ttbar",{2,339,344,354});
-  //   conf->RerunList("2018","FL400",{0});
-  //   conf->RerunList("2018","single_antitop_tchan",{128});
-  //   conf->RerunList("2018","SingleMuon",{136,185,357});
-  //   conf->RerunList("2018","SingleElectron",{100,144,290,501,517});
-  //   conf->RerunList("2018","single_top_tchan",{102});
-  //   conf->RerunList("2018","single_top_tw",{13});
-  //   conf->RerunList("2018","wjets_HT_600_800",{31});
-  //   conf->RerunList("2018","wjets_HT_70_100",{56});
-  //   conf->RerunList("2018","WZTo3LNu",{8});
-  // }
+  // conf->RerunList("2018","ttbar",{106, 167, 301, 322, 53,126, 254, 307, 332, 6,131, 259, 312, 350, 74,133, 281, 317, 352, 87,146, 287, 320, 388, 92,148, 288, 321, 3});
+  // conf->RerunList("2018","FL700",{0});
+  // conf->RerunList("2018","LL800",{0});
+  // conf->RerunList("2018","SingleMuon",{320});
   
   ThisAnalysis *a = new ThisAnalysis(conf);
-  if (!(a->SetOutput("Validation"))) return;
+  if (!(a->SetOutput("Validation2"))) return;
   for (Long64_t iEvent = 0; iEvent < a->GetEntryMax(); ++iEvent) {
     if (a->ReadEvent(iEvent) < 0) continue;
     if (!a->WithinROI()) continue;

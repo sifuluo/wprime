@@ -55,7 +55,10 @@ public:
   void CreateHistograms(string path, string prefix, string st = "", int ifile = -1) {
     Hists.clear();
     Hists.resize(Observables.size());
+    cout << "Output is saved as: " << StandardNames::HistFileName(path, prefix, "Obs", st, ifile) << endl;
+    cout << "Creating Histograms for Observables: ";
     for (unsigned io = 0; io < Observables.size(); ++io) {
+      cout  << Observables[io] << ", ";
       Hists[io].resize(SampleTypes.size());
       TString fn = StandardNames::HistFileName(path, prefix, Observables[io], st, ifile);
       fouts.push_back(new TFile(fn, "RECREATE"));
@@ -73,6 +76,7 @@ public:
         }
       }
     }
+    cout << endl;
   }
 
   int Fill(string ob, int ist, int iv, int rid, float x, float w) {

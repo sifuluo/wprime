@@ -136,7 +136,7 @@ public:
       ReadPileup();
     }
     ReadJets();
-    if (conf->bTagEffHistCreation) return 1;
+    if (conf->bTagEffHistCreation) return 0;
     ReadTriggers();
     ReadLeptons();
     ReadMET();
@@ -191,6 +191,7 @@ public:
 
   void ReadJets() {
     Jets.clear();
+    AllJets.clear();
     if (!PassedHEMCut) return;
     int emptysequence = 0;
     if (evts->nJet > evts->nJetMax) cout << "Error: nJet = " << evts->nJet << " at iEvent = " << iEvent << endl;
@@ -210,7 +211,7 @@ public:
       tmp.JERup().SetPtEtaPhiM(evts->Jet_pt_jerUp[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jerUp[i]);
       tmp.JERdown().SetPtEtaPhiM(evts->Jet_pt_jerDown[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jerDown[i]);
       tmp.JetId = evts->Jet_jetId[i];
-
+      if (conf->AuxHistCreation) AllJets.push_back(tmp);
       if (!PassCommon(tmp)) continue;
 
       //set PUID flags
@@ -271,8 +272,8 @@ public:
           bTSFsCorr[1] = {evts->Jet_bTagScaleFactorLooseUpCorrelated[i], evts->Jet_bTagScaleFactorMediumUpCorrelated[i], evts->Jet_bTagScaleFactorTightUpCorrelated[i]};
           bTSFsCorr[2] = {evts->Jet_bTagScaleFactorLooseDownCorrelated[i], evts->Jet_bTagScaleFactorMediumDownCorrelated[i], evts->Jet_bTagScaleFactorTightDownCorrelated[i]};
           bTSFsUncorr[0] = {1, 1, 1};
-          bTSFsUncorr[1] = {evts->Jet_bTagScaleFactorLooseUpCorrelated[i], evts->Jet_bTagScaleFactorMediumUpCorrelated[i], evts->Jet_bTagScaleFactorTightUpCorrelated[i]};
-          bTSFsUncorr[2] = {evts->Jet_bTagScaleFactorLooseDownCorrelated[i], evts->Jet_bTagScaleFactorMediumDownCorrelated[i], evts->Jet_bTagScaleFactorTightDownCorrelated[i]};
+          bTSFsUncorr[1] = {evts->Jet_bTagScaleFactorLooseUpUncorrelated[i], evts->Jet_bTagScaleFactorMediumUpUncorrelated[i], evts->Jet_bTagScaleFactorTightUpUncorrelated[i]};
+          bTSFsUncorr[2] = {evts->Jet_bTagScaleFactorLooseDownUncorrelated[i], evts->Jet_bTagScaleFactorMediumDownUncorrelated[i], evts->Jet_bTagScaleFactorTightDownUncorrelated[i]};
         }
         if (conf->Compare_bTagSF) {
           R_BTSF->CompareScaleFactors(tmp, bTSFsCorr);
@@ -482,9 +483,9 @@ public:
       //set SF and variation for primary only, HEEP as in https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaRunIIRecommendations#HEEPV7_0
       tmp.SFs = {1., 1., 1.};
       if(PassPrimary(tmp,0) && IsMC){
-	tmp.SF[0] = evts->Electron_scaleFactor[i];
-	tmp.SF[1] = evts->Electron_scaleFactorUp[i];
-	tmp.SF[2] = evts->Electron_scaleFactorDown[i];
+        tmp.SFs[0] = evts->Electron_scaleFactor[i];
+        tmp.SFs[1] = evts->Electron_scaleFactorUp[i];
+        tmp.SFs[2] = evts->Electron_scaleFactorDown[i];
       }
 
       Electrons.push_back(tmp);
@@ -777,6 +778,7 @@ public:
         for(unsigned j = 0; j < Jets.size(); ++j){
           BjetWCorr.variations[i] *= Jets[j].bJetSFweightsCorr[i][bTagWP];
           BjetWUncorr.variations[i] *= Jets[j].bJetSFweightsUncorr[i][bTagWP];
+          if (i > 0) BjetWUncorr.variations[i] *= 1. / Jets[j].bJetSFweightsCorr[0][bTagWP]; // Fix for Corr and Uncorr nominal are combined
           PUIDW.variations[i] *= Jets[j].PUIDSFweights[i][PUIDWP];
         }
       }
@@ -909,7 +911,7 @@ public:
   int run, luminosityBlock;
   vector<GenPart> GenParts;
   vector<GenJet> GenJets;
-  vector<Jet> Jets;
+  vector<Jet> Jets, AllJets;
   vector<Trigger> Triggers;
   vector<Lepton> Leptons;
   Lepton TheLepton;
