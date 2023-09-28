@@ -2,6 +2,7 @@
 #include "Utilities/DrawDataFormat.cc"
 #include "Utilities/MCReweight.cc"
 #include "../Utilities/ProgressBar.cc"
+#include "../Utilities/ErrorLogDetector.cc"
 // #include "../Utilities/Configs.cc" // For checkpoints
 
 #include <math.h>
@@ -22,6 +23,7 @@ public:
 
 void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1, bool DoMCReweight = false, bool DrawMCReweight = false) {
   if (isampletype != 2 && DoMCReweight) return;
+  if (ErrorLogDetected(isampleyear, isampletype, ifile) == 1) return;
   rm.TightOnlyInit();
   string basepath = "/eos/user/s/siluo/WPrimeAnalysis/Validation/";
   string itpath = "";

@@ -86,11 +86,12 @@ struct Configs {
     return true;
   }
   
-  bool FirstRun = true;
-  bool NeedRerun = false;
+  int ErrorRerun = ErrorLogDetected(iSampleYear, iSampleType, iFile); // 0: no log;  1: empty log;  2: non-empty log
+  bool FirstRun = (ErrorRerun == 0);
+  bool InRerunList = false;
   bool RerunList(vector<int>& l) {
     for (unsigned i = 0; i < l.size(); ++i) if (l[i] == iFile) {
-      NeedRerun = true;
+      InRerunList = true;
       return true;
     }
     return false;

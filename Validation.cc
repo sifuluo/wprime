@@ -26,6 +26,7 @@
 #include <map>
 
 #include "Utilities/Analyzer.cc"
+#include "Utilities/ErrorLogDetector.cc"
 
 class ThisAnalysis : public Analyzer {
 public:
@@ -250,16 +251,18 @@ void Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
   // conf->DebugList = {"LeptonRegion"};
   // conf->ProgressInterval = 1;
   // conf->EntryMax = 20000;
-  conf->RerunList("2018","ttbar",{2,339,344,354});
-  conf->RerunList("2018","FL400",{0});
-  conf->RerunList("2018","single_antitop_tchan",{128});
-  conf->RerunList("2018","SingleMuon",{136,185,357});
-  conf->RerunList("2018","SingleElectron",{100,144,290,501,517});
-  conf->RerunList("2018","single_top_tchan",{102});
-  conf->RerunList("2018","single_top_tw",{13});
-  conf->RerunList("2018","wjets_HT_600_800",{31});
-  conf->RerunList("2018","wjets_HT_70_100",{56});
-  conf->RerunList("2018","WZTo3LNu",{8});
+  // if (!conf->FirstRun) {
+  //   conf->RerunList("2018","ttbar",{2,339,344,354});
+  //   conf->RerunList("2018","FL400",{0});
+  //   conf->RerunList("2018","single_antitop_tchan",{128});
+  //   conf->RerunList("2018","SingleMuon",{136,185,357});
+  //   conf->RerunList("2018","SingleElectron",{100,144,290,501,517});
+  //   conf->RerunList("2018","single_top_tchan",{102});
+  //   conf->RerunList("2018","single_top_tw",{13});
+  //   conf->RerunList("2018","wjets_HT_600_800",{31});
+  //   conf->RerunList("2018","wjets_HT_70_100",{56});
+  //   conf->RerunList("2018","WZTo3LNu",{8});
+  // }
   
   ThisAnalysis *a = new ThisAnalysis(conf);
   if (!(a->SetOutput("Validation"))) return;

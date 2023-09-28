@@ -22,7 +22,7 @@ with open("Utilities/UserSpecificsSkeleton.cc","r") as skeleton:
     fout.write(el)
 
 with open("Submits/SubmitTemplate.sh","r") as skeleton:
-  NewFile = "Submit/Submit.sh"
+  NewFile = "Submits/Submit.sh"
   fout = open(NewFile,"w")
   for el in skeleton:
     el = el.replace("__cwd__",os.getcwd())
@@ -53,9 +53,9 @@ for iy, year in enumerate(SampleYears):
     lines.append("max_retries  = 10\n")
     # lines.append("+JobBatchName= " + runname +"\n")
     lines.append("batch_name   = " + runname +"\n")
-    lines.append("output       = logs/"+runname+"/$(ClusterID)_$(ProcID).out\n")
-    lines.append("error        = logs/"+runname+"/$(ClusterID)_$(ProcID).err\n")
-    lines.append("log          = logs/"+runname+"/$(ClusterID)_$(ProcID).log\n")
+    lines.append("output       = logs/"+runname+"/"+runname+"_$(ProcID).out\n")
+    lines.append("error        = logs/"+runname+"/"+runname+"_$(ProcID).err\n")
+    lines.append("log          = logs/"+runname+"/"+runname+"_$(ProcID).log\n")
     lines.append("universe     = vanilla\n")
     lines.append('Requirements = (OpSysAndVer =?= "CentOS7")\n')
     # lines.append('+JobFlavour  = "workday"\n')
