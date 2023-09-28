@@ -14,7 +14,7 @@ for d in os.listdir("."):
         # os.path.getsize(ferr)
         print("Error log: " + ferr)
         continue
-      else:
-        os.remove(flog)
+      # else:
+        # os.remove(flog)
         # os.remove(ferr)
-        os.remove(fout)
+        # os.remove(fout)

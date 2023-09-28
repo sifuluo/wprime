@@ -7,14 +7,14 @@ for i in LeptonPt LeptonEta LeptonPhi Jet0Pt Jet0Eta Jet0Phi Jet1Pt Jet1Eta Jet1
 do
 rm ${p}${pre}NRW_${i}_ttbar.root
 hadd -f ${p}${pre}NRW_${i}_ttbar.root ${p}batch/${pre}NRW_${i}_ttbar_*
+# rm ${p}${pre}RW_${i}_ttbar.root
+# hadd -f ${p}${pre}RW_${i}_ttbar.root ${p}batch/${pre}RW_${i}_ttbar_*
 rm ${p}${pre}${i}_SingleElectron.root
 hadd -f ${p}${pre}${i}_SingleElectron.root ${p}batch/${pre}${i}_SingleElectron_* 
 rm ${p}${pre}${i}_SingleMuon.root
 hadd -f ${p}${pre}${i}_SingleMuon.root ${p}batch/${pre}${i}_SingleMuon_* 
 
 # hadd -f outputs/${pre}${i}.root ${p}${pre}${i}* ${p}${pre}NRW_${i}*
-
-# hadd -f ${p}${pre}RW_${i}_batch.root ${p}batch/${pre}${i}* ${p}batch/${pre}RW_${i}*
 # hadd -f outputs/${pre}RW_${i}.root ${p}${pre}${i}* ${p}${pre}RW_${i}*
 done
 # cp ${p}${pre}*ReweightSF.root outputs/
