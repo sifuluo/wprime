@@ -35,7 +35,7 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1
   vector<string> SampleTypes = dlib.DatasetNames;
   string SampleType = SampleTypes[isampletype];
   HistFilePath = HistFilePath + "Hists/";
-  if (ifile > -1) HistFilePath = HistFilePath + "batch/";
+  if (ifile > -1) HistFilePath = HistFilePath + SampleType + "/";
   if (isampletype != -1) {
     
   }
@@ -43,19 +43,20 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1
   else if (SampleType == "ttbar") HistFilePrefix += "_NRW";
   if (SampleType == "ZZ") return;
 
-  MCReweightManager *mcrm = new MCReweightManager();
+  MCReweightManager *mcrm = new MCReweightManager("Jet0Pt");
+  mcrm->Verbose = false;
   if ((DoMCReweight && (SampleType == "ttbar" || SampleType == "")) || DrawMCReweight) {
     mcrm->Init();
-    string idr1161 = rm.StringRanges[rm.GetRangeIndex(1161)];
-    string idr1151 = rm.StringRanges[rm.GetRangeIndex(1151)];
-    string SourceObs = "WPrimeMassSimpleFL";
-    string SourcePath = HistFilePath;
+    string SourcePath = basepath + "Hists/";
     string SourcePrefix = SampleYear + "_Validation";
-    mcrm->ReadFromFile(SourcePath, SourcePrefix, SourceObs);
-    if (DrawMCReweight) {
-      TString fweightname = StandardNames::HistFileName(HistFilePath, HistFilePrefix, "ReweightSF");
-      mcrm->SaveToFile(fweightname);
+    TString rwfn = StandardNames::HistFileName(basepath + "Hists/", HistFilePrefix, "ReweightSF");
+    if (DrawMCReweight || !mcrm->ReadFromFile(rwfn)) {
+      mcrm->ReadFromFiles(SourcePath, SourcePrefix);
+      mcrm->SaveToFile(rwfn);
     }
+    // else if (){
+    //   mcrm->ReadFromFile(rwfn);
+    // }
   }
 
   if (DrawMCReweight) return;
@@ -158,16 +159,18 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1
       if (iv > 0 && iv < 9) { // Variations on Physical quantities
         // "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown"
         if (iv == 1) LeptonPt = r->LeptonPt_SU;
-        if (iv == 2) LeptonPt = r->LeptonPt_SD;
-        if (iv == 3) LeptonPt = r->LeptonPt_RU;
-        if (iv == 4) LeptonPt = r->LeptonPt_RD;
-        for (unsigned ij = 0; ij < 5; ++ij) {
-          float TarPt = 0;
-          if (iv == 5) TarPt = r->JetPt_SU->at(ij);
-          if (iv == 6) TarPt = r->JetPt_SD->at(ij);
-          if (iv == 7) TarPt = r->JetPt_RU->at(ij);
-          if (iv == 8) TarPt = r->JetPt_RD->at(ij);
-          Jets[ij] = Jets[ij] * (TarPt / Jets[ij].Pt());
+        else if (iv == 2) LeptonPt = r->LeptonPt_SD;
+        else if (iv == 3) LeptonPt = r->LeptonPt_RU;
+        else if (iv == 4) LeptonPt = r->LeptonPt_RD;
+        else {
+          for (unsigned ij = 0; ij < 5; ++ij) {
+            float TarPt = 0;
+            if (iv == 5) TarPt = r->JetPt_SU->at(ij);
+            if (iv == 6) TarPt = r->JetPt_SD->at(ij);
+            if (iv == 7) TarPt = r->JetPt_RU->at(ij);
+            if (iv == 8) TarPt = r->JetPt_RD->at(ij);
+            Jets[ij] = Jets[ij] * (TarPt / Jets[ij].Pt());
+          }
         }
         mT = r->mT->at(iv);
         WPrimeMassSimpleFL = r->WPrimeMassSimpleFL->at(iv);

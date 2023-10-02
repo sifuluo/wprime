@@ -68,9 +68,20 @@ public:
   }
   
   // Reading Histograms
-  void ReadHistograms(TFile *f) {
+  void ReadHistograms(string path, string prefix, bool DoMCReweight = false) {
     Plots.clear();
     Plots.resize(Regions.size());
+    InFiles.clear();
+    for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
+      string thisprefix = prefix;
+      if (SampleTypes[ist] == "ttbar") {
+        if (DoMCReweight) thisprefix += "_RW";
+        else thisprefix += "_NRW";
+      }
+      TString fn = StandardNames:: HistFileName(path, thisprefix, Observable, SampleTypes[ist]);
+      InFiles.push_back(new TFile(fn, "READ"));
+      cout << "Reading from file " << fn << endl;
+    }
     for (unsigned ir = 0; ir < Regions.size(); ++ir) {
       bool IsSR = rm.Ranges[ir].IsSR;
       TString PlotName = PlotNamePrefix + "_" + Observable + "_" + rm.StringRanges[ir];
@@ -89,7 +100,7 @@ public:
         if (ig < 0) continue;
         for (unsigned iv = 0; iv < Variations.size(); ++iv){
           TString hn = StandardNames::HistName(SampleTypes[ist], Observable, Regions[ir], Variations[iv]);
-          TH1F* h = (TH1F*) f->Get(hn);
+          TH1F* h = (TH1F*) InFiles[ist]->Get(hn);
           if (h == nullptr) {
             // cout << hn << " is nullptr" <<endl;
             continue;
@@ -175,6 +186,7 @@ public:
   vector<string> SampleTypes, Variations, Regions;
   string XTitle, YTitle;// [Observable]
   vector<RatioPlot*> Plots; // [Region]
+  vector<TFile*> InFiles; // [iSampleType]
   bool NormalizePlot = false;
   bool DoLogy = true;
   bool DrawSensitivity = false;

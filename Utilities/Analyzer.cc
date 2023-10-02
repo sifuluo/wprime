@@ -73,8 +73,8 @@ public:
     }
     TString ofname = path + subpath + outname;
     cout << "Output will be saved to " << ofname << endl;
-    cout << "Output Status: Zombie: " << (HasZombieOutput(ofname)? "YES" : "No") << ", FirstRun: " << ((conf->FirstRun) ?  "YES" : "No") << ", InRerunList: " << ((conf->InRerunList) ?  "YES" : "No") << ", ErrorLogDetected: " << ((conf->ErrorRerun)? "YES" : "No") << endl;
-    if (!(HasZombieOutput(ofname)) && !(conf->FirstRun) && !(conf->InRerunList) && !(conf->ErrorRerun)) {
+    cout << "Output Status: Zombie: " << (HasZombieOutput(ofname)? "YES" : "No") << ", FirstRun: " << ((conf->FirstRun) ?  "YES" : "No") << ", InRerunList: " << ((conf->InRerunList) ?  "YES" : "No") << ", ErrorLogDetected: " << ((conf->ErrorRerun == 2)? "YES" : "No") << endl;
+    if (!(HasZombieOutput(ofname)) && !(conf->FirstRun) && !(conf->InRerunList) && !(conf->ErrorRerun  == 2)) {
       cout << "File skipped. Ending job" << endl;
       return false;
     }

@@ -240,6 +240,7 @@ public:
 };
 
 void Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
+  if (ErrorLogDetected(isampleyear, isampletype, ifile) == 1) return;
   Configs *conf = new Configs(isampleyear, isampletype, ifile);
   conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/SingleMuon/2018/2B07B4C0-852B-9B4F-83FA-CA6B047542D1.root";
   conf->LocalOutput = false;

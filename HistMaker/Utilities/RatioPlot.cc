@@ -81,6 +81,14 @@ public:
       MCStack->Add(h);
       HasMC = true;
     }
+    else {
+      for (unsigned inm = 0; inm < MCNames.size(); ++inm) {
+        if (MCNames[inm] != n_) continue;
+        if (fabs(h_->Integral() / MCHists[inm]->Integral() - 1.0) > 0.5) {
+          cout << h_->GetName() << " integral = " << h_->Integral() << ", " << MCHists[inm]->GetName() << " integral = " << MCHists[inm]->Integral() << endl;
+        }
+      }
+    }
     if (MCSummed[iv] == nullptr) {
       MCSummed[iv] = (TH1F*) h_->Clone();
       MCSummed[iv]->SetLineColor(1);
@@ -528,7 +536,7 @@ public:
   double MinY = 0;
   double CanvasMaximum = 0;
   double TrueMaximum = 0;
-  double TrueMaximumScale = 10.0;
+  double TrueMaximumScale = 5.0;
 
   bool HasData = false;
   bool HasMC = false;

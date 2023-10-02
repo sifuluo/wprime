@@ -59,13 +59,15 @@ public:
     ttbarHists[iv]->SetDirectory(0);
   }
 
-  void ReadFromFile(string path, string prefix, string obs) {
+  void ReadFromFiles(string path, string prefix, string obs) {
+    Observable = obs;
     for (unsigned i = 0; i < dlib.DatasetNames.size(); ++i) {
       string ds = dlib.DatasetNames[i];
       string thisprefix = prefix;
       if (ds == "ttbar") thisprefix += "_NRW";
       TString fn = StandardNames::HistFileName(path, thisprefix, obs, ds);
       TFile *f = new TFile(fn,"READ");
+      if (!f || !(f->IsOpen())) continue;
       // cout << "Calculating MC reweighting from file: " << fn << endl;
       // cout << "ds = " << ds << ", Region = " << SourceRegionInt << endl;
       TString histname = StandardNames::HistName(ds, obs, StringRange, rm.Variations[0]);
@@ -76,6 +78,17 @@ public:
       f->Close();
       delete f;
     }
+  }
+
+  void ReadFromFile(TFile *f, string obs) {
+    Observable = obs;
+    TString hn = "ttbarReweightSF_" + Observable + "_" + SourceRegion;
+    TString fn = "MCRFunc" + SourceRegion;
+    SF1D = (TH1F*)f->Get(hn)->Clone();
+    SF1D->SetDirectory(0);
+    SF1DF = SF1D->GetFunction(fn);
+    cout << "SF Value at 685.592GeV from" << SourceRegion << " is " << SF1D->GetBinContent(SF1D->FindBin(685.592)) << endl;
+    cout << "SF Evaled value is " << SF1DF->Eval(685.592) << endl;
   }
 
   // void StatError(TH1F* hcentral, vector<double>& errup, vector<double>& errlow) {
@@ -134,22 +147,23 @@ public:
     SF1D->SetDirectory(0);
     SF1D->Add(OtherMCHists[0], -1.);
     SF1D->Divide(ttbarHists[0]);
-    SF1D->SetName(("ttbarReweightSFFrom" + SourceRegion).c_str());
-    SF1D->SetTitle(("ttbar Reweighting Scale Factor From " + SourceRegion).c_str());
+    SF1D->SetName(("ttbarReweightSF_" + Observable + "_" + SourceRegion).c_str());
+    SF1D->SetTitle(("ttbar Reweighting From " + Observable + " in " + SourceRegion).c_str());
     TString FuncName = "MCRFunc" + SourceRegion;
     SF1DF = new TF1(FuncName,"[0]/x+[1]*x+[2]*x*x+[3]",100,2000);
     SF1D->Fit(SF1DF,"RM");
-    // cout << "SF Value at 685.592GeV from" << SourceRegion << " is " << SF1D->GetBinContent(SF1D->FindBin(685.592)) << endl;
+    cout << "SF Value at 685.592GeV from" << SourceRegion << " is " << SF1D->GetBinContent(SF1D->FindBin(685.592)) << endl;
+    cout << "SF Evaled value is " << SF1DF->Eval(685.592) << endl;
   }
 
   float GetSF1D(double wpmass) {
     return SF1D->GetBinContent(SF1D->FindBin(wpmass));
   }
-  float GetSF1DF(double wpmass) {
+  float GetSF1DF(double wpmass, bool Verbose = true) {
     float sf = SF1DF->Eval(wpmass);
     if (wpmass < 2000 && wpmass > 0) {
-      if (sf > 2.0 || sf < 0.5) cout << SF1DF->GetName() << " at " << wpmass << " has extreme value of " << sf << endl;
-      return SF1DF->Eval(wpmass);
+      if (Verbose) if (sf > 2.0 || sf < 0.5) cout << SF1DF->GetName() << " at " << wpmass << " has extreme value of " << sf << endl;
+      return sf;
     }
     return GetSF1D(wpmass);
   }
@@ -157,6 +171,7 @@ public:
   int SourceRegionInt;
   string SourceRegion;
   string StringRange;
+  string Observable;
   unsigned nbins;
   TH1F* DataHist = nullptr;
   vector<string> Variations;
@@ -168,7 +183,9 @@ public:
 
 class MCReweightManager {
 public:
-  MCReweightManager() {
+  MCReweightManager(string obs) {
+    Observable = obs;
+    Verbose = true;
   };
 
   void Init(int nbtag = 1) {
@@ -178,11 +195,33 @@ public:
     rws.push_back(new MCReweight(2160 + nbtag));
   }
 
-  void ReadFromFile(string path, string prefix, string obs) {
+  void ReadFromFiles(string path, string prefix) {
     for (unsigned i = 0; i < rws.size(); ++i) {
-      rws[i]->ReadFromFile(path, prefix, obs);
+      rws[i]->ReadFromFiles(path, prefix, Observable);
       rws[i]->CreateSF1DPlot();
     }
+  }
+
+  bool ReadFromFile(TString rwfn) {
+    cout << "Reading Reweight file: " << rwfn << endl;
+    TFile *f = new TFile(rwfn, "READ");
+    if (!f || !(f->IsOpen())) return false;
+    for (unsigned i = 0; i < rws.size(); ++i) {
+      rws[i]->ReadFromFile(f, Observable);
+    }
+    f->Close();
+    return true;
+  }
+
+  bool ReadFromFile(string path, string prefix) {
+    TString rwfn = StandardNames::HistFileName(path, prefix + "_RW", "ReweightSF");
+    if (ReadFromFile(rwfn)) return true;
+    rwfn = StandardNames::HistFileName(path, prefix + "_NRW", "ReweightSF");
+    if (ReadFromFile(rwfn)) return true;
+    rwfn = StandardNames::HistFileName(path, prefix, "ReweightSF");
+    if (ReadFromFile(rwfn)) return true;
+    cout << "Failed to read Reweight plots file" << endl;
+    return false;
   }
 
   void SaveToFile(TString fname) {
@@ -195,24 +234,27 @@ public:
     f->Write();
     f->Save();
     f->Close();
+    cout << "Reweight file has been saved to " << fname << endl;
     delete f;
   }
 
   float GetSF1D(double wpmass, int rid) {
     for (unsigned i = 0; i < rws.size(); ++i) {
-      if (rws[i]->SourceRegionInt / 10 == rid / 10) return rws[i]->GetSF1D(wpmass); 
+      if (rws[i]->SourceRegionInt / 10 == rid / 10 && rws[i]->SourceRegionInt / 1000 == rid / 1000) return rws[i]->GetSF1D(wpmass); 
     }
     return 1.0;
   }
 
   float GetSF1DF(double wpmass, int rid) {
     for (unsigned i = 0; i < rws.size(); ++i) {
-      if (rws[i]->SourceRegionInt / 10 == rid / 10) return rws[i]->GetSF1DF(wpmass); 
+      if (rws[i]->SourceRegionInt / 10 == rid / 10 && rws[i]->SourceRegionInt / 1000 == rid / 1000) return rws[i]->GetSF1DF(wpmass, Verbose); 
     }
     return 1.0;
   }
 
   vector<MCReweight*> rws;
+  string Observable;
+  bool Verbose;
 
 };
 
