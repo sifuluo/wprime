@@ -177,7 +177,7 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1
         WPrimeMassSimpleLL = r->WPrimeMassSimpleLL->at(iv);
       }
       if (SampleType == "ttbar" && DoMCReweight) {
-        float mcrweight = mcrm->GetSF1DF(WPrimeMassSimpleFL, RegionIdentifier);
+        float mcrweight = mcrm->GetSF1DF(Jets[0].Pt(), RegionIdentifier);
         EventWeight *= mcrweight;
       }
       HistCol.SetCurrentFill(isampletype, iv, RegionIdentifier, EventWeight);
