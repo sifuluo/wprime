@@ -11,6 +11,7 @@
 
 #include "Dataset.cc"
 #include "UserSpecifics.cc"
+#include "ErrorLogDetector.cc"
 
 struct Configs {
   Configs(int isy_ = 2, int ist_ = 2, int ifile_ = 0) {
@@ -22,8 +23,11 @@ struct Configs {
     Type = dlib.Datasets[SampleType].Type;
     IsMC = Type > 0;
     TString st = SampleType;
+    ErrorRerun = ErrorLogDetected(iSampleYear, iSampleType, iFile);
+    FirstRun = (ErrorRerun == 0);
     if (st.Contains("FL")) WPType = 0;
     else if (st.Contains("LL")) WPType = 1;
+    else WPType = -1;
   };
 
   ~Configs() {
@@ -86,8 +90,8 @@ struct Configs {
     return true;
   }
   
-  int ErrorRerun = ErrorLogDetected(iSampleYear, iSampleType, iFile); // 0: no log;  1: empty log;  2: non-empty log
-  bool FirstRun = (ErrorRerun == 0);
+  int ErrorRerun; // 0: no log;  1: empty log;  2: non-empty log
+  bool FirstRun;
   bool InRerunList = false;
   bool RerunList(vector<int>& l) {
     for (unsigned i = 0; i < l.size(); ++i) if (l[i] == iFile) {

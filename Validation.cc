@@ -51,10 +51,13 @@ public:
   float nTrueInt;
   int nPV, nPVGood;
 
+  GenHypothesis *gh;
   int TruePerm;
-  float TruePermLikelihood;
+  vector<int> TruePermVector;
+  float TruePermLikelihood, TruePermWPrimeMass;
   vector<float> *PermScales, *TruePermScales, *TruePermSolvedScales;
   vector<int> *WPType, *Perm;
+  int PermDiffCode;
   vector<float> *WPrimeMassSimpleFL, *WPrimeMassSimpleLL, *Likelihood, *WPrimeMass;
 
   void BookBranches() {
@@ -119,6 +122,7 @@ public:
     t->Branch("WPrimeMassSimpleFL", &WPrimeMassSimpleFL);
     t->Branch("WPrimeMassSimpleLL", &WPrimeMassSimpleLL);
     
+    if (conf->Type == 2) gh = new GenHypothesis(conf->WPType);
     TruePermScales = new vector<float>;
     TruePermSolvedScales = new vector<float>;
 
@@ -140,6 +144,8 @@ public:
     t->Branch("TruePermLikelihood", &TruePermLikelihood);
     t->Branch("TruePermScales",&TruePermScales);
     t->Branch("TruePermSolvedScales", &TruePermSolvedScales);
+    t->Branch("TruePermWPrimeMass", &TruePermWPrimeMass);
+    t->Branch("PermDiffCode", &PermDiffCode);
 
     t->Branch("Perm", &Perm);
     t->Branch("PermScales", PermScales);
@@ -201,6 +207,28 @@ public:
 
     dPhiMetLep = r->Met.DeltaPhi(r->TheLepton);
 
+    TruePerm = 0;
+    PermDiffCode = -1;
+    TruePermVector = vector<int>(5,-1);
+    TruePermScales->clear();
+    bool HasGenHypo = false;
+    if (conf->Type == 2) {
+      gh->SetGenParts(r->GenParts);
+      TruePermVector = gh->MatchToJets(r->GenJets, r->Jets);
+      HasGenHypo = gh->ValidReco && gh->ValidGen;
+    }
+    if (HasGenHypo) {
+      gh->MatchToLeptons(r->Leptons);
+      gh->CreateHypothesisSet(r->TheLepton, r->Met);
+      if (TruePermVector.size() == 5) for (unsigned ipe = 0; ipe < 5; ++ipe) {
+        TruePerm += TruePermVector[ipe] * pow(10,(4 - ipe));
+        TruePermScales->push_back(gh->OutGenJets[ipe].Pt() / gh->OutJets[ipe].Pt());
+      }
+    }
+    else {
+      TruePermVector.clear();
+    }
+
     for (unsigned i = 0; i < 9; ++i) {
       TLorentzVector vmT = r->TheLepton.GetV(i) + r->Met.GetV(i);
       vmT.SetPz(0);
@@ -210,6 +238,7 @@ public:
       WPrimeMassSimpleFL->at(i) = vWprimeFL.M();
       WPrimeMassSimpleLL->at(i) = vWprimeLL.M();
       if (!conf->RunFitter) continue;
+      if (HasGenHypo) Ftr->SetTruePerm(TruePermVector);
       if (i == 0) {
         SetEventFitter(i);
         Likelihood->at(i) = Ftr->Optimize();
@@ -218,6 +247,14 @@ public:
         for (int j = 0; j < 4; ++j) PermScales->at(i * 4 + j) = Ftr->BestHypo.Scales[j];
         WPType->at(i) = Ftr->BestHypo.WPType;
         WPrimeMass->at(i) = Ftr->BestHypo.WP().M();
+        if (HasGenHypo && Ftr->TrueHypo.WPType > -1) {
+          TruePermLikelihood = Ftr->TrueHypo.GetTotalP();
+          TruePermWPrimeMass = Ftr->TrueHypo.WP().M();
+          for (int j =0; j < 4; ++j) TruePermSolvedScales->at(j) = Ftr->TrueHypo.Scales[j];
+          PermDiffCode = PM->ComparePerm(Ftr->BestPerm, TruePermVector);
+          if (Ftr->BestHypo.WPType != conf->WPType) PermDiffCode += 10; 
+          if (Ftr->TrueHypo.WPType != conf->WPType) PermDiffCode += 20;
+        }
       }
       else {
         Likelihood->at(i) = -1;
@@ -242,15 +279,15 @@ public:
 void Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
   if (ErrorLogDetected(isampleyear, isampletype, ifile) == 1) return;
   Configs *conf = new Configs(isampleyear, isampletype, ifile);
-  conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/SingleMuon/2018/2B07B4C0-852B-9B4F-83FA-CA6B047542D1.root";
+  // conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/SingleMuon/2018/2B07B4C0-852B-9B4F-83FA-CA6B047542D1.root";
   conf->LocalOutput = false;
   conf->PrintProgress = true;
-  // conf->RunFitter = true;
+  conf->RunFitter = true;
   conf->UseMergedAuxHist = true;
   conf->AcceptRegions({1,2},{1},{5,6},{0,1,2,3,4,5,6});
   conf->UseMassDist = true;
   // conf->DebugList = {"LeptonRegion"};
-  // conf->ProgressInterval = 1;
+  conf->ProgressInterval = 1;
   // conf->EntryMax = 20000;
   // if (!conf->FirstRun) {
   //   conf->RerunList("2018","ttbar",{2,339,344,354});

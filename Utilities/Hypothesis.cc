@@ -18,7 +18,7 @@ public:
     Jets.clear();
   }
 
-  void SetJetsFromPerm(vector<TLorentzVector> alljets, vector<unsigned> perm){
+  void SetJetsFromPerm(vector<TLorentzVector> alljets, vector<int> perm){
     if (Jets.size() < perm.size()) Jets.resize(perm.size());
     for (unsigned i = 0; i < perm.size(); ++i) {
       Jets[i] = alljets[perm[i]];
@@ -67,6 +67,10 @@ public:
 
   double GetPFitter() {
     return PScale * PLep * PHadW * PHadT;
+  }
+  
+  double GetTotalP() {
+    return PbTag * PPtPerm * PWPrimedR * GetPFitter();
   }
 
   FitRecord MakeRecord() {

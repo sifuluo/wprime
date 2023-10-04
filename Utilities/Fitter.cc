@@ -54,6 +54,11 @@ public:
     BaseHypo.MET = met_.v(iregion);
   }
 
+  void SetTruePerm(vector<int> tp) {
+    if (tp.size() != 5) cout << "SetTruePerm Perm size = " << tp.size() << endl;
+    TruePerm = tp;
+  }
+
   // Functor to determine likelihood of a set of scales
   // return 1.0 - likelihood. Such that the return value will be positive
   // And the minimized return value correspond to the highest likelihood
@@ -78,7 +83,6 @@ public:
     ScaledHypo.PHadT = JS->EvalHadTop(ScaledHypo.HadT());
 
     ScaledHypo.PScale = ScaleLikelihood(scales);
-    // GetPFitter = PScale * PLep * PHadW * PHadT;
     double p = ScaledHypo.GetPFitter();
     if (p < 0 || p > 1.) cout << Form("PScale = %f, PHadW = %f, PHadT = %f, PLep = %f", ScaledHypo.PScale, ScaledHypo.PHadW, ScaledHypo.PHadT, ScaledHypo.PLep) << endl;
 
@@ -131,23 +135,23 @@ public:
   }
 
   // Makes permutations using the number of jets and target size of each permutation
-  void MakePermutations(unsigned nj = 0, unsigned target = 5) {
+  void MakePermutations(int nj = 0, int target = 5) {
     Perms.clear();
     if (nj == 0) nj = AllJets.size();
-    vector<unsigned> ThisPerm = vector<unsigned>(target);
+    vector<int> ThisPerm = vector<int>(target);
     AppendPerm(ThisPerm, nj);
   }
 
-  void AppendPerm(vector<unsigned> thisperm, unsigned nj, unsigned pos = 0) {
-    for (unsigned i = 0; i < nj; ++i) {
+  void AppendPerm(vector<int> thisperm, int nj, int pos = 0) {
+    for (int i = 0; i < nj; ++i) {
       bool taken = false;
-      for (unsigned j = 0; j < pos; ++j) {
+      for (int j = 0; j < pos; ++j) {
         if (i == thisperm[j]) taken = true;
       }
       if (taken) continue;
       if (pos == 1 && i < thisperm[0]) continue;
       thisperm[pos] = i;
-      if (pos == thisperm.size() - 1) Perms.push_back(thisperm); // Last digit filled. A complete permutation can be saved
+      if (pos == (int)thisperm.size() - 1) Perms.push_back(thisperm); // Last digit filled. A complete permutation can be saved
       else AppendPerm(thisperm, nj, pos + 1); // Moving on to next digit position of a permutation
     }
   }
@@ -174,13 +178,14 @@ public:
     if (min(min(HighScaledHypo.LepT().M(), LowScaledHypo.LepT().M()), BaseHypo.LepT().M()) > JS->LeptMassMax) return false;
     return true;
   }
-  
+
   // Optimize event over all permutations
   double Optimize() {
     if (AllJets.size() < 5) return -2;
     MakePermutations();
     double BestP = -1;
-    BestPerm = {0,0,0,0};
+    BestPerm = {0,0,0,0,0};
+    TrueHypo.WPType = -1;
     // Debug block
     double BestPFitter = 0;
     vector<FitRecord> BestFitRecords;
@@ -219,7 +224,7 @@ public:
         ScaledHypo.WPType = 1;
       }
       
-      double ThisP = ScaledHypo.PbTag * ScaledHypo.PPtPerm * ScaledHypo.PWPrimedR * PFitter;
+      double ThisP = ScaledHypo.GetTotalP();
       if (ThisP > 0 && ThisP > BestP) {
         BestP = ThisP;
         BestPerm = Perms[ip];
@@ -228,8 +233,13 @@ public:
         BestPFitter = PFitter;
         BestFitRecords = FitRecords;
       }
+      TrueHypo.WPType = -1;
+      if (Perms[ip].size() != TruePerm.size() && conf->WPType > -1) cout << "Perm size = " << Perms[ip].size() << " ,TruePermSize = " << TruePerm.size() << endl;
+      else if (Perms[ip] == TruePerm && ThisP > 0) {
+        TrueHypo = ScaledHypo;
+      }
     }
-    // FIXME PFitter gave different min value from the value calculated by the same functor with the scale set given by the fitter.
+
     if (BestP > 0 && fabs((BestPFitter - BestHypo.GetPFitter()) / BestPFitter) > 0.01) {
       cout << "Last few trials of fitter: " << endl;
       for (unsigned i = BestFitRecords.size() - 5; i < BestFitRecords.size(); ++i) BestFitRecords[i].Print("    Trials: ");
@@ -246,11 +256,14 @@ public:
   Permutations* PermEval;
   vector<TLorentzVector> AllJets;
   vector<bool> AllbTags;
-  vector< vector<unsigned> > Perms;
+  vector< vector<int> > Perms;
+
+  vector<int> TruePerm;
+  Hypothesis TrueHypo;
 
   double BestP;
   double BestScales[4];
-  vector<unsigned> BestPerm;
+  vector<int> BestPerm;
   Hypothesis BestHypo;
 
 

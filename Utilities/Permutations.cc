@@ -278,7 +278,7 @@ public:
     return PtPermHists[LocateHist(mass, WPType)]->GetBinContent(PtPermHists[LocateHist(mass, WPType)]->FindBin(GetPtPermIndex(js)));
   }
 
-  double GetPtPermLikelihood(vector<TLorentzVector>& AllJets, vector<unsigned> ThisPerm, double mass, int WPType) {
+  double GetPtPermLikelihood(vector<TLorentzVector>& AllJets, vector<int> ThisPerm, double mass, int WPType) {
     vector<TLorentzVector> js = vector<TLorentzVector>(ThisPerm.size());
     for (unsigned i = 0; i < ThisPerm.size(); ++i) js[i] = AllJets[ThisPerm[i]];
     return PtPermHists[LocateHist(mass, WPType)]->GetBinContent(PtPermHists[LocateHist(mass, WPType)]->FindBin(GetPtPermIndex(js)));
@@ -288,7 +288,7 @@ public:
     return bTagPermHists[LocateHist(mass, WPType)]->GetBinContent(PtPermHists[LocateHist(mass, WPType)]->FindBin(GetbTagPermIndex(js)));
   }
   
-  double GetbTagPermLikelihood(vector<bool>& AllbTags, vector<unsigned> ThisPerm, double mass, int WPType) {
+  double GetbTagPermLikelihood(vector<bool>& AllbTags, vector<int> ThisPerm, double mass, int WPType) {
     vector<bool> js = vector<bool> (ThisPerm.size());
     for (unsigned i = 0; i < ThisPerm.size(); ++i) js[i] = AllbTags[ThisPerm[i]];
     return bTagPermHists[LocateHist(mass, WPType)]->GetBinContent(PtPermHists[LocateHist(mass, WPType)]->FindBin(GetbTagPermIndex(js)));
