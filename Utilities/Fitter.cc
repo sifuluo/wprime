@@ -24,6 +24,7 @@ public:
     conf = conf_;
     PUIDWP = conf->PUIDWP;
     bTagWP = conf->bTagWP;
+    TruePerm.clear();
   };
 
   void SetJetScale(JetScale* JS_) {
@@ -194,9 +195,15 @@ public:
       FitRecords.clear();
       BaseHypo.ResetJets();
       BaseHypo.SetJetsFromPerm(AllJets, Perms[ip]);
-      if (!PermutationPreFitCheck()) continue;
+      if (!PermutationPreFitCheck()) {
+        if (conf->WPType > -1 && Perms[ip] == TruePerm) cout << "True Perm failed PreFitCheck" << endl;
+        continue;
+      }
       double PFitter = MinimizeP();
-      if (PFitter < 0) continue;
+      if (PFitter < 0) {
+        if (conf->WPType > -1 && Perms[ip] == TruePerm) cout << "True Perm failed to get positive P = " << PFitter << endl;
+        continue;
+      }
 
       // Obtaining the scales set from minimizer which should yield the minimized likelihodd
       double ThisScale[4];
@@ -233,9 +240,8 @@ public:
         BestPFitter = PFitter;
         BestFitRecords = FitRecords;
       }
-      TrueHypo.WPType = -1;
-      if (Perms[ip].size() != TruePerm.size() && conf->WPType > -1) cout << "Perm size = " << Perms[ip].size() << " ,TruePermSize = " << TruePerm.size() << endl;
-      else if (Perms[ip] == TruePerm && ThisP > 0) {
+      if (conf->WPType > -1 && Perms[ip].size() != TruePerm.size()) cout << "Perm size = " << Perms[ip].size() << " ,TruePermSize = " << TruePerm.size() << endl;
+      if (conf->WPType > -1 && Perms[ip] == TruePerm && ThisP > 0) {
         TrueHypo = ScaledHypo;
       }
     }

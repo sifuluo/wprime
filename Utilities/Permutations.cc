@@ -120,11 +120,16 @@ public:
   }
 
   int ComparePerm(vector<int> pv, vector<int> tpv) {
+    cout << "Start ComparePerm" <<endl;
     if (pv == tpv) return 0;
     int out = 0;
     vector<bool> WithinTrueJets = vector<bool>(5,false); // Check if the permutation digits are the same ones.
+    if (pv.size() < 5 || tpv.size() < 5) return -1;
+    cout << Form("pv = %i, %i, %i, %i, %i, tpv = %i, %i, %i, %i, %i",pv[0],pv[1],pv[2],pv[3],pv[4],tpv[0],tpv[1],tpv[2],tpv[3],tpv[4]) << endl;
     for (unsigned i = 0; i < 5; ++i) {
-      for (unsigned j = 0; j < 5; ++i) {
+      if (pv[i] == -1) return -1;
+      for (unsigned j = 0; j < 5; ++j) {
+        if (tpv[j] == -1) return -1;
         if (pv[i] == tpv[j]) WithinTrueJets[i] = true;
       }
     }

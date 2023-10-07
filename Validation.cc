@@ -227,6 +227,7 @@ public:
     }
     else {
       TruePermVector.clear();
+      // cout << Form("OutParts size = %d, OutGenJets size = %d, OutJets size = %d", gh->OutParts.size(), gh->OutGenJets.size(), gh->OutJets.size() ) << endl;
     }
 
     for (unsigned i = 0; i < 9; ++i) {
@@ -252,8 +253,12 @@ public:
           TruePermWPrimeMass = Ftr->TrueHypo.WP().M();
           for (int j =0; j < 4; ++j) TruePermSolvedScales->at(j) = Ftr->TrueHypo.Scales[j];
           PermDiffCode = PM->ComparePerm(Ftr->BestPerm, TruePermVector);
-          if (Ftr->BestHypo.WPType != conf->WPType) PermDiffCode += 10; 
+          if (Ftr->BestHypo.WPType != conf->WPType) PermDiffCode += 10;
           if (Ftr->TrueHypo.WPType != conf->WPType) PermDiffCode += 20;
+        }
+        else {
+          if (!HasGenHypo) cout << "Again, no true perm found" << endl;
+          if (Ftr->TrueHypo.WPType < 0) cout << "Ftr TrueHypo WPType = " << Ftr->TrueHypo.WPType << endl;
         }
       }
       else {
@@ -277,17 +282,17 @@ public:
 };
 
 void Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
-  if (ErrorLogDetected(isampleyear, isampletype, ifile) == 1) return;
   Configs *conf = new Configs(isampleyear, isampletype, ifile);
+  if (conf->ErrorRerun() == 0) return;
   // conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/SingleMuon/2018/2B07B4C0-852B-9B4F-83FA-CA6B047542D1.root";
   conf->LocalOutput = false;
   conf->PrintProgress = true;
-  conf->RunFitter = true;
+  // conf->RunFitter = true;
   conf->UseMergedAuxHist = true;
   conf->AcceptRegions({1,2},{1},{5,6},{0,1,2,3,4,5,6});
   conf->UseMassDist = true;
   // conf->DebugList = {"LeptonRegion"};
-  conf->ProgressInterval = 1;
+  // conf->ProgressInterval = 1;
   // conf->EntryMax = 20000;
   // if (!conf->FirstRun) {
   //   conf->RerunList("2018","ttbar",{2,339,344,354});
@@ -303,7 +308,7 @@ void Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
   // }
   
   ThisAnalysis *a = new ThisAnalysis(conf);
-  if (!(a->SetOutput("Validation"))) return;
+  if (!(a->SetOutput("Validation"))) return 0;
   for (Long64_t iEvent = 0; iEvent < a->GetEntryMax(); ++iEvent) {
     if (a->ReadEvent(iEvent) < 0) continue;
     if (!a->WithinROI()) continue;
@@ -313,4 +318,5 @@ void Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
   }
   a->SaveOutput();
   a->CloseOutput();
+  return conf->ErrorRerun();
 }

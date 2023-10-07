@@ -61,6 +61,7 @@ for iy, year in enumerate(SampleYears):
     # lines.append('+JobFlavour  = "workday"\n')
     lines.append('+JobFlavour  = "longlunch"\n')
     lines.append("RequestCpus  = 2\n")
+    lines.append("stream_error = True\n")
     lines.append("periodic_release =  (NumJobStarts < 10) && ((CurrentTime - EnteredCurrentStatus) > (5*60))\n")
     lines.append("queue "+str(nf)+"\n")
 

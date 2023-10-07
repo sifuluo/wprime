@@ -84,6 +84,9 @@ public:
     Observable = obs;
     TString hn = "ttbarReweightSF_" + Observable + "_" + SourceRegion;
     TString fn = "MCRFunc" + SourceRegion;
+    TH1F* htmp = (TH1F*)f->Get(hn);
+    cout << "Trying to access SF plot: " << hn << endl;
+    if (htmp == nullptr) return;
     SF1D = (TH1F*)f->Get(hn)->Clone();
     SF1D->SetDirectory(0);
     SF1DF = SF1D->GetFunction(fn);

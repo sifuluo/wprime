@@ -23,8 +23,6 @@ struct Configs {
     Type = dlib.Datasets[SampleType].Type;
     IsMC = Type > 0;
     TString st = SampleType;
-    ErrorRerun = ErrorLogDetected(iSampleYear, iSampleType, iFile);
-    FirstRun = (ErrorRerun == 0);
     if (st.Contains("FL")) WPType = 0;
     else if (st.Contains("LL")) WPType = 1;
     else WPType = -1;
@@ -90,8 +88,9 @@ struct Configs {
     return true;
   }
   
-  int ErrorRerun; // 0: no log;  1: empty log;  2: non-empty log
-  bool FirstRun;
+  int ErrorRerun(){ // 0: Empty log (Succeeded run);  1: non-empty log (failed run);  2: no log (first run)
+    return ErrorLogDetected(iSampleYear, iSampleType, iFile);
+  } 
   bool InRerunList = false;
   bool RerunList(vector<int>& l) {
     for (unsigned i = 0; i < l.size(); ++i) if (l[i] == iFile) {
@@ -101,12 +100,10 @@ struct Configs {
     return false;
   }
   bool RerunList(int y, int st, vector<int> l) {
-    FirstRun = false;
     if (iSampleYear == y && iSampleType == st) return RerunList(l);
     return false;
   }
   bool RerunList(string y, string st, vector<int> l) {
-    FirstRun = false;
     if (SampleYear == y && SampleType == st) return RerunList(l);
     return false;
   }

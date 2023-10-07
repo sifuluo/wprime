@@ -21,9 +21,9 @@ public:
   void FillHistograms() {}
 };
 
-void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1, bool DoMCReweight = false, bool DrawMCReweight = false) {
-  if (isampletype != 2 && DoMCReweight) return;
-  if (ErrorLogDetected(isampleyear, isampletype, ifile) == 1) return;
+int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1, bool DoMCReweight = false, bool DrawMCReweight = false) {
+  if (isampletype != 2 && DoMCReweight) return 0;
+  // if (ErrorLogDetected(isampleyear, isampletype, ifile) == 0) return 0;
   rm.TightOnlyInit();
   string basepath = "/eos/user/s/siluo/WPrimeAnalysis/Validation/";
   string itpath = "";
@@ -41,9 +41,9 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1
   }
   if (DoMCReweight) HistFilePrefix += "_RW";
   else if (SampleType == "ttbar") HistFilePrefix += "_NRW";
-  if (SampleType == "ZZ") return;
+  if (SampleType == "ZZ") return 0;
 
-  MCReweightManager *mcrm = new MCReweightManager("Jet0Pt");
+  MCReweightManager *mcrm = new MCReweightManager("ST");
   mcrm->Verbose = false;
   if ((DoMCReweight && (SampleType == "ttbar" || SampleType == "")) || DrawMCReweight) {
     mcrm->Init();
@@ -59,7 +59,7 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1
     // }
   }
 
-  if (DrawMCReweight) return;
+  if (DrawMCReweight) return 0;
 
   HistCol.SetSampleTypes(SampleTypes);
   HistCol.AddObservable("LeptonPt",50,0,500);
@@ -177,7 +177,7 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1
         WPrimeMassSimpleLL = r->WPrimeMassSimpleLL->at(iv);
       }
       if (SampleType == "ttbar" && DoMCReweight) {
-        float mcrweight = mcrm->GetSF1DF(Jets[0].Pt(), RegionIdentifier);
+        float mcrweight = mcrm->GetSF1DF(ST, RegionIdentifier);
         EventWeight *= mcrweight;
       }
       HistCol.SetCurrentFill(isampletype, iv, RegionIdentifier, EventWeight);
@@ -215,6 +215,7 @@ void MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1
   cout << ", Number of events with nan weight = " << n_nan_weight << endl;
 
   HistCol.PostProcess();
-  cout << "Auto exiting" << endl;
-  gApplication->Terminate();
+  return ErrorLogDetected(isampleyear, isampletype, ifile);
+  // cout << "Auto exiting" << endl;
+  // gApplication->Terminate();
 }
