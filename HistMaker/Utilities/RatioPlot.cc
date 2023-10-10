@@ -84,8 +84,8 @@ public:
     else {
       for (unsigned inm = 0; inm < MCNames.size(); ++inm) {
         if (MCNames[inm] != n_) continue;
-        if (fabs(h_->Integral() / MCHists[inm]->Integral() - 1.0) > 0.5) {
-          cout << h_->GetName() << " integral = " << h_->Integral() << ", " << MCHists[inm]->GetName() << " integral = " << MCHists[inm]->Integral() << endl;
+        if (fabs(h_->Integral(0,-1) / MCHists[inm]->Integral(0,-1) - 1.0) > 0.5) {
+          cout << h_->GetName() << " integral = " << h_->Integral(0,-1) << ", " << MCHists[inm]->GetName() << " integral = " << MCHists[inm]->Integral(0,-1) << endl;
         }
       }
     }

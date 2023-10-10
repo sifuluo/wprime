@@ -59,33 +59,9 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0, bool DoMCReweight = f
   string HistFilePath = "/eos/user/s/siluo/WPrimeAnalysis/Validation/Hists/";
   string HistFilePrefix = SampleYear + "_Validation";
   string PlotNamePrefix = HistFilePrefix;
-  HistManager* AllPlots = new HistManager();
-  // AllPlots->SetSampleTypes(SampleTypes);
-  // AllPlots->SetRegions(StringRanges);
-  AllPlots->SetTitles(ObservablesXTitle);
-  AllPlots->SetPrefix(PlotNamePrefix);
-  AllPlots->SetObservable(Observable);
-  AllPlots->SetDrawSensitivity(true);
-  AllPlots->SetDrawPurity(true);
-  AllPlots->ReadHistograms(HistFilePath, HistFilePrefix, DoMCReweight);
-
-  for (unsigned ir = 0; ir < rm.StringRanges.size(); ++ir) {
-    TCanvas* c1 = new TCanvas("c1","c1",800,800);
-    AllPlots->CreateAuxiliaryPlots(ir);
-    AllPlots->DrawPlot(ir, c1, isampleyear);
-    TString PlotName = AllPlots->Plots[ir]->PlotName;
-    TString pn  = "plots/" + PlotName + ".pdf";
-    if (DoMCReweight) pn = "plots/" + PlotName + "_RW.pdf";
-    c1->SaveAs(pn);
-    string sr = rm.StringRanges[ir];
-    if (sr == "1153" || sr == "1163" || sr == "2153" || sr == "2163") if (SaveUncerts) AllPlots->SaveUncertContribution(ir, PlotName);
-    delete c1;
-  }
-
 
   if (DrawMCReweight) {
     gStyle->SetOptFit(0000);
-    
     TCanvas* c1 = new TCanvas("c1","c1",800,800);
     MCReweightManager *mcrm = new MCReweightManager("ST");
     mcrm->Init();
@@ -114,6 +90,33 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0, bool DoMCReweight = f
     }
     leg->Draw();
     c1->SaveAs("plots/ReweightSF.pdf");
+    return;
   }
+
+  HistManager* AllPlots = new HistManager();
+  // AllPlots->SetSampleTypes(SampleTypes);
+  // AllPlots->SetRegions(StringRanges);
+  AllPlots->SetTitles(ObservablesXTitle);
+  AllPlots->SetPrefix(PlotNamePrefix);
+  AllPlots->SetObservable(Observable);
+  AllPlots->SetDrawSensitivity(true);
+  AllPlots->SetDrawPurity(true);
+  AllPlots->ReadHistograms(HistFilePath, HistFilePrefix, DoMCReweight);
+
+  for (unsigned ir = 0; ir < rm.StringRanges.size(); ++ir) {
+    TCanvas* c1 = new TCanvas("c1","c1",800,800);
+    AllPlots->CreateAuxiliaryPlots(ir);
+    AllPlots->DrawPlot(ir, c1, isampleyear);
+    TString PlotName = AllPlots->Plots[ir]->PlotName;
+    TString pn  = "plots/" + PlotName + ".pdf";
+    if (DoMCReweight) pn = "plots/" + PlotName + "_RW.pdf";
+    c1->SaveAs(pn);
+    string sr = rm.StringRanges[ir];
+    if (sr == "1153" || sr == "1163" || sr == "2153" || sr == "2163") if (SaveUncerts) AllPlots->SaveUncertContribution(ir, PlotName);
+    delete c1;
+  }
+
+
+  
 
 }

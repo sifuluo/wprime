@@ -18,6 +18,12 @@ int ErrorLogDetected(string errlog) {
   }
   else {
     cout << "(Failed Run) None empty error log detected for " << errlog << endl;
+    string errtext;
+    int counter = 0;
+    while (getline(f, errtext) && counter < 20) {
+      ++counter;
+      cout << errtext << endl;
+    }
     return 1;
   }
 }

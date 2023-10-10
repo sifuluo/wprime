@@ -54,9 +54,6 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
       mcrm->ReadFromFiles(SourcePath, SourcePrefix);
       mcrm->SaveToFile(rwfn);
     }
-    // else if (){
-    //   mcrm->ReadFromFile(rwfn);
-    // }
   }
 
   if (DrawMCReweight) return 0;
@@ -179,6 +176,9 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
       if (SampleType == "ttbar" && DoMCReweight) {
         float mcrweight = mcrm->GetSF1DF(ST, RegionIdentifier);
         EventWeight *= mcrweight;
+        if ((mcrweight > 3.0 || mcrweight < 0.3)) {
+          cout << "Extreme reweight = " << mcrweight << ", at var = " << ST <<endl;
+        }
       }
       HistCol.SetCurrentFill(isampletype, iv, RegionIdentifier, EventWeight);
       HistCol.Fill("LeptonPt", LeptonPt);

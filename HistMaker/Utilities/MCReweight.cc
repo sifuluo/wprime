@@ -59,7 +59,7 @@ public:
     ttbarHists[iv]->SetDirectory(0);
   }
 
-  void ReadFromFiles(string path, string prefix, string obs) {
+  void ReadFromFiles(string path, string prefix, string obs) { // Reads histograms of observables to make reweight
     Observable = obs;
     for (unsigned i = 0; i < dlib.DatasetNames.size(); ++i) {
       string ds = dlib.DatasetNames[i];
@@ -80,7 +80,7 @@ public:
     }
   }
 
-  void ReadFromFile(TFile *f, string obs) {
+  void ReadFromFile(TFile *f, string obs) { // Read the reweight file for later application
     Observable = obs;
     TString hn = "ttbarReweightSF_" + Observable + "_" + SourceRegion;
     TString fn = "MCRFunc" + SourceRegion;
@@ -90,6 +90,15 @@ public:
     SF1D = (TH1F*)f->Get(hn)->Clone();
     SF1D->SetDirectory(0);
     SF1DF = SF1D->GetFunction(fn);
+    nbins = SF1D->GetNbinsX();
+    StartBin = EndBin = -1;
+    for (unsigned ib = 1; ib <=nbins; ++ib) {
+      if (SF1D->GetBinContent(ib) == 0) continue;
+      if (StartBin == -1) StartBin = ib;
+      EndBin = ib;
+    }
+    xmin = SF1D->GetBinLowEdge(StartBin);
+    xmax = SF1D->GetBinLowEdge(EndBin + 1);
     cout << "SF Value at 685.592GeV from" << SourceRegion << " is " << SF1D->GetBinContent(SF1D->FindBin(685.592)) << endl;
     cout << "SF Evaled value is " << SF1DF->Eval(685.592) << endl;
   }
@@ -152,23 +161,44 @@ public:
     SF1D->Divide(ttbarHists[0]);
     SF1D->SetName(("ttbarReweightSF_" + Observable + "_" + SourceRegion).c_str());
     SF1D->SetTitle(("ttbar Reweighting From " + Observable + " in " + SourceRegion).c_str());
+    StartBin = EndBin = -1;
+    for (unsigned ib = 1; ib <= nbins; ++ib) { // Trimming bins with little stats
+      if (DataHist->GetBinContent(ib) < 10 || ttbarHists[0]->GetBinContent(ib) < 10) {
+        SF1D->SetBinContent(ib,0.0);
+        SF1D->SetBinError(ib,0.0);
+        continue;
+      }
+      if (StartBin == -1) StartBin = ib;
+      EndBin = ib; // LastBin with enough stats
+      if (SF1D->GetBinContent(ib) > 5.0 || SF1D->GetBinContent(ib) < 0.2) {
+        cout << SF1D->GetName() << " at ibin = " << ib << ", bincenter = " << SF1D->GetBinCenter(ib) << ", has bin value = " << SF1D->GetBinContent(ib) << " +- " << SF1D->GetBinError(ib);
+        if (SF1D->GetBinErrorUp(ib) != SF1D->GetBinError(ib) || SF1D->GetBinErrorLow(ib) != SF1D->GetBinError(ib)){
+          cout << "(+" << SF1D->GetBinErrorUp(ib) << ",-" << SF1D->GetBinErrorLow(ib) << ")";
+        }
+        cout << endl;
+        cout << Form("Data: %f(+ %f, - %f)", DataHist->GetBinContent(ib), DataHist->GetBinErrorUp(ib), DataHist->GetBinErrorLow(ib)) << endl;
+        cout << Form("OtherMC: %f(+ %f, - %f)", OtherMCHists[0]->GetBinContent(ib), OtherMCHists[0]->GetBinErrorUp(ib), OtherMCHists[0]->GetBinErrorLow(ib)) << endl;
+        cout << Form("ttbar: %f(+ %f, - %f)", ttbarHists[0]->GetBinContent(ib), ttbarHists[0]->GetBinErrorUp(ib), ttbarHists[0]->GetBinErrorLow(ib)) << endl;
+      }
+    }
+    
     TString FuncName = "MCRFunc" + SourceRegion;
-    SF1DF = new TF1(FuncName,"[0]/x+[1]*x+[2]*x*x+[3]",100,2000);
+    SF1DF = new TF1(FuncName,"[0]/x/x+[1]/x+[2]*x+[3]*x*x+[4]*x*x*x+[5]",SF1D->GetBinLowEdge(StartBin),SF1D->GetBinLowEdge(EndBin+1));
     SF1D->Fit(SF1DF,"RM");
-    cout << "SF Value at 685.592GeV from" << SourceRegion << " is " << SF1D->GetBinContent(SF1D->FindBin(685.592)) << endl;
-    cout << "SF Evaled value is " << SF1DF->Eval(685.592) << endl;
   }
 
-  float GetSF1D(double wpmass) {
-    return SF1D->GetBinContent(SF1D->FindBin(wpmass));
+  float GetSF1D(double v) {
+    return SF1D->GetBinContent(SF1D->FindBin(v));
   }
-  float GetSF1DF(double wpmass, bool Verbose = true) {
-    float sf = SF1DF->Eval(wpmass);
-    if (wpmass < 2000 && wpmass > 0) {
-      if (Verbose) if (sf > 2.0 || sf < 0.5) cout << SF1DF->GetName() << " at " << wpmass << " has extreme value of " << sf << endl;
-      return sf;
+  float GetSF1DF(double v, bool Verbose = true) {
+    float sf = 1.0;
+    if (v < xmax && v > xmin) sf = SF1DF->Eval(v);
+    if (v <= xmin) sf = SF1DF->Eval(xmin);
+    if (v >= xmax) sf = SF1DF->Eval(xmax);
+    if (sf > 3.0 || sf < 0.3) {
+      cout << SF1D->GetName() << " function at " << v << " has extreme value of " << sf << endl;
     }
-    return GetSF1D(wpmass);
+    return sf;
   }
 
   int SourceRegionInt;
@@ -176,6 +206,8 @@ public:
   string StringRange;
   string Observable;
   unsigned nbins;
+  int StartBin, EndBin;
+  float xmin, xmax;
   TH1F* DataHist = nullptr;
   vector<string> Variations;
   int VarSize;
@@ -241,16 +273,16 @@ public:
     delete f;
   }
 
-  float GetSF1D(double wpmass, int rid) {
+  float GetSF1D(double v, int rid) {
     for (unsigned i = 0; i < rws.size(); ++i) {
-      if (rws[i]->SourceRegionInt / 10 == rid / 10 && rws[i]->SourceRegionInt / 1000 == rid / 1000) return rws[i]->GetSF1D(wpmass); 
+      if (rws[i]->SourceRegionInt / 10 == rid / 10 && rws[i]->SourceRegionInt / 1000 == rid / 1000) return rws[i]->GetSF1D(v); 
     }
     return 1.0;
   }
 
-  float GetSF1DF(double wpmass, int rid) {
+  float GetSF1DF(double v, int rid) {
     for (unsigned i = 0; i < rws.size(); ++i) {
-      if (rws[i]->SourceRegionInt / 10 == rid / 10 && rws[i]->SourceRegionInt / 1000 == rid / 1000) return rws[i]->GetSF1DF(wpmass, Verbose); 
+      if (rws[i]->SourceRegionInt / 10 == rid / 10) return rws[i]->GetSF1DF(v, Verbose); 
     }
     return 1.0;
   }

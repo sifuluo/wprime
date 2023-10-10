@@ -22,5 +22,5 @@ for d in os.listdir("logs/"):
         # os.remove(ferr)
         # os.remove(fout)
   if haserr > 0:
-    print("There are " + str(haserr) + " error processes in above folder" + dd)
+    print("There are " + str(haserr) + " error processes in above folder " + dd)
     print("-------------------------------")
