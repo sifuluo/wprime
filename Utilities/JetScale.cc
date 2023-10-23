@@ -77,6 +77,7 @@ public:
 
   void CreateScaleHists() {
     ScaleFile = new TFile(FileName,"RECREATE");
+    cout << "Saving into Scale File: " << FileName << endl;
     vector<vector<TH1F*> > jes;
     jes.clear();
     for (unsigned ieta = 0; ieta < etabins.size() - 1; ++ieta) {
@@ -122,6 +123,7 @@ public:
 
   void ReadScaleHists() {// Read the jet response file. Then read and fit the jet response histos.
     ScaleFile = new TFile(FileName, "READ");
+    cout << "Reading from Scale File: " << FileName << endl;
     // vector< vector<TH1F*> > jes;
     vector< vector<TF1*> > fjes;
     // jes.clear();

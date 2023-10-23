@@ -39,7 +39,7 @@ public:
     R_BTSF->ReadCSVFile();
     R_PUIDSF = new PUIDSFReader(conf);
     R_PUIDSF->ReadPUIDSF();
-
+    
     if (conf->iFile >= 0 || (conf->InputFile == "All" && conf->iFile < 0)) { // batch mode
 
       vector<string> rootfiles = GetFileNames();
@@ -93,11 +93,13 @@ public:
   }
 
   Long64_t GetEntries() {
-    return chain->GetEntries();
+    EntryMax = chain->GetEntries();
+    return EntryMax;
   }
 
   Long64_t GetEntriesFast() {
-    return chain->GetEntriesFast();
+    EntryMax = chain->GetEntriesFast();
+    return EntryMax;
   }
 
   void SetbTag(bTagEff* bt) {
@@ -141,7 +143,7 @@ public:
     ReadLeptons();
     ReadMET();
     ReadVertices();
-    if (!PassedHEMCut) return -3;
+    // if (!PassedHEMCut) return -3;
     RegionAssociations = RegionReader();
     EventWeights = CalcEventSFweights();
     return 0;
@@ -192,7 +194,7 @@ public:
   void ReadJets() {
     Jets.clear();
     AllJets.clear();
-    if (!PassedHEMCut) return;
+    // if (!PassedHEMCut) return;
     int emptysequence = 0;
     if (evts->nJet > evts->nJetMax) cout << "Error: nJet = " << evts->nJet << " at iEvent = " << iEvent << endl;
     for (unsigned i = 0; i < evts->nJet; ++i) {
@@ -204,7 +206,7 @@ public:
       tmp.SetPtEtaPhiM(evts->Jet_pt_nom[i],evts->Jet_eta[i],evts->Jet_phi[i],evts->Jet_mass_nom[i]); //the nominal here in MC contains JER while nanoAOD default does not
       if (!PassHEMCut(tmp)) {
         PassedHEMCut = false;
-        return;
+        // return;
       }
       tmp.JESup().SetPtEtaPhiM(evts->Jet_pt_jesTotalUp[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jesTotalUp[i]);
       tmp.JESdown().SetPtEtaPhiM(evts->Jet_pt_jesTotalDown[i], evts->Jet_eta[i], evts->Jet_phi[i], evts->Jet_mass_jesTotalDown[i]);
@@ -325,7 +327,7 @@ public:
 
   void ReadTriggers() {
     Triggers.clear();
-    if (!PassedHEMCut) return;
+    // if (!PassedHEMCut) return;
     isolated_electron_trigger = evts->isolated_electron_trigger;
     isolated_muon_trigger = evts->isolated_muon_trigger;
     isolated_muon_track_trigger = evts->isolated_muon_track_trigger;
@@ -444,7 +446,7 @@ public:
     Leptons.clear();
     Electrons.clear();
     Muons.clear();
-    if (!PassedHEMCut) return;
+    // if (!PassedHEMCut) return;
     int emptysequence = 0;
     for (unsigned i = 0; i < evts->nElectron; ++i) {
       if (emptysequence >= 3) break;
@@ -458,7 +460,7 @@ public:
       tmp.SetPtEtaPhiM(evts->Electron_pt[i],evts->Electron_eta[i],evts->Electron_phi[i],evts->Electron_mass[i]);
       if (!PassHEMCut(tmp)) {
         PassedHEMCut = false;
-        return;
+        // return;
       }
       //set resolution variations (only matter in MC, will be ineffective in data)
       tmp.ResUp() = ((TLorentzVector) tmp) * ((tmp.E() - evts->Electron_dEsigmaUp[i]) / tmp.E());
@@ -493,6 +495,7 @@ public:
     }
 
     emptysequence = 0;
+    bool ZeroMuonErrOccurred = false;
     for (unsigned i = 0; i < evts->nMuon; ++i) {
       if (emptysequence >= 3) break; // [9] is the hard cap of Muon array size
       if (evts->Muon_pt[i] == 0) {
@@ -504,7 +507,7 @@ public:
       tmp.SetPtEtaPhiM(evts->Muon_pt[i],evts->Muon_eta[i],evts->Muon_phi[i],evts->Muon_mass[i]);
       if (!PassHEMCut(tmp)) {
         PassedHEMCut = false;
-        return;
+        // return;
       }
       tmp.index = i;
       tmp.charge = evts->Muon_charge[i];
@@ -549,7 +552,9 @@ public:
       //set SF and variation for primary only
       if(PassPrimary(tmp) && IsMC){
         if (evts->Muon_triggerScaleFactor[i] * evts->Muon_idScaleFactor[i] * evts->Muon_isoScaleFactor[i] == 0) {
-          cout << "Zero muon SF" <<endl;
+          if (MuonSFZeroErrors < 100) cout << "Zero muon SF, triggerSF = " << evts->Muon_triggerScaleFactor[i] << " , idSF = " << evts->Muon_idScaleFactor[i] << " , isoSF = " << evts->Muon_isoScaleFactor[i] <<endl;
+          MuonSFZeroErrors++;
+          ZeroMuonErrOccurred = true;
         }
         else {
           tmp.triggerSFs[0] = evts->Muon_triggerScaleFactor[i];
@@ -567,6 +572,7 @@ public:
       Muons.push_back(tmp);
       Leptons.push_back(tmp);
     }
+    if (ZeroMuonErrOccurred) MuonSFZeroErrorEvts++;
     if (evts->nElectron > evts->nElectronMax) cout << "Error: nElectron = " << evts->nElectron << " at iEvent = " << iEvent << endl;
     if (evts->nMuon > evts->nMuonMax) cout << "Error: nMuon = " << evts->nMuon << " at iEvent = " << iEvent << endl;
   }
@@ -653,7 +659,11 @@ public:
 
     //loop over variations: nominal, e-scale up, e-scale down, e-res up, e-res down, JES up, JES down, JER up, JER down
     for(unsigned i = 0; i < rids.RegionCount; ++i){
-      int RegionNumber = -1; //-1 no region
+      int RegionNumber = -1; //-1 no region , -2 not pass jet proximity, -3 not Pass HEMCut
+      if (!PassedHEMCut) {
+        rids.Regions[i] = -3;
+        continue;
+      }
       int iPrimaryLep(-1), iLooseLep(-1), iVetoLep(-1);
       //check lepton multiplicity
       int nev(0), nel(0), nep(0);
@@ -725,7 +735,7 @@ public:
       else {
         if (conf->Debug("LeptonRegion") && i == 0) cout << Form("In Event %i, Variation %i, Electron (Primary, Veto, Loose) = (%i, %i, %i), Muon (Primary, Veto, Loose) = (%i, %i, %i)"
           , (int)iEvent, i, nep, nev, nel, nmup, nmuv, nmul) << endl;
-        rids.Regions[i] = -2; // Lepton failed to fall into any region
+        rids.Regions[i] = -1; // Lepton failed to fall into any region
         continue;
       }
 
@@ -895,9 +905,20 @@ public:
     }
   }
 
+  void RunEndSummary() {
+    double em = EntryMax;
+    cout << endl << "NanoAODReader Summary:" << endl;
+    if (MuonSFZeroErrors > 0) {
+      double nerrevts = MuonSFZeroErrorEvts;
+      cout << "Muon SF zeros occurance = " << MuonSFZeroErrors << " in " << nerrevts << " Events out of total Events " << EntryMax;
+      cout << ", Event rate = " << nerrevts / em << endl;
+    }
+  }
+
   Configs *conf;
 
   Long64_t iEvent;
+  Long64_t EntryMax;
 
   bTagSFReader *R_BTSF;
   PUIDSFReader *R_PUIDSF;
@@ -924,6 +945,9 @@ public:
   int Pileup_nPU;
   float Pileup_nTrueInt;
   int PV_npvs, PV_npvsGood;
+
+  int MuonSFZeroErrors = 0;
+  int MuonSFZeroErrorEvts = 0;
   // nlohmann::json GoodSections;
   // bool LumiStatus;
 

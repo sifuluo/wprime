@@ -75,11 +75,11 @@ public:
     cout << "Output will be saved to " << ofname << endl;
     bool torun = false;
     cout << "Output Status: ";
-    if (conf->ErrorRerun == 2) {
+    if (conf->ErrorRerun() == 2) {
       cout << "FirstRun" << endl;
       torun = true;
     }
-    if (conf->ErrorRerun == 1) {
+    if (conf->ErrorRerun() == 1) {
       cout << "RetryFailedJob" << endl;
       torun = true;
     }
@@ -135,6 +135,7 @@ public:
   }
 
   void SaveOutput() {
+    r->RunEndSummary();
     ofile->Write();
     ofile->Save();
   }

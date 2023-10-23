@@ -63,18 +63,22 @@ public:
 
   void AddData(TH1F* h_) {
     DataHist = (TH1F*)h_->Clone();
+    DataHist->SetDirectory(0);
     DataHist->SetBinErrorOption(TH1::kPoisson);
     DataHist->SetLineStyle(1);
     DataHist->SetLineColor(1);
     DataHist->SetMarkerStyle(20);
     DataHist->SetTitle(UTitle); // Not necessary because Stack will be drawn first
-    if (DataHist->GetMaximum() > TrueMaximum) TrueMaximum = DataHist->GetMaximum();
+    if (DataHist->GetMaximum() > TrueMaximum) {
+      TrueMaximum = DataHist->GetMaximum();
+    }
     HasData = true;
   }
 
   void AddMC(TString n_, TH1F* h_, int iv) {
     if (iv == 0) {
       TH1F* h = (TH1F*) h_->Clone();
+      h->SetDirectory(0);
       h->SetLineStyle(1);
       MCHists.push_back(h); // Saved into vector, since THStack class doesn't own the histograms.
       MCNames.push_back(n_);
@@ -91,16 +95,19 @@ public:
     }
     if (MCSummed[iv] == nullptr) {
       MCSummed[iv] = (TH1F*) h_->Clone();
+      MCSummed[iv]->SetDirectory(0);
       MCSummed[iv]->SetLineColor(1);
     }
     else MCSummed[iv]->Add(h_);
     if (MCSummed[iv]->GetMaximum() > TrueMaximum) TrueMaximum = MCSummed[iv]->GetMaximum();
   }
 
-  void AddSig(TString n_, TH1F* h_, int iv) {
+  void AddSig(TString n_, TH1F* h_, int iv, int style) {
     TH1F* h = (TH1F*) h_->Clone();
+    h->SetDirectory(0);
     if (iv == 0) {
-      h->SetLineStyle(2);
+      if (style == -1) h->SetLineStyle(2);
+      else h->SetLineStyle(style);
       h->SetLineWidth(2);
       HasSig = true;
     }
@@ -119,11 +126,11 @@ public:
     if (h->GetMaximum() > TrueMaximum) TrueMaximum = h->GetMaximum();
   }
 
-  void AddHist(TString n_, TH1F* h_, int type_, int iv) {
+  void AddHist(TString n_, TH1F* h_, int type_, int iv, int style = -1) {
     if (h_ == nullptr) return;
     if (type_ == 0 && iv == 0) AddData(h_);
     else if (type_ == 1) AddMC(n_, h_, iv);
-    else if (type_ == 2) AddSig(n_, h_, iv);
+    else if (type_ == 2) AddSig(n_, h_, iv, style);
     if (h_->GetNbinsX() <= 0) cout << n_ << " nbins = " << h_->GetNbinsX()<< endl;
     if (nbins == 0) {
       nbins = h_->GetNbinsX();
@@ -137,17 +144,18 @@ public:
   }
 
   void PrepHists() {
+    LowerDummy = new TH1F("","", nbins, xlow, xup);
     if (!HasMC) {
       StackDummy = new TH1F("","",nbins,xlow, xup);
       // StackDummy->SetLineWidth(0);
       MCStack->Add(StackDummy);
-      double x[2] = {xlow, xup};
-      double y[2] = {1.,1.};
-      MCErrorRatioGraph = new TGraph(2,x,y);
+      // double x[2] = {xlow, xup};
+      // double y[2] = {1.,1.};
+      // MCErrorRatioGraph = new TGraph(2,x,y);
     }
     if (!HasMC && !HasData && HasSig) {
       for (unsigned i = 0; i < SigNames.size(); ++i) {
-        SigHists[i][0]->SetLineStyle(1);
+        if (SigHists[i][0]->GetLineStyle() == 2) SigHists[i][0]->SetLineStyle(1);
       }
     }
   }
@@ -338,12 +346,14 @@ public:
     if (HasSig) {
       for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
         ExpOverMC[isig] = (TH1F*)SigHists[isig][0]->Clone();
+        ExpOverMC[isig]->SetDirectory(0);
         ExpOverMC[isig]->Add(MCSummed[0]);
         ExpOverMC[isig]->Divide(MCSummed[0]);
       }
     }
     if (!IsSR && HasData) {
       DataOverMC = (TH1F*)DataHist->Clone();
+      DataOverMC->SetDirectory(0);
       DataOverMC->SetTitle(LTitle); // Not necessary because ErrorGraph will be drawn first
       DataOverMC->Divide(MCSummed[0]);
     }
@@ -470,25 +480,32 @@ public:
     leg->Draw();
 
     LPad->cd();
-    MCErrorRatioGraph->SetTitle(LTitle);
-    MCErrorRatioGraph->GetXaxis()->SetRangeUser(xlow, xup);
-    MCErrorRatioGraph->GetYaxis()->SetRangeUser(0, 2.4);
-    MCErrorRatioGraph->GetYaxis()->SetNdivisions(505);
+    LowerDummy->SetTitle(LTitle);
+    LowerDummy->GetXaxis()->SetRangeUser(xlow, xup);
+    LowerDummy->GetYaxis()->SetRangeUser(0, 2.4);
+    LowerDummy->GetYaxis()->SetNdivisions(505);
 
-    MCErrorRatioGraph->GetXaxis()->CenterTitle();
-    MCErrorRatioGraph->GetXaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3 * 0.7);
-    MCErrorRatioGraph->GetXaxis()->SetTitleOffset(gStyle->GetTitleOffset());
-    MCErrorRatioGraph->GetXaxis()->SetLabelSize(gStyle->GetLabelSize() / 0.3 * 0.7);
-    MCErrorRatioGraph->GetXaxis()->SetLabelOffset(gStyle->GetLabelOffset());
+    if (XBinLabels.size() != 0) {
+      int nb_ = nbins;
+      if (XBinLabels.size() < nbins) nb_ = XBinLabels.size();
+      for (int ib = 1; ib <= nb_; ++ib) LowerDummy->GetXaxis()->SetBinLabel(ib, XBinLabels[ib - 1]);
+    }
+    LowerDummy->GetXaxis()->CenterTitle();
+    LowerDummy->GetXaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3 * 0.7);
+    LowerDummy->GetXaxis()->SetTitleOffset(gStyle->GetTitleOffset());
+    LowerDummy->GetXaxis()->SetLabelSize(gStyle->GetLabelSize() / 0.3 * 0.7);
+    LowerDummy->GetXaxis()->SetLabelOffset(gStyle->GetLabelOffset());
 
-    MCErrorRatioGraph->GetYaxis()->CenterTitle();
-    MCErrorRatioGraph->GetYaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3 * 0.7);
-    MCErrorRatioGraph->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset() * 0.5 );
-    MCErrorRatioGraph->GetYaxis()->SetLabelSize(gStyle->GetLabelSize()/ 0.3 * 0.7);
-    MCErrorRatioGraph->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
-    MCErrorRatioGraph->Draw("af");
+    LowerDummy->GetYaxis()->CenterTitle();
+    LowerDummy->GetYaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3 * 0.7);
+    LowerDummy->GetYaxis()->SetTitleOffset(gStyle->GetTitleOffset() * 0.5 );
+    LowerDummy->GetYaxis()->SetLabelSize(gStyle->GetLabelSize()/ 0.3 * 0.7);
+    LowerDummy->GetYaxis()->SetLabelOffset(gStyle->GetLabelOffset());
+    LowerDummy->Draw("");
+
 
     if (HasMC) {  
+      MCErrorRatioGraph->Draw("af same");
       if (!IsSR && HasData) DataOverMC->Draw("same");
       for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
         ExpOverMC[isig]->Draw("same hist ][");
@@ -566,6 +583,8 @@ public:
   TGraph* MCErrorGraph = nullptr;
   vector<TGraph*> SigErrorGraphs;
   TGraph* MCErrorRatioGraph = nullptr;
+  TH1F* LowerDummy;
+  vector<TString> XBinLabels;
 
 };
 

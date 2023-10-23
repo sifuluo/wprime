@@ -26,6 +26,7 @@ void CreateAuxHists(int sampleyear = 3, int sampletype = 22, int ifile = -1, str
   conf->DASInput = false;
   conf->bTagEffHistCreation = false;
   conf->AuxHistCreation = true;
+  conf->UseMergedAuxHist = true;
   // conf->ProgressInterval = 1;
   conf->InputFile = infile;
   // conf->EntryMax = 1000;

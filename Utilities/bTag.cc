@@ -80,12 +80,16 @@ public:
     if (had > 5) had = -1; // Other particles
     if (had >= 0) TotalEvts->Fill(had,j.Pt());
     if (had >= 0 && had < 5) TotalEvts->Fill(-2,j.Pt());
+    // cout << "Filling Jet with HadFlav = " << had << ", Pt = " << j.Pt() << " with tag ";
     for (unsigned i = 0; i < 3; ++i) {
       if (j.bTagPasses[i]) {
+        // cout << " P,";
         h_eff[i + 3]->Fill(had,j.Pt());
         if (had >= 0 && had < 5) h_eff[i + 3]->Fill(-2,j.Pt());
       }
+      // else cout << " N,";
     }
+    // cout << endl;
   }
 
   void PostProcess() {

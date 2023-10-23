@@ -8,7 +8,7 @@
 
 #include "Utilities/Configs.cc"
 
-void MergeAuxHists(int isampleyear = 3) {
+void MergeAuxHists(int isampleyear = 3, int iter = 0) {
   // Eta and pT bins for Jet response 
   const vector<double> etabins{0., 1.3, 2.5, 3.0, 5.2}; // size 5, 4 bins, ieta top at 3;
   const vector<vector<double> > ptbins{
@@ -20,6 +20,51 @@ void MergeAuxHists(int isampleyear = 3) {
 
   Configs* conf = new Configs(isampleyear, 2, 0);
   
+  if (iter == 0) {
+    vector<TFile*> bTEInFiles;
+    vector<double> bTENorms;
+    for (unsigned ist = 0; ist < dlib.DatasetNames.size(); ++ist) {
+      if (ist < 2) continue; // Data not considered
+      TString bTEInFileName = conf->AuxHistBasePath + "bTagEff_" + conf->SampleYear + "_" + dlib.DatasetNames[ist] + ".root";
+      TFile *infile = new TFile(bTEInFileName, "READ");
+      if (infile->IsZombie() || !infile || infile->GetListOfKeys()->IsEmpty()) continue;
+      bTEInFiles.push_back(new TFile(bTEInFileName, "READ"));
+      bTENorms.push_back(dlib.GetNormFactor(dlib.DatasetNames[ist],isampleyear));
+      cout << "Loading " << bTEInFileName << endl;
+    }
+    TString bTEOutFileName = conf->AuxHistBasePath + "bTagEff_" + conf->SampleYear + "_Merged.root";
+    TFile *fbTE = new TFile(bTEOutFileName, "RECREATE");
+    cout << "Output to " << bTEOutFileName << endl;
+    fbTE->cd();
+    vector<TString> bTEsn = {"BtagEff_L","BtagEff_M", "BtagEff_T","BtagPass_L","BtagPass_M", "BtagPass_T","TotalEvts"};
+    vector<TH2F*> bTEHists;
+    bTEHists.resize(bTEsn.size());
+    for (unsigned ist = 0; ist < bTEInFiles.size(); ++ist) {
+      for (unsigned ih = 3; ih < 7; ++ih) {
+        TH2F* h1 = (TH2F*) bTEInFiles[ist]->Get(bTEsn[ih]);
+        h1->Scale(bTENorms[ist]);
+        if (ist == 0) {
+          bTEHists[ih] = (TH2F*) h1->Clone();
+          bTEHists[ih]->SetDirectory(fbTE);
+        }
+        else {
+          bTEHists[ih]->Add(h1);
+        }
+      }
+    }
+    for (unsigned ih = 0; ih < 3; ++ih) {
+      bTEHists[ih] = (TH2F*) bTEHists[ih + 3]->Clone();
+      bTEHists[ih]->Divide(bTEHists[6]);
+      bTEHists[ih]->SetName(bTEsn[ih]);
+      bTEHists[ih]->SetTitle(bTEsn[ih]);
+      bTEHists[ih]->SetDirectory(fbTE);
+    }
+
+    fbTE->Write();
+    fbTE->Save();
+    return;
+  }
+
   vector<TFile*> JSInFiles;
   vector<double> JSNorms;
   for (unsigned ist = 0; ist < dlib.DatasetNames.size(); ++ist) {
@@ -90,49 +135,35 @@ void MergeAuxHists(int isampleyear = 3) {
   }
   fJS->Write();
   fJS->Save();
+
+
+  vector<TFile*> PermInFiles;
+  TString PermOutFileName = conf->AuxHistBasePath + "Permutations_" + conf->SampleYear + "_Merged.root";
+  TFile *fPerm = new TFile(PermOutFileName, "RECREATE");
+  fPerm->cd();
+  for (unsigned ist = 0; ist < dlib.DatasetNames.size(); ++ist) {
+    if (dlib.GetType(dlib.DatasetNames[ist]) < 2) continue; // Data and BG not considered
+    TString PermName = conf->AuxHistBasePath + "Permutations_" + conf->SampleYear + "_" + dlib.DatasetNames[ist] + ".root";
+    TFile *infile = new TFile(PermName, "READ");
+    if (infile->IsZombie() || !infile || infile->GetListOfKeys()->IsEmpty()) continue;
+    PermInFiles.push_back(new TFile(PermName, "READ"));
+    cout << "Loading " << PermName << endl;
+    TString PtPermHistName = "PtPerm_" + conf->SampleYear + "_" + dlib.DatasetNames[ist];
+    TString bTagPermHistName = "bTagPerm_" + conf->SampleYear + "_" + dlib.DatasetNames[ist];
+    TString WPrimedRHistName = "WPrimedR_" + conf->SampleYear + "_" + dlib.DatasetNames[ist];
+    TH1F* hptperm = (TH1F*) infile->Get(PtPermHistName)->Clone();
+    TH1F* hbtagperm = (TH1F*) infile->Get(bTagPermHistName)->Clone();
+    TH1F* hwpdr = (TH1F*) infile->Get(WPrimedRHistName)->Clone();
+    hptperm->SetDirectory(fPerm);
+    hbtagperm->SetDirectory(fPerm);
+    hwpdr->SetDirectory(fPerm);
+  }
+  fPerm->Write();
+  fPerm->Save();
+  cout << "Output to " << PermOutFileName << endl;
   
 
-  vector<TFile*> bTEInFiles;
-  vector<double> bTENorms;
-  for (unsigned ist = 0; ist < dlib.DatasetNames.size(); ++ist) {
-    if (ist < 2) continue; // Data not considered
-    TString bTEInFileName = conf->AuxHistBasePath + "bTagEff_" + conf->SampleYear + "_" + dlib.DatasetNames[ist] + ".root";
-    TFile *infile = new TFile(bTEInFileName, "READ");
-    if (infile->IsZombie() || !infile || infile->GetListOfKeys()->IsEmpty()) continue;
-    bTEInFiles.push_back(new TFile(bTEInFileName, "READ"));
-    bTENorms.push_back(dlib.GetNormFactor(dlib.DatasetNames[ist],isampleyear));
-    cout << "Loading " << bTEInFileName << endl;
-  }
-  TString bTEOutFileName = conf->AuxHistBasePath + "bTagEff_" + conf->SampleYear + "_Merged.root";
-  TFile *fbTE = new TFile(bTEOutFileName, "RECREATE");
-  cout << "Output to " << bTEOutFileName << endl;
-  fbTE->cd();
-  vector<TString> bTEsn = {"BtagEff_L","BtagEff_M", "BtagEff_T","BtagPass_L","BtagPass_M", "BtagPass_T","TotalEvts"};
-  vector<TH2F*> bTEHists;
-  bTEHists.resize(bTEsn.size());
-  for (unsigned ist = 0; ist < bTEInFiles.size(); ++ist) {
-    for (unsigned ih = 3; ih < 7; ++ih) {
-      TH2F* h1 = (TH2F*) bTEInFiles[ist]->Get(bTEsn[ih]);
-      h1->Scale(bTENorms[ist]);
-      if (ist == 0) {
-        bTEHists[ih] = (TH2F*) h1->Clone();
-        bTEHists[ih]->SetDirectory(fbTE);
-      }
-      else {
-        bTEHists[ih]->Add(h1);
-      }
-    }
-  }
-  for (unsigned ih = 0; ih < 3; ++ih) {
-    bTEHists[ih] = (TH2F*) bTEHists[ih + 3]->Clone();
-    bTEHists[ih]->Divide(bTEHists[6]);
-    bTEHists[ih]->SetName(bTEsn[ih]);
-    bTEHists[ih]->SetTitle(bTEsn[ih]);
-    bTEHists[ih]->SetDirectory(fbTE);
-  }
-
-  fbTE->Write();
-  fbTE->Save();
+  
 
 
 

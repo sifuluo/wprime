@@ -73,7 +73,7 @@ struct Configs {
   bool bTagEffHistCreation = false;
   bool AuxHistCreation = false;
   string AuxHistBasePath = UserSpecifics::EOSBasePath + "AuxHists/";
-  bool UseMergedAuxHist = false;
+  bool UseMergedAuxHist = true;
 
   bool RunFitter = false;
   bool UseMassDist = false;

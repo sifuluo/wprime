@@ -120,12 +120,12 @@ public:
   }
 
   int ComparePerm(vector<int> pv, vector<int> tpv) {
-    cout << "Start ComparePerm" <<endl;
+    // cout << "Start ComparePerm" <<endl;
     if (pv == tpv) return 0;
     int out = 0;
     vector<bool> WithinTrueJets = vector<bool>(5,false); // Check if the permutation digits are the same ones.
     if (pv.size() < 5 || tpv.size() < 5) return -1;
-    cout << Form("pv = %i, %i, %i, %i, %i, tpv = %i, %i, %i, %i, %i",pv[0],pv[1],pv[2],pv[3],pv[4],tpv[0],tpv[1],tpv[2],tpv[3],tpv[4]) << endl;
+    // cout << Form("pv = %i, %i, %i, %i, %i, tpv = %i, %i, %i, %i, %i",pv[0],pv[1],pv[2],pv[3],pv[4],tpv[0],tpv[1],tpv[2],tpv[3],tpv[4]) << endl;
     for (unsigned i = 0; i < 5; ++i) {
       if (pv[i] == -1) return -1;
       for (unsigned j = 0; j < 5; ++j) {
@@ -160,22 +160,37 @@ public:
     bool TopbToLJ = HadbToLJ || LepbToLJ;
     
     // Code is already human readable. No need for explanation for return codes.
-    if (WPbCorrect && HadbToLepb && LepbToHadb) return 1;
-    if (WPbCorrect && TopbToLJ && TopbCorrect) return 2;
-    if (WPbCorrect && TopbToLJ && TopbSwap) return 2;
-    if (WPbCorrect && HadbToLJ && LepbToLJ) return 2;
+    // top b swap
+    // if (WPbCorrect && HadbToLepb && LepbToHadb) return 1;
 
-    if (WPbToTopb && TopbToWPb && TopbCorrect) return 3;
-    if (WPbToTopb && TopbToWPb && TopbSwap) return 3;    
-    if (WPbToTopb && TopbToLJ && TopbCorrect) return 4;
-    if (WPbToTopb && TopbToLJ && TopbSwap) return 4;
-    if (WPbToTopb && HadbToLJ && LepbToLJ) return 4;
+    // // reco with a lj where it should be a b
+    // if (WPbCorrect && TopbToLJ && TopbCorrect) return 2;
+    // if (WPbCorrect && TopbToLJ && TopbSwap) return 2;
+    // if (WPbCorrect && HadbToLJ && LepbToLJ) return 2;
 
-    if (WPbToLJ && HadbCorrect && LepbCorrect) return 5;
-    if (WPbToLJ && HadbToLepb && LepbToHadb) return 5;
-    if (WPbToLJ && TopbToLJ && TopbCorrect) return 6;
-    if (WPbToLJ && TopbToLJ && TopbSwap) return 6;
-    return 9; // Other undefined circumstances
+    // // 
+    // if (WPbToTopb && TopbToWPb && TopbCorrect) return 3;
+    // if (WPbToTopb && TopbToWPb && TopbSwap) return 3;
+
+    // if (WPbToTopb && TopbToLJ && TopbCorrect) return 4;
+    // if (WPbToTopb && TopbToLJ && TopbSwap) return 4;
+    // if (WPbToTopb && HadbToLJ && LepbToLJ) return 4;
+
+    // if (WPbToLJ && HadbCorrect && LepbCorrect) return 5;
+    // if (WPbToLJ && HadbToLepb && LepbToHadb) return 5;
+    // if (WPbToLJ && TopbToLJ && TopbCorrect) return 6;
+    // if (WPbToLJ && TopbToLJ && TopbSwap) return 6;
+    // return 9; // Other undefined circumstances
+    out = 0;
+    if (TopbSwap) out += 1;
+    if (WPbToLJ || TopbToLJ) out += 10;
+    if (!WPbCorrect) out += 100;
+    return out;
+
+    // 1: top b swap
+    // 2: Lj taking b place
+    // 3: W'b wrong
+    // 1 1 1 7
   }
 
   int GetbTagPermIndex(vector<Jet>& js) { // Input as in default Jets order: LJ0, LJ1, Hadb, Lepb, WPb
@@ -209,10 +224,11 @@ public:
 
   void CreatePermutationFile() {
     PermFile = new TFile(FileName,"RECREATE");
+    cout << "Saving into Perm File: " << FileName << endl;
     TString PtPermHistName = "PtPerm_" + conf->SampleYear + "_" + conf->SampleType;
     TString bTagPermHistName = "bTagPerm_" + conf->SampleYear + "_" + conf->SampleType;
-    // TString WPrimedRHistName = "WPrimedR_" + conf->SampleYear + "_" + conf->SampleType;
-    TString WPrimedRHistName = "WPrimedR";
+    TString WPrimedRHistName = "WPrimedR_" + conf->SampleYear + "_" + conf->SampleType;
+    // TString WPrimedRHistName = "WPrimedR";
     PtPermHist = new TH1F(PtPermHistName, PtPermHistName, 60,0,60);
     bTagPermHist = new TH1F(bTagPermHistName, bTagPermHistName, 40,0,40);
     WPrimedRHist = new TH1F(WPrimedRHistName, WPrimedRHistName, 100,0,10);
@@ -250,6 +266,7 @@ public:
       PermSamples.push_back(Form("LL%i", (i + 3) * 100));
     }
     PermFile = new TFile(FileName, "READ");
+    cout << "Reading from Perm File: " << FileName << endl;
     for (unsigned i = 0; i < 18; ++i) {
       TString PtPermHistName = "PtPerm_" + conf->SampleYear + "_" + PermSamples[i];
       TString bTagPermHistName = "bTagPerm_" + conf->SampleYear + "_" + PermSamples[i];
@@ -262,9 +279,8 @@ public:
       PtPermHists.push_back(h1);
       bTagPermHists.push_back(h2);
     }
-    TString WPrimedRFileName = conf->AuxHistBasePath + "WPrimedR_2018_FL500.root";
-    WPrimedRFile = new TFile(WPrimedRFileName,"READ");
-    WPrimedRHist = (TH1F*) WPrimedRFile->Get("WPrimedR");
+    TString WPrimedRHistName = "WPrimedR_" + conf->SampleYear + "_FL500";
+    WPrimedRHist = (TH1F*) PermFile->Get(WPrimedRHistName);
     WPrimedRHist->SetDirectory(0);
     WPrimedRHist->Scale(1./WPrimedRHist->GetMaximum());
   }
@@ -307,7 +323,6 @@ public:
   string SampleType;
   TString FileName;
   TFile* PermFile;
-  TFile* WPrimedRFile;
   TH1F *PtPermHist, *bTagPermHist, *WPrimedRHist;
   vector<TH1F*> PtPermHists, bTagPermHists;
   vector<int> PtPerms;

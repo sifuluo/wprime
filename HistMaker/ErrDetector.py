@@ -15,8 +15,8 @@ print("Checking err file: " + ferr)
 if not (os.path.exists(ferr) and os.path.exists(fout)):
   print("(First Run) No error log file detected")
   sys.exit(2)
-errlines = open(ferr).readlines()
-if errlines[0] == "===Job is done===": emptyerr = True
+# errlines = open(ferr).readlines()
+# if errlines[0] == "===Job is done===": emptyerr = True
 errsize = os.stat(ferr).st_size
 outsize = os.stat(fout).st_size
 

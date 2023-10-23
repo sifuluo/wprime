@@ -33,7 +33,7 @@ if not os.path.exists("Submits"):
 
 
 for iy, year in enumerate(SampleYears):
-  if iy < 3: continue
+  # if iy < 3: continue
 
   for isa, sampletype in enumerate(SampleTypes):
     print(SampleYears[iy] + "| " + str(isa) + ":" + sampletype)

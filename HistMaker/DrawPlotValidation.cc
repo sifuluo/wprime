@@ -61,9 +61,11 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0, bool DoMCReweight = f
   string PlotNamePrefix = HistFilePrefix;
 
   if (DrawMCReweight) {
+    setTDRStyle();
     gStyle->SetOptFit(0000);
     TCanvas* c1 = new TCanvas("c1","c1",800,800);
-    MCReweightManager *mcrm = new MCReweightManager("ST");
+    string MCRWVar = "WPrimeMassSimpleFL";
+    MCReweightManager *mcrm = new MCReweightManager(MCRWVar);
     mcrm->Init();
     if (!mcrm->ReadFromFile(HistFilePath, HistFilePrefix)) return;
     TString SFPlotTitle = "NoTitle; NoTitle; NoTitle";
@@ -84,6 +86,7 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = 0, bool DoMCReweight = f
       leg->AddEntry(mcrm->rws[i]->SF1D, label);
       if (i == 0) {
         mcrm->rws[i]->SF1D->SetMaximum(2.5);
+        mcrm->rws[i]->SF1D->GetXaxis()->CenterTitle();
         mcrm->rws[i]->SF1D->Draw("E1");
       }
       else mcrm->rws[i]->SF1D->Draw("E1same");

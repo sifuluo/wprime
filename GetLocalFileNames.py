@@ -8,13 +8,16 @@ def GetLocalDataset(names, iy):
   # basepath = "/eos/user/d/doverton/skimmed_samples"
   pbasepath = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/"
   ebasepath = "/eos/user/e/eusebi/andrewsdata/skimmed_samples/"
-  inyears = ["2016","2016_APV","2017","2018"]
-  outyears = ["2016","2016apv","2017","2018"]
+  b2gbasepath = "/eos/cms/store/group/phys_b2g/wprime/skimmed_samples/"
+  inyears = ["2016_APV","2016","2017","2018"]
+  outyears = ["2016apv","2016","2017","2018"]
   if inname == "SingleElectron" and iy == 3: inname = "EGamma/"
   else: inname = inname + "/"
 
   if iy == 3: basepath = ebasepath
-  else: basepath = ebasepath
+  elif iy == 2: basepath = b2gbasepath
+  elif iy == 1: basepath = b2gbasepath
+  else: basepath = b2gbasepath
   infile = basepath + inname + inyears[iy] + "/*"
   if not os.path.exists("filenames/"):
     os.makedirs("filenames")
@@ -93,6 +96,6 @@ def GetSampleTypes():
 CreateFileNames = True
 if CreateFileNames:
   for iy in range(4):
-    if iy != 3: continue # currenlty only 2018 available
+    # if iy != 3: continue # currenlty only 2018 available
     for ids in GetDatasetNames():
       GetLocalDataset(ids, iy)

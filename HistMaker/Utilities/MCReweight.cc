@@ -80,13 +80,13 @@ public:
     }
   }
 
-  void ReadFromFile(TFile *f, string obs) { // Read the reweight file for later application
+  bool ReadFromFile(TFile *f, string obs) { // Read the reweight file for later application
     Observable = obs;
     TString hn = "ttbarReweightSF_" + Observable + "_" + SourceRegion;
     TString fn = "MCRFunc" + SourceRegion;
     TH1F* htmp = (TH1F*)f->Get(hn);
     cout << "Trying to access SF plot: " << hn << endl;
-    if (htmp == nullptr) return;
+    if (htmp == nullptr) return false;
     SF1D = (TH1F*)f->Get(hn)->Clone();
     SF1D->SetDirectory(0);
     SF1DF = SF1D->GetFunction(fn);
@@ -101,6 +101,7 @@ public:
     xmax = SF1D->GetBinLowEdge(EndBin + 1);
     cout << "SF Value at 685.592GeV from" << SourceRegion << " is " << SF1D->GetBinContent(SF1D->FindBin(685.592)) << endl;
     cout << "SF Evaled value is " << SF1DF->Eval(685.592) << endl;
+    return true;
   }
 
   // void StatError(TH1F* hcentral, vector<double>& errup, vector<double>& errlow) {
@@ -160,7 +161,8 @@ public:
     SF1D->Add(OtherMCHists[0], -1.);
     SF1D->Divide(ttbarHists[0]);
     SF1D->SetName(("ttbarReweightSF_" + Observable + "_" + SourceRegion).c_str());
-    SF1D->SetTitle(("ttbar Reweighting From " + Observable + " in " + SourceRegion).c_str());
+    TString SFTitle = Observable + " in " + StringRange +  "; (Data - OtherMC) / ttbar for " + Observable + ";";
+    SF1D->SetTitle(SFTitle);
     StartBin = EndBin = -1;
     for (unsigned ib = 1; ib <= nbins; ++ib) { // Trimming bins with little stats
       if (DataHist->GetBinContent(ib) < 10 || ttbarHists[0]->GetBinContent(ib) < 10) {
@@ -242,7 +244,10 @@ public:
     TFile *f = new TFile(rwfn, "READ");
     if (!f || !(f->IsOpen())) return false;
     for (unsigned i = 0; i < rws.size(); ++i) {
-      rws[i]->ReadFromFile(f, Observable);
+      if (!(rws[i]->ReadFromFile(f, Observable))) {
+        cout << "Cannot read from " << rws[i]->Observable << " in region " << rws[i]->StringRange << endl;
+        return false;
+      }
     }
     f->Close();
     return true;

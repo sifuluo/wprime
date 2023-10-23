@@ -43,7 +43,9 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
   else if (SampleType == "ttbar") HistFilePrefix += "_NRW";
   if (SampleType == "ZZ") return 0;
 
-  MCReweightManager *mcrm = new MCReweightManager("ST");
+  string MCRWVar = "WPrimeMassSimpleFL";
+  double MCRWVal = 0.; // Need to be assigned later
+  MCReweightManager *mcrm = new MCReweightManager(MCRWVar); // MCReweight derive variable
   mcrm->Verbose = false;
   if ((DoMCReweight && (SampleType == "ttbar" || SampleType == "")) || DrawMCReweight) {
     mcrm->Init();
@@ -174,7 +176,8 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
         WPrimeMassSimpleLL = r->WPrimeMassSimpleLL->at(iv);
       }
       if (SampleType == "ttbar" && DoMCReweight) {
-        float mcrweight = mcrm->GetSF1DF(ST, RegionIdentifier);
+        MCRWVal = WPrimeMassSimpleFL;
+        float mcrweight = mcrm->GetSF1DF(MCRWVal, RegionIdentifier);
         EventWeight *= mcrweight;
         if ((mcrweight > 3.0 || mcrweight < 0.3)) {
           cout << "Extreme reweight = " << mcrweight << ", at var = " << ST <<endl;
