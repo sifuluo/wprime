@@ -23,7 +23,7 @@ public:
 
 int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1, bool DoMCReweight = false, bool DrawMCReweight = false) {
   if (isampletype != 2 && DoMCReweight) return 0;
-  // if (ErrorLogDetected(isampleyear, isampletype, ifile) == 0) return 0;
+  if (ErrorLogDetected(isampleyear, isampletype, ifile) == 0) return 0;
   rm.TightOnlyInit();
   string basepath = "/eos/user/s/siluo/WPrimeAnalysis/Validation/";
   string itpath = "";
@@ -35,7 +35,7 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
   vector<string> SampleTypes = dlib.DatasetNames;
   string SampleType = SampleTypes[isampletype];
   HistFilePath = HistFilePath + "Hists/";
-  if (ifile > -1) HistFilePath = HistFilePath + SampleType + "/";
+  if (ifile > -1) HistFilePath = HistFilePath + SampleYear + "_" + SampleType + "/";
   if (isampletype != -1) {
     
   }
@@ -43,7 +43,7 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
   else if (SampleType == "ttbar") HistFilePrefix += "_NRW";
   if (SampleType == "ZZ") return 0;
 
-  string MCRWVar = "WPrimeMassSimpleFL";
+  string MCRWVar = "ST";
   double MCRWVal = 0.; // Need to be assigned later
   MCReweightManager *mcrm = new MCReweightManager(MCRWVar); // MCReweight derive variable
   mcrm->Verbose = false;
@@ -51,10 +51,10 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
     mcrm->Init();
     string SourcePath = basepath + "Hists/";
     string SourcePrefix = SampleYear + "_Validation";
-    TString rwfn = StandardNames::HistFileName(basepath + "Hists/", HistFilePrefix, "ReweightSF");
-    if (DrawMCReweight || !mcrm->ReadFromFile(rwfn)) {
+    // TString rwfn = StandardNames::HistFileName(basepath + "Hists/", HistFilePrefix, "ReweightSF");
+    if (DrawMCReweight || !mcrm->ReadFromFile(SourcePath, SourcePrefix)) {
       mcrm->ReadFromFiles(SourcePath, SourcePrefix);
-      mcrm->SaveToFile(rwfn);
+      mcrm->SaveToFile(SourcePath, SourcePrefix);
     }
   }
 
@@ -176,7 +176,7 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
         WPrimeMassSimpleLL = r->WPrimeMassSimpleLL->at(iv);
       }
       if (SampleType == "ttbar" && DoMCReweight) {
-        MCRWVal = WPrimeMassSimpleFL;
+        MCRWVal = ST;
         float mcrweight = mcrm->GetSF1DF(MCRWVal, RegionIdentifier);
         EventWeight *= mcrweight;
         if ((mcrweight > 3.0 || mcrweight < 0.3)) {

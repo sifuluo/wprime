@@ -505,7 +505,7 @@ public:
 
 
     if (HasMC) {  
-      MCErrorRatioGraph->Draw("af same");
+      MCErrorRatioGraph->Draw("f same");
       if (!IsSR && HasData) DataOverMC->Draw("same");
       for (unsigned isig = 0; isig < SigNames.size(); ++isig) {
         ExpOverMC[isig]->Draw("same hist ][");

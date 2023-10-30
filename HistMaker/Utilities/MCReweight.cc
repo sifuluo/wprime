@@ -185,7 +185,8 @@ public:
     }
     
     TString FuncName = "MCRFunc" + SourceRegion;
-    SF1DF = new TF1(FuncName,"[0]/x/x+[1]/x+[2]*x+[3]*x*x+[4]*x*x*x+[5]",SF1D->GetBinLowEdge(StartBin),SF1D->GetBinLowEdge(EndBin+1));
+    // SF1DF = new TF1(FuncName,"[0]/x/x+[1]/x+[2]*x+[3]*x*x+[4]*x*x*x+[5]",SF1D->GetBinLowEdge(StartBin),SF1D->GetBinLowEdge(EndBin+1));
+    SF1DF = new TF1(FuncName,"[0]/x/x+[1]/x+[2]+[3]*x",SF1D->GetBinLowEdge(StartBin),SF1D->GetBinLowEdge(EndBin+1));
     SF1D->Fit(SF1DF,"RM");
   }
 
@@ -254,18 +255,19 @@ public:
   }
 
   bool ReadFromFile(string path, string prefix) {
-    TString rwfn = StandardNames::HistFileName(path, prefix + "_RW", "ReweightSF");
+    TString rwfn = StandardNames::HistFileName(path, prefix, "ReweightSF");
+    if (ReadFromFile(rwfn)) return true;
+    rwfn = StandardNames::HistFileName(path, prefix + "_RW", "ReweightSF");
     if (ReadFromFile(rwfn)) return true;
     rwfn = StandardNames::HistFileName(path, prefix + "_NRW", "ReweightSF");
-    if (ReadFromFile(rwfn)) return true;
-    rwfn = StandardNames::HistFileName(path, prefix, "ReweightSF");
     if (ReadFromFile(rwfn)) return true;
     cout << "Failed to read Reweight plots file" << endl;
     return false;
   }
 
-  void SaveToFile(TString fname) {
-    TFile *f = new TFile(fname,"RECREATE");
+  void SaveToFile(string path, string prefix) {
+    TString rwfn = StandardNames::HistFileName(path, prefix, "ReweightSF");
+    TFile *f = new TFile(rwfn,"RECREATE");
     f->cd();
     for (unsigned i = 0; i < rws.size(); ++i) {
       TH1F* h = (TH1F*)rws[i]->SF1D->Clone();
@@ -274,7 +276,7 @@ public:
     f->Write();
     f->Save();
     f->Close();
-    cout << "Reweight file has been saved to " << fname << endl;
+    cout << "Reweight file has been saved to " << rwfn << endl;
     delete f;
   }
 

@@ -283,7 +283,7 @@ public:
 
 int Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
   Configs *conf = new Configs(isampleyear, isampletype, ifile);
-  if (conf->ErrorRerun() == 0) return 0;
+  // if (conf->ErrorRerun() == 0) return 0;
   // conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/SingleMuon/2018/2B07B4C0-852B-9B4F-83FA-CA6B047542D1.root";
   conf->LocalOutput = false;
   conf->PrintProgress = true;

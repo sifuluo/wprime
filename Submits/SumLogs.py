@@ -1,5 +1,7 @@
 import os
 
+RemarkableErrlogs = []
+remarklogsize = 250
 for d in os.listdir("logs/"):
   dd = "logs/"+d
   if not os.path.isdir(dd): continue
@@ -12,10 +14,13 @@ for d in os.listdir("logs/"):
     ferr = dd + "/" + f.replace(".log",".err")
     fout = dd + "/" + f.replace(".log",".out")
     if os.path.exists(ferr):
-      if os.stat(ferr).st_size > 0:
+      fsize = os.stat(ferr).st_size
+      if fsize > 0:
         # os.path.getsize(ferr)
-        print("Error log: " + ferr)
+        line = "Error log: " + ferr + " size = " + str(fsize)
+        print(line)
         haserr += 1
+        if fsize > remarklogsize: RemarkableErrlogs.append(line)
         continue
       # else:
         # os.remove(flog)
@@ -24,3 +29,7 @@ for d in os.listdir("logs/"):
   if haserr > 0:
     print("There are " + str(haserr) + " error processes in above folder " + dd)
     print("-------------------------------")
+if len(RemarkableErrlogs) > 0:
+  print("\nRemarkable Error logs: (size > "+ str(remarklogsize) +")")
+  for line in RemarkableErrlogs:
+    print(line)
