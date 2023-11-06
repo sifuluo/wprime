@@ -11,7 +11,7 @@ SampleTypes = GetSampleTypes()
 print(SampleTypes)
 
 EOSPath = "/eos/user/s/siluo/WPrimeAnalysis/"
-EOSSubFolderName = "Validation"
+EOSSubFolderName = "ValidationFitted"
 
 with open("Utilities/UserSpecificsSkeleton.cc","r") as skeleton:
   NewFile = "Utilities/UserSpecifics.cc"
@@ -58,8 +58,8 @@ for iy, year in enumerate(SampleYears):
     lines.append("log          = logs/"+runname+"/"+runname+"_$(ProcID).log\n")
     lines.append("universe     = vanilla\n")
     lines.append('Requirements = (OpSysAndVer =?= "CentOS7")\n')
-    # lines.append('+JobFlavour  = "workday"\n')
-    lines.append('+JobFlavour  = "longlunch"\n')
+    lines.append('+JobFlavour  = "testmatch"\n')
+    # lines.append('+JobFlavour  = "longlunch"\n')
     lines.append("RequestCpus  = 2\n")
     lines.append("stream_error = True\n")
     lines.append("periodic_release =  (NumJobStarts < 10) && ((CurrentTime - EnteredCurrentStatus) > (5*60))\n")

@@ -59,7 +59,7 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = -99, bool DoMCReweight =
 
   string SampleYear = dlib.SampleYears[isampleyear];
   vector<string> SampleTypes = dlib.DatasetNames;
-  rm.TightOnlyInit();
+  rm.AcceptRegions({1,2},{1},{5,6},{1,2,3,4,5,6});
   rm.Variations = {"" // 0
   , "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESUp", "JESDown", "JERUp", "JERDown" // 1-8
   , "EleSFUp", "EleSFDown", "MuonTriggerUp", "MuonTriggerDown", "MuonIdUp", "MuonIdDown", "MuonIsoUp", "MuonIsoDown" // 9-16

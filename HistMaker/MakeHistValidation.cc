@@ -24,7 +24,7 @@ public:
 int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1, bool DoMCReweight = false, bool DrawMCReweight = false) {
   if (isampletype != 2 && DoMCReweight) return 0;
   if (ErrorLogDetected(isampleyear, isampletype, ifile) == 0) return 0;
-  rm.TightOnlyInit();
+  rm.AcceptRegions({1,2},{1},{5,6},{1,2,3,4,5,6});
   string basepath = "/eos/user/s/siluo/WPrimeAnalysis/Validation/";
   string itpath = "";
   string SampleYear = dlib.SampleYears[isampleyear];

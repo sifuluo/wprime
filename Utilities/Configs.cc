@@ -76,7 +76,7 @@ struct Configs {
   bool UseMergedAuxHist = true;
 
   bool RunFitter = false;
-  bool UseMassDist = false;
+  int TWMassMode = 0; // 0: Hist Directly; 1: Fitted Hist; 2: Default Func with values from wiki
   double JetScaleMinPMass = 0.01;
 
   vector<int> AcceptedRegions = {};

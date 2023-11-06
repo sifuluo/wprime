@@ -239,7 +239,7 @@ public:
       WPrimeMassSimpleFL->at(i) = vWprimeFL.M();
       WPrimeMassSimpleLL->at(i) = vWprimeLL.M();
       if (!conf->RunFitter) continue;
-      if (HasGenHypo) Ftr->SetTruePerm(TruePermVector);
+      Ftr->SetTruePerm(TruePermVector);
       if (i == 0) {
         SetEventFitter(i);
         Likelihood->at(i) = Ftr->Optimize();
@@ -253,12 +253,15 @@ public:
           TruePermWPrimeMass = Ftr->TrueHypo.WP().M();
           for (int j =0; j < 4; ++j) TruePermSolvedScales->at(j) = Ftr->TrueHypo.Scales[j];
           PermDiffCode = PM->ComparePerm(Ftr->BestPerm, TruePermVector);
-          if (Ftr->BestHypo.WPType != conf->WPType) PermDiffCode += 10;
-          if (Ftr->TrueHypo.WPType != conf->WPType) PermDiffCode += 20;
+          if (Ftr->BestHypo.WPType != conf->WPType) PermDiffCode += 1000;
+          if (Ftr->TrueHypo.WPType != conf->WPType) PermDiffCode += 2000;
         }
         else {
-          if (!HasGenHypo) cout << "Again, no true perm found" << endl;
-          if (Ftr->TrueHypo.WPType < 0) cout << "Ftr TrueHypo WPType = " << Ftr->TrueHypo.WPType << endl;
+          TruePermLikelihood = -1;
+          TruePermWPrimeMass = -1;
+          PermDiffCode = -1;
+          // if (!HasGenHypo) cout << "Again, no true perm found" << endl;
+          // if (Ftr->TrueHypo.WPType < 0) cout << "Ftr TrueHypo WPType = " << Ftr->TrueHypo.WPType << endl;
         }
       }
       else {
@@ -281,19 +284,19 @@ public:
   }
 };
 
-int Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
+int Validation(int isampleyear = 3, int isampletype = 24, int ifile = 0, bool DoFitter = true) {
   Configs *conf = new Configs(isampleyear, isampletype, ifile);
   // if (conf->ErrorRerun() == 0) return 0;
   // conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/SingleMuon/2018/2B07B4C0-852B-9B4F-83FA-CA6B047542D1.root";
   conf->LocalOutput = false;
   conf->PrintProgress = true;
-  // conf->RunFitter = true;
+  conf->RunFitter = DoFitter;
   conf->UseMergedAuxHist = true;
-  conf->AcceptRegions({1,2},{1},{5,6},{0,1,2,3,4,5,6});
-  conf->UseMassDist = true;
+  conf->AcceptRegions({1,2},{1},{5,6},{1,2,3,4,5,6});
+  conf->TWMassMode = 0;
   // conf->DebugList = {"LeptonRegion"};
-  // conf->ProgressInterval = 1;
-  // conf->EntryMax = 20000;
+  conf->ProgressInterval = 1;
+  conf->EntryMax = 1000;
   // if (!conf->FirstRun) {
   //   conf->RerunList("2018","ttbar",{2,339,344,354});
   //   conf->RerunList("2018","FL400",{0});
@@ -308,15 +311,27 @@ int Validation(int isampleyear = 3, int isampletype = 2, int ifile = 0) {
   // }
   
   ThisAnalysis *a = new ThisAnalysis(conf);
-  if (!(a->SetOutput("Validation"))) return 0;
+  if (!(a->SetOutput("ValidationFitted"))) return 0;
+  StopWatch SW;
+  SW.Start();
   for (Long64_t iEvent = 0; iEvent < a->GetEntryMax(); ++iEvent) {
+    // a->Ftr->FS.Reset();
+    SW.Check();
     if (a->ReadEvent(iEvent) < 0) continue;
     if (!a->WithinROI()) continue;
     // a->r->BranchSizeCheck();
     a->FillBranchContent();
     a->FillTree();
+    // FitterStatus FS_ = a->Ftr->FS;
+    // if (FS_.NCalls > 0) FS.Add(FS_);
+    // if (FS_.Status == 0) FSSucc.Add(FS_);
+    // else FSFail.Add(FS_);
   }
+  // FS.PrintAvg("Avg");
+  // FSSucc.PrintAvg("Avg Succeeded");
+  // FSFail.PrintAvg("Avg Failed");
   a->SaveOutput();
   a->CloseOutput();
+  SW.End();
   return conf->ErrorRerun();
 }

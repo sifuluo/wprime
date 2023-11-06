@@ -8,7 +8,7 @@
 
 #include "Utilities/Configs.cc"
 
-void MergeAuxHists(int isampleyear = 3, int iter = 0) {
+void MergeAuxHists(int isampleyear = 3, int iter = 0) { // iter == 0: bTagEfficiency Merge; else do JetScale and Permutation Merge
   // Eta and pT bins for Jet response 
   const vector<double> etabins{0., 1.3, 2.5, 3.0, 5.2}; // size 5, 4 bins, ieta top at 3;
   const vector<vector<double> > ptbins{

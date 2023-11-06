@@ -6,6 +6,7 @@
 #include <map>
 #include <string>
 #include <iostream>
+#include <chrono>
 // #include "TChain.h"
 #include "TLorentzVector.h"
 #include "TString.h"
@@ -197,6 +198,56 @@ struct FitRecord{
   }
 };
 
+struct FitterStatus{
+  int Status = -1;
+  double NCalls = 0;
+  double NIterations = 0;
+  double SecondsTaken = 0;
+  double NCount = 0;
+  void Reset() {
+    Status = -1;
+    NCalls = 0;
+    NIterations = 0;
+    SecondsTaken = 0;
+    NCount = 0;
+  }
+  void Add(FitterStatus& o) {
+    NCalls += o.NCalls;
+    NIterations += o.NIterations;
+    SecondsTaken += o.SecondsTaken;
+    NCount += o.NCount;
+  }
+  void Print(string tt) {
+    cout << tt << " Contains " << NCount << " Entries. NCalls = " << NCalls << ", NIterations = " << NIterations << ", SecondsTaken = " << SecondsTaken << endl;
+  }
+  void PrintAvg(string tt) {
+    cout << tt << " Contains " << NCount << " Entries. NCalls = " << NCalls / NCount << ", NIterations = " << NIterations / NCount << ", SecondsTaken = " << SecondsTaken / NCount << endl;
+  }
+};
+
+struct StopWatch{
+  chrono::system_clock::time_point StartTime, CheckedTime, CurrentTime;
+  chrono::duration<double, std::milli> d;
+  void Start() {
+    StartTime = std::chrono::system_clock::now();
+    CheckedTime = StartTime;
+  }
+  double End() {
+    CurrentTime = chrono::system_clock::now();
+    d = CurrentTime - StartTime;
+    double dd = d.count();
+    CheckedTime = CurrentTime;
+    return dd;
+  }
+  double Check() {
+    CurrentTime = chrono::system_clock::now();
+    d = CurrentTime - CheckedTime;
+    double dd = d.count();
+    CheckedTime = CurrentTime;
+    return dd;
+  }
+};
+
 namespace StandardNames {
   TString HistName(string sampletype, string observable, string regionrange, string variation) { // eg. ttbar_WPrimeMassFL_1152_PUIDWup
     TString histname = "=SampleType=_=Observable=_=RegionRange=_=Variation=";
@@ -219,7 +270,6 @@ namespace StandardNames {
     hfn += ".root";
     return hfn;
   }
-
 }
 
 #endif

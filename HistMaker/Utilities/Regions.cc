@@ -100,9 +100,6 @@ public:
 class RegionManager{
 public:
   RegionManager() {
-    // SplitInit();
-    // TestInit();
-    TightOnlyInit();
   };
   vector<RegionIdRange> Ranges;
   vector<string> StringRanges;
@@ -120,90 +117,13 @@ public:
   // Variations have to be ordered as central followed by Up variations and Down variations.
   // Histmanager will determine the variation type based on 
   // vector<string> Variations = {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown", "SFup", "SFdown"};
-
-  void DefaultInit() {
+  void AcceptRegions(vector<int> a, vector<int> b, vector<int> c, vector<int> d) {
     Reset();
-    Add(1150);
-    Add(1151);
-    Add(1152,1155,true);
-    Add(1250);
-    Add(1251);
-    Add(1252,1255,true);
-    Add(1160);
-    Add(1161,1162);
-    Add(1163,1166,true);
-    Add(1260);
-    Add(1261,1262);
-    Add(1263,1266,true);
-  }
-
-  void SplitInit() {
-    Reset();
-    Add(1150);
-    Add(1151);
-    Add(1152,1152,true);
-    Add(1153,1153,true);
-    Add(1154,1154,true);
-    Add(1155,1155,true);
-    Add(1250);
-    Add(1251);
-    Add(1252,1252,true);
-    Add(1253,1253,true);
-    Add(1254,1254,true);
-    Add(1255,1255,true);
-    Add(1160);
-    Add(1161,1161);
-    Add(1162,1162);
-    Add(1163,1163,true);
-    Add(1164,1164,true);
-    Add(1165,1165,true);
-    Add(1166,1166,true);
-    Add(1260);
-    Add(1261,1261);
-    Add(1262,1262);
-    Add(1263,1263,true);
-    Add(1264,1264,true);
-    Add(1265,1265,true);
-    Add(1266,1266,true);
-  }
-
-  void TightOnlyInit(int type = 0) {
-    Reset();
-    if (type == 0 || type == 1) {
-      Add(1150);
-      Add(1151);
-      Add(1152);
-      Add(1153,1153,true);
-      Add(1154,1154,true);
-      Add(1155,1155,true);
-      Add(1160);
-      Add(1161);
-      Add(1162);
-      Add(1163,1163,true);
-      Add(1164,1164,true);
-      Add(1165,1165,true);
-      Add(1166,1166,true);
+    for (int aa : a) for (int bb : b) for (int cc : c) for (int dd: d) if (dd <= cc) {
+      int r = aa * 1000 + bb * 100 + cc * 10 + dd;
+      if (dd < 3) Add(r);
+      else Add(r,r,true);
     }
-    if (type == 0 || type == 2) {
-      Add(2150);
-      Add(2151);
-      Add(2152);
-      Add(2153,2153,true);
-      Add(2154,2154,true);
-      Add(2155,2155,true);
-      Add(2160);
-      Add(2161);
-      Add(2162);
-      Add(2163,2163,true);
-      Add(2164,2164,true);
-      Add(2165,2165,true);
-      Add(2166,2166,true);
-    }
-  }
-
-  void TestInit() {
-    Reset();
-    Add(1121);
   }
 
   void InclusiveInit() {

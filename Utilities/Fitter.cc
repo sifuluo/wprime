@@ -56,7 +56,7 @@ public:
   }
 
   void SetTruePerm(vector<int> tp) {
-    if (tp.size() != 5) cout << "SetTruePerm Perm size = " << tp.size() << endl;
+    if (tp.size() != 5 && tp.size() != 0) cout << "SetTruePerm Perm size = " << tp.size() << endl;
     TruePerm = tp;
   }
 
@@ -101,10 +101,8 @@ public:
     return p;
   }
 
-  // Minimize the return value of the functor MinimizePFunc()
-  // Then return likelihood as 1. - minimized functor; or 1. - (1. - likelihood)
-  double MinimizeP() {
-    // Initializing the minimizer with our funtor MinimizePFunc() defined above
+  void InitMinizer() {
+    if (MinimizerInited) return;
     func = ROOT::Math::Functor(&MinimizePFunc,4);
     mini->SetPrintLevel(0);
     // mini->SetPrintLevel(3);
@@ -115,14 +113,31 @@ public:
     mini->SetErrorDef(0.5);
     mini->SetFunction(func);
     ROOT::Math::MinimizerOptions::SetDefaultMaxFunctionCalls(100000);
-
+    MinimizerInited = true;
+  }
+  // Minimize the return value of the functor MinimizePFunc()
+  // Then return likelihood as 1. - minimized functor; or 1. - (1. - likelihood)
+  double MinimizeP() {
+    // Initializing the minimizer with our funtor MinimizePFunc() defined above
+    InitMinizer();
     for (unsigned i = 0; i < 4; ++i) {
       // The variating range is limited to +- 2 sigma of the fitted jet response distribution
       pair<double,double> limits = JS->ScaleLimits(BaseHypo.Jets[i].Eta(),BaseHypo.Jets[i].Pt());
       mini->SetLimitedVariable(i,Form("Scale_%i",i),1.0,0.01,limits.first,limits.second);
       // mini->SetLimitedVariable(i,Form("Scale_%i",i),1.0,0.01,0.99,1.01);
     }
+    SW.Start();
     mini->Minimize();
+    double ptime = SW.End();
+    FitterStatus fs;
+    fs.Status = mini->Status();
+    fs.NCalls = mini->NCalls();
+    fs.NIterations = mini->NIterations();
+    fs.SecondsTaken = ptime / 1000.;
+    fs.NCount = 1;
+    FS.Add(fs);
+    if (fs.Status == 0) FSSucc.Add(fs);
+    else FSFail.Add(fs);
 
     double Prob = 0;
     if (!(mini->Status())) {
@@ -158,7 +173,7 @@ public:
   }
 
   // Check if the reconstructed W and tops can have a likelihood at least = MinPMass. To avoid redundant fitting on insane permutations.
-  bool PermutationPreFitCheck() {
+  int PermutationPreFitCheck() {
     double MinPMass = 0.01;
     double lowlimit[4];
     double uplimit[4];
@@ -171,13 +186,13 @@ public:
     LowScaledHypo.ScaleJets(lowlimit);
     Hypothesis HighScaledHypo = BaseHypo;
     HighScaledHypo.ScaleJets(uplimit);
-    if (max(max(HighScaledHypo.HadW().M(), LowScaledHypo.HadW().M()), BaseHypo.HadW().M()) < JS->HadWMassMin) return false;
-    if (min(min(HighScaledHypo.HadW().M(), LowScaledHypo.HadW().M()), BaseHypo.HadW().M()) > JS->HadWMassMax) return false;
-    if (max(max(HighScaledHypo.HadT().M(), LowScaledHypo.HadT().M()), BaseHypo.HadT().M()) < JS->HadtMassMin) return false;
-    if (min(min(HighScaledHypo.HadT().M(), LowScaledHypo.HadT().M()), BaseHypo.HadT().M()) > JS->HadtMassMax) return false;
-    if (max(max(HighScaledHypo.LepT().M(), LowScaledHypo.LepT().M()), BaseHypo.LepT().M()) < JS->LeptMassMin) return false;
-    if (min(min(HighScaledHypo.LepT().M(), LowScaledHypo.LepT().M()), BaseHypo.LepT().M()) > JS->LeptMassMax) return false;
-    return true;
+    if (max(max(HighScaledHypo.HadW().M(), LowScaledHypo.HadW().M()), BaseHypo.HadW().M()) < JS->HadWMassMin) return 1;
+    if (min(min(HighScaledHypo.HadW().M(), LowScaledHypo.HadW().M()), BaseHypo.HadW().M()) > JS->HadWMassMax) return 2;
+    if (max(max(HighScaledHypo.HadT().M(), LowScaledHypo.HadT().M()), BaseHypo.HadT().M()) < JS->HadtMassMin) return 3;
+    if (min(min(HighScaledHypo.HadT().M(), LowScaledHypo.HadT().M()), BaseHypo.HadT().M()) > JS->HadtMassMax) return 4;
+    // if (max(max(HighScaledHypo.LepT().M(), LowScaledHypo.LepT().M()), BaseHypo.LepT().M()) < JS->LeptMassMin) return false;
+    // if (min(min(HighScaledHypo.LepT().M(), LowScaledHypo.LepT().M()), BaseHypo.LepT().M()) > JS->LeptMassMax) return false;
+    return 0;
   }
 
   // Optimize event over all permutations
@@ -190,21 +205,28 @@ public:
     // Debug block
     double BestPFitter = 0;
     vector<FitRecord> BestFitRecords;
+    FS.Reset();
+    FSSucc.Reset();
+    FSFail.Reset();
+    MinimizerRuntime = 0;
+    OtherRuntime = 0;
     // End of Debug Block
     for (unsigned ip = 0; ip < Perms.size(); ++ip) { // Loop over permutations
       FitRecords.clear();
       BaseHypo.ResetJets();
       BaseHypo.SetJetsFromPerm(AllJets, Perms[ip]);
-      if (!PermutationPreFitCheck()) {
-        if (conf->WPType > -1 && Perms[ip] == TruePerm) cout << "True Perm failed PreFitCheck" << endl;
+      int precheckresult = PermutationPreFitCheck();
+      if (precheckresult) {
+        if (conf->WPType > -1 && Perms[ip] == TruePerm) cout << "True Perm failed PreFitCheck: " << precheckresult << endl;
         continue;
       }
+      SW.Start();
       double PFitter = MinimizeP();
-      if (PFitter < 0) {
+      MinimizerRuntime += SW.Check();
+      if (PFitter < 0 && PFitter != -1) {
         if (conf->WPType > -1 && Perms[ip] == TruePerm) cout << "True Perm failed to get positive P = " << PFitter << endl;
         continue;
       }
-
       // Obtaining the scales set from minimizer which should yield the minimized likelihodd
       double ThisScale[4];
       for (unsigned isc = 0; isc < 4; ++isc) ThisScale[isc] = mini->X()[isc];
@@ -240,18 +262,22 @@ public:
         BestPFitter = PFitter;
         BestFitRecords = FitRecords;
       }
-      if (conf->WPType > -1 && Perms[ip].size() != TruePerm.size()) cout << "Perm size = " << Perms[ip].size() << " ,TruePermSize = " << TruePerm.size() << endl;
+      if (conf->WPType > -1 && Perms[ip].size() != TruePerm.size() && TruePerm.size() != 0) cout << "Perm size = " << Perms[ip].size() << " ,TruePermSize = " << TruePerm.size() << endl;
       if (conf->WPType > -1 && Perms[ip] == TruePerm && ThisP > 0) {
         TrueHypo = ScaledHypo;
       }
     }
+    cout << endl;
+    FS.Print("Avg");
+    FSSucc.Print("Avg Succeeded");
+    FSFail.Print("Avg Failed");
 
-    if (BestP > 0 && fabs((BestPFitter - BestHypo.GetPFitter()) / BestPFitter) > 0.01) {
-      cout << "Last few trials of fitter: " << endl;
-      for (unsigned i = BestFitRecords.size() - 5; i < BestFitRecords.size(); ++i) BestFitRecords[i].Print("    Trials: ");
-      BestHypo.MakeRecord().Print("Reproduced: ");
-      cout << "Minimizer gave PFitter = " << BestPFitter << ", Reproduced PFitter = " << BestHypo.GetPFitter() << endl;
-    }
+    // if (BestP > 0 && fabs((BestPFitter - BestHypo.GetPFitter()) / BestPFitter) > 0.01) {
+    //   cout << "Last few trials of fitter: " << endl;
+    //   for (unsigned i = BestFitRecords.size() - 5; i < BestFitRecords.size(); ++i) BestFitRecords[i].Print("    Trials: ");
+    //   BestHypo.MakeRecord().Print("Reproduced: ");
+    //   cout << "Minimizer gave PFitter = " << BestPFitter << ", Reproduced PFitter = " << BestHypo.GetPFitter() << endl;
+    // }
     return BestP;
   }
 
@@ -272,8 +298,12 @@ public:
   vector<int> BestPerm;
   Hypothesis BestHypo;
 
+  FitterStatus FS, FSSucc, FSFail;
+  StopWatch SW;
+  double MinimizerRuntime, OtherRuntime;
 
   //Minimizer components
+  bool MinimizerInited = false;
   static ROOT::Math::Minimizer* mini;
   static ROOT::Math::Functor func;
 
