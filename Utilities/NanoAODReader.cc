@@ -143,6 +143,7 @@ public:
     ReadLeptons();
     ReadMET();
     ReadVertices();
+    if (PV_npvsGood < 1) return -3; // Requires PV_npvsGood >= 1
     // if (!PassedHEMCut) return -3;
     RegionAssociations = RegionReader();
     EventWeights = CalcEventSFweights();
@@ -347,7 +348,7 @@ public:
     if (!evts->isolated_electron_trigger) return false;
     for (unsigned i = 0; i < Triggers.size(); ++i) {
       if (Triggers[i].id != 11) continue;
-      if (e.DeltaR(Triggers[i]) > 0.4) continue;
+      if (e.DeltaR(Triggers[i]) > 0.1) continue;
       if (conf->SampleYear == "2017" && !(1024 & Triggers[i].filterBits)) continue;
       return true;
     }
@@ -398,7 +399,7 @@ public:
     if (!isolated_muon_trigger && !isolated_muon_track_trigger) return false;
     for (unsigned i = 0; i < Triggers.size(); ++i) {
       if (Triggers[i].id != 13) continue;
-      if (m.DeltaR(Triggers[i]) > 0.4) continue;
+      if (m.DeltaR(Triggers[i]) > 0.1) continue;
       return true;
     }
     return false;
@@ -656,14 +657,10 @@ public:
   //function to determine all regions an event belongs to as a function of all object pT variations
   RegionID RegionReader(){
     RegionID rids;
-
+    HasRegionsOfInterest = false;
     //loop over variations: nominal, e-scale up, e-scale down, e-res up, e-res down, JES up, JES down, JER up, JER down
     for(unsigned i = 0; i < rids.RegionCount; ++i){
       int RegionNumber = -1; //-1 no region , -2 not pass jet proximity, -3 not Pass HEMCut
-      if (!PassedHEMCut) {
-        rids.Regions[i] = -3;
-        continue;
-      }
       int iPrimaryLep(-1), iLooseLep(-1), iVetoLep(-1);
       //check lepton multiplicity
       int nev(0), nel(0), nep(0);
@@ -706,10 +703,6 @@ public:
         else {
           RegionNumber = 1100;
           TheLepton = Muons[iPrimaryLep];
-        }
-        if (TheLepton.JetProximity[conf->PUIDWP]) {
-          rids.Regions[i] = -2;
-          continue;
         }
       }
       else if ((nep + nmup == 0) && (nev + nmuv == 0) && (nel + nmul == 1)) { // Background Estimation Region 1
@@ -755,6 +748,23 @@ public:
       RegionNumber += nj*10;
       RegionNumber += nb;
       rids.Regions[i]=RegionNumber;
+      for (unsigned j = 0; j < conf->AcceptedRegions.size(); ++j) {
+        if (RegionNumber != conf->AcceptedRegions[j]) continue;
+        // When the raw region is within the region, we start to assign the error region codes.
+        if (TheLepton.JetProximity[conf->PUIDWP]) {
+          rids.Regions[i] = -2;
+        }
+        if (!PassedHEMCut) {
+          rids.Regions[i] = -3;
+        }
+        if ((!PassedHEMCut) && (TheLepton.JetProximity[conf->PUIDWP])) {
+          rids.Regions[i] = -4;
+        }
+      }
+      for (unsigned j = 0; j < conf->AcceptedRegions.size(); ++j) {
+        // Check if the iteration care about the error regions
+        if (RegionNumber == conf->AcceptedRegions[j]) HasRegionsOfInterest = true;
+      }
     }
     return rids;
   }
@@ -925,6 +935,7 @@ public:
 
   bool IsMC;
   bool PassedHEMCut;
+  bool HasRegionsOfInterest;
   int bTagWP, PUIDWP;
   TChain* chain;
   Events* evts;

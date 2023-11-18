@@ -188,10 +188,15 @@ public:
     HighScaledHypo.ScaleJets(uplimit);
     if (max(max(HighScaledHypo.HadW().M(), LowScaledHypo.HadW().M()), BaseHypo.HadW().M()) < JS->HadWMassMin) return 1;
     if (min(min(HighScaledHypo.HadW().M(), LowScaledHypo.HadW().M()), BaseHypo.HadW().M()) > JS->HadWMassMax) return 2;
-    if (max(max(HighScaledHypo.HadT().M(), LowScaledHypo.HadT().M()), BaseHypo.HadT().M()) < JS->HadtMassMin) return 3;
-    if (min(min(HighScaledHypo.HadT().M(), LowScaledHypo.HadT().M()), BaseHypo.HadT().M()) > JS->HadtMassMax) return 4;
+    // if (max(max(HighScaledHypo.HadT().M(), LowScaledHypo.HadT().M()), BaseHypo.HadT().M()) < JS->HadtMassMin) return 3;
+    // if (min(min(HighScaledHypo.HadT().M(), LowScaledHypo.HadT().M()), BaseHypo.HadT().M()) > JS->HadtMassMax) return 4;
     // if (max(max(HighScaledHypo.LepT().M(), LowScaledHypo.LepT().M()), BaseHypo.LepT().M()) < JS->LeptMassMin) return false;
     // if (min(min(HighScaledHypo.LepT().M(), LowScaledHypo.LepT().M()), BaseHypo.LepT().M()) > JS->LeptMassMax) return false;
+    return 0;
+  }
+
+  int PermutationbTagCheck() {
+    if (BaseHypo.bTags[0] || BaseHypo.bTags[1]) return 1;
     return 0;
   }
 
@@ -212,12 +217,18 @@ public:
     OtherRuntime = 0;
     // End of Debug Block
     for (unsigned ip = 0; ip < Perms.size(); ++ip) { // Loop over permutations
+      bool OnTruePerm = (conf->WPType > -1 && Perms[ip] == TruePerm);
       FitRecords.clear();
       BaseHypo.ResetJets();
       BaseHypo.SetJetsFromPerm(AllJets, Perms[ip]);
+      BaseHypo.SetbTagsFromPerm(AllbTags, Perms[ip]);
+      if (PermLevel > 0 && PermutationbTagCheck()) {
+        if (OnTruePerm) cout << "True Perm failed bTag Check" << endl;
+        continue;
+      }
       int precheckresult = PermutationPreFitCheck();
-      if (precheckresult) {
-        if (conf->WPType > -1 && Perms[ip] == TruePerm) cout << "True Perm failed PreFitCheck: " << precheckresult << endl;
+      if (PermLevel > 1 && precheckresult) {
+        if (OnTruePerm) cout << "True Perm failed PreFitCheck: " << precheckresult << endl;
         continue;
       }
       SW.Start();
@@ -267,10 +278,13 @@ public:
         TrueHypo = ScaledHypo;
       }
     }
-    cout << endl;
-    FS.Print("Avg");
-    FSSucc.Print("Avg Succeeded");
-    FSFail.Print("Avg Failed");
+    if (FS.SecondsTaken > 0.5) {
+      cout << endl;
+      FS.Print("Total");
+      FSSucc.Print("Succeeded");
+      FSFail.Print("Failed");
+    }
+    
 
     // if (BestP > 0 && fabs((BestPFitter - BestHypo.GetPFitter()) / BestPFitter) > 0.01) {
     //   cout << "Last few trials of fitter: " << endl;
@@ -300,6 +314,7 @@ public:
 
   FitterStatus FS, FSSucc, FSFail;
   StopWatch SW;
+  int PermLevel;
   double MinimizerRuntime, OtherRuntime;
 
   //Minimizer components

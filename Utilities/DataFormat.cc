@@ -161,15 +161,6 @@ struct RegionID{
   int Regions[9] = {-1, -1, -1, -1, -1, -1, -1, -1, -1};
   //Central; Electron scale up, down; Electron resolution up, down; Jet Energy Scale up, down; Jet Energy resolution up, down
   string RegionNames[9] = {"central", "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown"};
-  bool HasValidRegions(vector<int> ar = {}) {
-    for (unsigned i = 0; i < RegionCount; ++i) {
-      if (ar.size() == 0 && Regions[i] > 0) return true;
-      for (unsigned j = 0; j < ar.size(); ++j) {
-        if (Regions[i] == ar[j]) return true;
-      }
-    }
-    return false;
-  }
   vector<int> V() { // output a vector type of RegionIDs
     vector<int> out;
     out.clear();
@@ -218,10 +209,9 @@ struct FitterStatus{
     NCount += o.NCount;
   }
   void Print(string tt) {
-    cout << tt << " Contains " << NCount << " Entries. NCalls = " << NCalls << ", NIterations = " << NIterations << ", SecondsTaken = " << SecondsTaken << endl;
-  }
-  void PrintAvg(string tt) {
-    cout << tt << " Contains " << NCount << " Entries. NCalls = " << NCalls / NCount << ", NIterations = " << NIterations / NCount << ", SecondsTaken = " << SecondsTaken / NCount << endl;
+    cout << tt << " Contains " << NCount << " Perms. NCalls = " << NCalls << ", SecondsTaken = " << SecondsTaken << ", Seconds per call = " << SecondsTaken / NCalls;
+    if (NIterations != NCalls) cout << ", NIterations = " << NIterations;
+    cout << endl;
   }
 };
 

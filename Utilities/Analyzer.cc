@@ -120,7 +120,7 @@ public:
   }
 
   bool WithinROI() {
-    return r->RegionAssociations.HasValidRegions(conf->AcceptedRegions);
+    return r->HasRegionsOfInterest;
   }
 
   void FillTree() {

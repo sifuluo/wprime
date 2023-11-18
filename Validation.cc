@@ -284,7 +284,7 @@ public:
   }
 };
 
-int Validation(int isampleyear = 3, int isampletype = 24, int ifile = 0, bool DoFitter = true) {
+int Validation(int isampleyear = 3, int isampletype = 24, int ifile = 0, bool DoFitter = true, int permlevel = 0) {
   Configs *conf = new Configs(isampleyear, isampletype, ifile);
   // if (conf->ErrorRerun() == 0) return 0;
   // conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/SingleMuon/2018/2B07B4C0-852B-9B4F-83FA-CA6B047542D1.root";
@@ -292,36 +292,43 @@ int Validation(int isampleyear = 3, int isampletype = 24, int ifile = 0, bool Do
   conf->PrintProgress = true;
   conf->RunFitter = DoFitter;
   conf->UseMergedAuxHist = true;
+  // conf->AcceptRegions({1,2},{1},{5,6},{1,2,3,4,5,6});
   conf->AcceptRegions({1,2},{1},{5,6},{1,2,3,4,5,6});
+  conf->AcceptRegions({-4,-3,-2});
   conf->TWMassMode = 0;
   // conf->DebugList = {"LeptonRegion"};
   conf->ProgressInterval = 1;
-  conf->EntryMax = 1000;
-  // if (!conf->FirstRun) {
-  //   conf->RerunList("2018","ttbar",{2,339,344,354});
-  //   conf->RerunList("2018","FL400",{0});
-  //   conf->RerunList("2018","single_antitop_tchan",{128});
-  //   conf->RerunList("2018","SingleMuon",{136,185,357});
-  //   conf->RerunList("2018","SingleElectron",{100,144,290,501,517});
-  //   conf->RerunList("2018","single_top_tchan",{102});
-  //   conf->RerunList("2018","single_top_tw",{13});
-  //   conf->RerunList("2018","wjets_HT_600_800",{31});
-  //   conf->RerunList("2018","wjets_HT_70_100",{56});
-  //   conf->RerunList("2018","WZTo3LNu",{8});
-  // }
+  conf->EntryMax = 2000;
   
   ThisAnalysis *a = new ThisAnalysis(conf);
   if (!(a->SetOutput("ValidationFitted"))) return 0;
   StopWatch SW;
   SW.Start();
+  FitterStatus FS;
+  FS.Reset();
+  int proceededEvts = 0;
+  a->Ftr->PermLevel = permlevel;
+  TFile *fperm = new TFile(Form("Fitter_%d.root",permlevel),"RECREATE");
+  TH1F* FTRPerms = new TH1F("FTRPerms","FTRPerms", 40, 0, 4000);
+  TH1F* FTRCalls = new TH1F("FTRCalls","FTRCalls", 100, 0, 200000);
+  TH1F* FTRCallsPerPerm = new TH1F("FTRCallsPerPerm","FTRCallsPerPerm", 100, 0, 1000);
+  TH1F* FTRSeconds = new TH1F("FTRSeconds", "FTRSeconds", 100, 0, 5.0);
+  TH1F* FTRSecondsPerPerm = new TH1F("FTRSecondsPerPerm", "FTRSecondsPerPerm", 50, 0, 0.05);
   for (Long64_t iEvent = 0; iEvent < a->GetEntryMax(); ++iEvent) {
     // a->Ftr->FS.Reset();
     SW.Check();
     if (a->ReadEvent(iEvent) < 0) continue;
     if (!a->WithinROI()) continue;
     // a->r->BranchSizeCheck();
+    proceededEvts++;
     a->FillBranchContent();
     a->FillTree();
+    FS.Add(a->Ftr->FS);
+    FTRPerms->Fill(a->Ftr->FS.NCount);
+    FTRCalls->Fill(a->Ftr->FS.NCalls);
+    FTRCallsPerPerm->Fill(((double)a->Ftr->FS.NCalls) / ((double)a->Ftr->FS.NCount));
+    FTRSeconds->Fill(a->Ftr->FS.SecondsTaken);
+    FTRSecondsPerPerm->Fill(a->Ftr->FS.SecondsTaken / ((double)a->Ftr->FS.NCount));
     // FitterStatus FS_ = a->Ftr->FS;
     // if (FS_.NCalls > 0) FS.Add(FS_);
     // if (FS_.Status == 0) FSSucc.Add(FS_);
@@ -330,8 +337,12 @@ int Validation(int isampleyear = 3, int isampletype = 24, int ifile = 0, bool Do
   // FS.PrintAvg("Avg");
   // FSSucc.PrintAvg("Avg Succeeded");
   // FSFail.PrintAvg("Avg Failed");
+  fperm->Write();
+  fperm->Save();
   a->SaveOutput();
   a->CloseOutput();
   SW.End();
+  cout << "Total Events processed: " << proceededEvts << endl;
+  FS.Print("Summary");
   return conf->ErrorRerun();
 }

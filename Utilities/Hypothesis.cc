@@ -16,6 +16,7 @@ public:
   void ResetJets() {
     PbTag = PScale = PLep = PHadW = PHadT = 1.0;
     Jets.clear();
+    bTags.clear();
   }
 
   void SetJetsFromPerm(vector<TLorentzVector> alljets, vector<int> perm){
@@ -24,6 +25,13 @@ public:
       Jets[i] = alljets[perm[i]];
     }
   }
+  void SetbTagsFromPerm(vector<bool> allbTags, vector<int> perm) {
+    if (bTags.size() < perm.size()) bTags.resize(perm.size());
+    for (unsigned i = 0; i < perm.size(); ++i) {
+      bTags[i] = allbTags[perm[i]];
+    }
+  }
+
   void SetWPb(TLorentzVector j) {
     if (Jets.size() == 4) Jets.push_back(j);
     else if (Jets.size() == 5) Jets[4] = j;
@@ -84,6 +92,7 @@ public:
   int WPType = -1; // 0 for FL, 1 for LL;
   double PbTag, PPtPerm, PWPrimedR, PScale, PLep, PHadW, PHadT;
   vector<TLorentzVector> Jets;
+  vector<bool> bTags;
   TLorentzVector Lep, MET, Neu;
   vector<double> Scales;
 };
