@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.insert(1,"../")
+# sys.path.insert(1,"../")
 
 LogsDir = "Submits/logs/"
 sampleyears = ["2016","2016apv","2017","2018"]

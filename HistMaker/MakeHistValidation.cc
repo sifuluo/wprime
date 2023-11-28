@@ -22,10 +22,11 @@ public:
 };
 
 int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1, bool DoMCReweight = false, bool DrawMCReweight = false) {
+  bool DoFitter = true;
   if (isampletype != 2 && DoMCReweight) return 0;
   if (ErrorLogDetected(isampleyear, isampletype, ifile) == 0) return 0;
   rm.AcceptRegions({1,2},{1},{5,6},{1,2,3,4,5,6});
-  string basepath = "/eos/user/s/siluo/WPrimeAnalysis/Validation/";
+  string basepath = "/eos/user/s/siluo/WPrimeAnalysis/ValidationFitted/";
   string itpath = "";
   string SampleYear = dlib.SampleYears[isampleyear];
   // string HistFilePath = "outputs/";
@@ -81,10 +82,12 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
   HistCol.AddObservable("ST",200,0,2000);
   HistCol.AddObservable("WPrimeMassSimpleFL",100,0,2000);
   HistCol.AddObservable("WPrimeMassSimpleLL",100,0,2000);
-  // HistCol.AddObservable("WPrimeMass",100,0,2000);
-  // HistCol.AddObservable("WPrimeMassFL",100,0,2000);
-  // HistCol.AddObservable("WPrimeMassLL",100,0,2000);
-  // HistCol.AddObservable("Likelihood",100,-10,0);
+  if (DoFitter) {
+    HistCol.AddObservable("WPrimeMass",100,0,2000);
+    HistCol.AddObservable("WPrimeMassFL",100,0,2000);
+    HistCol.AddObservable("WPrimeMassLL",100,0,2000);
+    HistCol.AddObservable("Likelihood",100,-10,0);
+  }
   HistCol.CreateHistograms(HistFilePath, HistFilePrefix, SampleType, ifile);
   Progress* progress = new Progress(0,10000);
 
@@ -152,9 +155,13 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
 
       float WPrimeMassSimpleFL = r->WPrimeMassSimpleFL->at(0);
       float WPrimeMassSimpleLL = r->WPrimeMassSimpleLL->at(0);
-      // float WPrimeMass = r->WPrimeMass->at(0);
-      // float Likelihood = r->Likelihood->at(0);
-      // int   WPType = r->WPType->at(0);
+      float WPrimeMass, Likelihood;
+      int WPType;
+      if (DoFitter) {
+        WPrimeMass = r->WPrimeMass->at(0);
+        Likelihood = r->Likelihood->at(0);
+        WPType = r->WPType->at(0);
+      }
       if (iv > 0 && iv < 9) { // Variations on Physical quantities
         // "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown"
         if (iv == 1) LeptonPt = r->LeptonPt_SU;
@@ -204,13 +211,13 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
       HistCol.Fill("ST",ST);
       HistCol.Fill("WPrimeMassSimpleFL",WPrimeMassSimpleFL);
       HistCol.Fill("WPrimeMassSimpleLL",WPrimeMassSimpleLL);
-      // if (Likelihood > 0) {
-      //   HistCol.Fill("WPrimeMass",WPrimeMass);
-      //   if (WPType == 0) HistCol.Fill("WPrimeMassFL", WPrimeMass);
-      //   else if (WPType == 1) HistCol.Fill("WPrimeMassLL", WPrimeMass);
-      //   else cout << "Wrong WPType read : " << WPType << endl;
-      //   HistCol.Fill("Likelihood", log10(Likelihood));
-      // }
+      if (DoFitter && Likelihood > 0) {
+        HistCol.Fill("WPrimeMass",WPrimeMass);
+        if (WPType == 0) HistCol.Fill("WPrimeMassFL", WPrimeMass);
+        else if (WPType == 1) HistCol.Fill("WPrimeMassLL", WPrimeMass);
+        else cout << "Wrong WPType read : " << WPType << endl;
+        HistCol.Fill("Likelihood", log10(Likelihood));
+      }
     }
     // checkpoint(2);
   }

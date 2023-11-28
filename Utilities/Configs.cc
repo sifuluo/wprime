@@ -26,6 +26,7 @@ struct Configs {
     if (st.Contains("FL")) WPType = 0;
     else if (st.Contains("LL")) WPType = 1;
     else WPType = -1;
+    ErrorRerunCode = ErrorRerun();
   };
 
   ~Configs() {
@@ -88,8 +89,9 @@ struct Configs {
     for (int aa : a) AcceptedRegions.push_back(aa);
   }
   
+  int ErrorRerunCode;
   int ErrorRerun(){ // 0: Empty log (Succeeded run);  1: non-empty log (failed run);  2: no log (first run)
-    return ErrorLogDetected(iSampleYear, iSampleType, iFile);
+    return ErrorRerunCode = ErrorLogDetected(iSampleYear, iSampleType, iFile);
   } 
   bool InRerunList = false;
   bool RerunList(vector<int>& l) {

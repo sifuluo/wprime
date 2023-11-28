@@ -231,9 +231,9 @@ public:
     }
 
     for (unsigned i = 0; i < 9; ++i) {
-      TLorentzVector vmT = r->TheLepton.GetV(i) + r->Met.GetV(i);
-      vmT.SetPz(0);
-      mT->at(i) = vmT.M();
+      TLorentzVector lepton = r->TheLepton.GetV(i);
+      TLorentzVector met = r->Met.GetV(i);
+      mT->at(i) = pow(pow(lepton.Pt()+met.Pt(),2)-pow(lepton.Px()+met.Px(),2)-pow(lepton.Py()+met.Py(),2),.5);
       TLorentzVector vWprimeFL = r->Jets[0].GetV(i) + r->Jets[1].GetV(i) + r->Jets[3].GetV(i) + r->Jets[4].GetV(i);
       TLorentzVector vWprimeLL = r->Jets[0].GetV(i) + r->Jets[1].GetV(i) + r->TheLepton.GetV(i) + r->Met.GetV(i);
       WPrimeMassSimpleFL->at(i) = vWprimeFL.M();
@@ -253,8 +253,6 @@ public:
           TruePermWPrimeMass = Ftr->TrueHypo.WP().M();
           for (int j =0; j < 4; ++j) TruePermSolvedScales->at(j) = Ftr->TrueHypo.Scales[j];
           PermDiffCode = PM->ComparePerm(Ftr->BestPerm, TruePermVector);
-          if (Ftr->BestHypo.WPType != conf->WPType) PermDiffCode += 1000;
-          if (Ftr->TrueHypo.WPType != conf->WPType) PermDiffCode += 2000;
         }
         else {
           TruePermLikelihood = -1;
@@ -284,7 +282,7 @@ public:
   }
 };
 
-int Validation(int isampleyear = 3, int isampletype = 24, int ifile = 0, bool DoFitter = true, int permlevel = 0) {
+int Validation(int isampleyear = 3, int isampletype = 24, int ifile = 0, bool DoFitter = true) {
   Configs *conf = new Configs(isampleyear, isampletype, ifile);
   // if (conf->ErrorRerun() == 0) return 0;
   // conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/SingleMuon/2018/2B07B4C0-852B-9B4F-83FA-CA6B047542D1.root";
@@ -292,57 +290,26 @@ int Validation(int isampleyear = 3, int isampletype = 24, int ifile = 0, bool Do
   conf->PrintProgress = true;
   conf->RunFitter = DoFitter;
   conf->UseMergedAuxHist = true;
-  // conf->AcceptRegions({1,2},{1},{5,6},{1,2,3,4,5,6});
   conf->AcceptRegions({1,2},{1},{5,6},{1,2,3,4,5,6});
   conf->AcceptRegions({-4,-3,-2});
   conf->TWMassMode = 0;
   // conf->DebugList = {"LeptonRegion"};
-  conf->ProgressInterval = 1;
-  conf->EntryMax = 2000;
+  // conf->ProgressInterval = 1;
+  // conf->EntryMax = 2000;
   
   ThisAnalysis *a = new ThisAnalysis(conf);
   if (!(a->SetOutput("ValidationFitted"))) return 0;
-  StopWatch SW;
-  SW.Start();
-  FitterStatus FS;
-  FS.Reset();
   int proceededEvts = 0;
-  a->Ftr->PermLevel = permlevel;
-  TFile *fperm = new TFile(Form("Fitter_%d.root",permlevel),"RECREATE");
-  TH1F* FTRPerms = new TH1F("FTRPerms","FTRPerms", 40, 0, 4000);
-  TH1F* FTRCalls = new TH1F("FTRCalls","FTRCalls", 100, 0, 200000);
-  TH1F* FTRCallsPerPerm = new TH1F("FTRCallsPerPerm","FTRCallsPerPerm", 100, 0, 1000);
-  TH1F* FTRSeconds = new TH1F("FTRSeconds", "FTRSeconds", 100, 0, 5.0);
-  TH1F* FTRSecondsPerPerm = new TH1F("FTRSecondsPerPerm", "FTRSecondsPerPerm", 50, 0, 0.05);
   for (Long64_t iEvent = 0; iEvent < a->GetEntryMax(); ++iEvent) {
-    // a->Ftr->FS.Reset();
-    SW.Check();
     if (a->ReadEvent(iEvent) < 0) continue;
     if (!a->WithinROI()) continue;
     // a->r->BranchSizeCheck();
     proceededEvts++;
     a->FillBranchContent();
     a->FillTree();
-    FS.Add(a->Ftr->FS);
-    FTRPerms->Fill(a->Ftr->FS.NCount);
-    FTRCalls->Fill(a->Ftr->FS.NCalls);
-    FTRCallsPerPerm->Fill(((double)a->Ftr->FS.NCalls) / ((double)a->Ftr->FS.NCount));
-    FTRSeconds->Fill(a->Ftr->FS.SecondsTaken);
-    FTRSecondsPerPerm->Fill(a->Ftr->FS.SecondsTaken / ((double)a->Ftr->FS.NCount));
-    // FitterStatus FS_ = a->Ftr->FS;
-    // if (FS_.NCalls > 0) FS.Add(FS_);
-    // if (FS_.Status == 0) FSSucc.Add(FS_);
-    // else FSFail.Add(FS_);
   }
-  // FS.PrintAvg("Avg");
-  // FSSucc.PrintAvg("Avg Succeeded");
-  // FSFail.PrintAvg("Avg Failed");
-  fperm->Write();
-  fperm->Save();
   a->SaveOutput();
   a->CloseOutput();
-  SW.End();
   cout << "Total Events processed: " << proceededEvts << endl;
-  FS.Print("Summary");
   return conf->ErrorRerun();
 }

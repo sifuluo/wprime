@@ -8,7 +8,7 @@ if [ ${errcode} -eq 0 ]; then
   exit ${errcode}
 fi
 
-root -l -b -q "MakeHistValidation.cc+($2,$3,$1,true)"
+root -l -b -q "MakeHistValidation.cc+($2,$3,$1,1)"
 echo The root exit code is $?
 python ErrDetector.py $2 $3 $1
 errcode=$?

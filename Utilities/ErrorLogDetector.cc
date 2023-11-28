@@ -29,12 +29,15 @@ int ErrorLogDetected(string logpre) {
   }
   else {
     cout << "(Failed Run) None empty error log detected for " << errlog << endl;
+    cout << "The first few lines of the error log is: " << endl;
+    cout << "(QUOTE)=========================================(QUOTE)" << endl;
     string errtext;
     int counter = 0;
     while (getline(fe, errtext) && counter < 20) {
       ++counter;
-      cout << errtext << endl;
+      cout << "    " << errtext << endl;
     }
+    cout << "(QUOTE)=========================================(QUOTE)" << endl;
     return 1;
   }
 }

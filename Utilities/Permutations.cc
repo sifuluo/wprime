@@ -121,76 +121,89 @@ public:
 
   int ComparePerm(vector<int> pv, vector<int> tpv) {
     // cout << "Start ComparePerm" <<endl;
+    if (conf->WPType <0) return -1;
     if (pv == tpv) return 0;
-    int out = 0;
-    vector<bool> WithinTrueJets = vector<bool>(5,false); // Check if the permutation digits are the same ones.
     if (pv.size() < 5 || tpv.size() < 5) return -1;
-    // cout << Form("pv = %i, %i, %i, %i, %i, tpv = %i, %i, %i, %i, %i",pv[0],pv[1],pv[2],pv[3],pv[4],tpv[0],tpv[1],tpv[2],tpv[3],tpv[4]) << endl;
-    for (unsigned i = 0; i < 5; ++i) {
-      if (pv[i] == -1) return -1;
-      for (unsigned j = 0; j < 5; ++j) {
-        if (tpv[j] == -1) return -1;
-        if (pv[i] == tpv[j]) WithinTrueJets[i] = true;
-      }
+    set<int> twp, wp;
+    if (conf->WPType == 0) { // FL case
+      twp = {tpv[0], tpv[1], tpv[2], tpv[4]};
+      wp = {pv[0], pv[1], pv[2], pv[4]};
     }
-    for (unsigned i = 0; i < 5; ++i) { // A jet is taking a jet not from the hypothesis
-      if (!WithinTrueJets[i]) out += -1 * pow(2, (4 - i)); // Binary is enough to hold the information
+    else if (conf->WPType == 1) { // LL case
+      twp = {tpv[3], tpv[4]};
+      wp = {pv[3], pv[4]};
     }
-    // if (out < 0) return out; // No need to proceed since the permutations digits are not all the same.
-    if (out < 0) return -1;
+    else cout << "conf->WPType = " << conf->WPType << " is an invalid value!!!" << endl;
+    if (twp == wp) return 1; // Effectively valid permutation
+    else return 2;
+    // int out = 0;
+    // vector<bool> WithinTrueJets = vector<bool>(5,false); // Check if the permutation digits are the same ones.
+    // // cout << Form("pv = %i, %i, %i, %i, %i, tpv = %i, %i, %i, %i, %i",pv[0],pv[1],pv[2],pv[3],pv[4],tpv[0],tpv[1],tpv[2],tpv[3],tpv[4]) << endl;
+    // for (unsigned i = 0; i < 5; ++i) {
+    //   if (pv[i] == -1) return -1;
+    //   for (unsigned j = 0; j < 5; ++j) {
+    //     if (tpv[j] == -1) return -1;
+    //     if (pv[i] == tpv[j]) WithinTrueJets[i] = true;
+    //   }
+    // }
+    // for (unsigned i = 0; i < 5; ++i) { // A jet is taking a jet not from the hypothesis
+    //   if (!WithinTrueJets[i]) out += -1 * pow(2, (4 - i)); // Binary is enough to hold the information
+    // }
+    // // if (out < 0) return out; // No need to proceed since the permutations digits are not all the same.
+    // if (out < 0) return -1;
 
-    bool WPbCorrect = tpv[4] == pv[4];
-    bool WPbToHadb = tpv[4] == pv[2];
-    bool WPbToLepb = tpv[4] == pv[3];
-    bool WPbToLJ = tpv[4] == pv[0] || tpv[4] == pv[1];
-    bool HadbCorrect = tpv[2] == pv[2];
-    bool HadbToLepb = tpv[2] == pv[3];
-    bool HadbToWPb = tpv[2] == pv[4];
-    bool HadbToLJ = tpv[2] == pv[0] || tpv[2] == pv[1];
-    bool LepbCorrect = tpv[3] == pv[3];
-    bool LepbToHadb = tpv[3] == pv[2];
-    bool LepbToWPb = tpv[3] == pv[4];
-    bool LepbToLJ = tpv[3] == pv[0] || tpv[2] == pv[1];
+    // bool WPbCorrect = tpv[4] == pv[4];
+    // bool WPbToHadb = tpv[4] == pv[2];
+    // bool WPbToLepb = tpv[4] == pv[3];
+    // bool WPbToLJ = tpv[4] == pv[0] || tpv[4] == pv[1];
+    // bool HadbCorrect = tpv[2] == pv[2];
+    // bool HadbToLepb = tpv[2] == pv[3];
+    // bool HadbToWPb = tpv[2] == pv[4];
+    // bool HadbToLJ = tpv[2] == pv[0] || tpv[2] == pv[1];
+    // bool LepbCorrect = tpv[3] == pv[3];
+    // bool LepbToHadb = tpv[3] == pv[2];
+    // bool LepbToWPb = tpv[3] == pv[4];
+    // bool LepbToLJ = tpv[3] == pv[0] || tpv[2] == pv[1];
 
-    bool WPbToTopb = WPbToHadb || WPbToLepb;
-    // Either topb is ...
-    bool TopbCorrect = HadbCorrect || LepbCorrect;
-    bool TopbSwap = HadbToLepb || LepbToHadb;
-    bool TopbToWPb = HadbToWPb || LepbToWPb;
-    bool TopbToLJ = HadbToLJ || LepbToLJ;
+    // bool WPbToTopb = WPbToHadb || WPbToLepb;
+    // // Either topb is ...
+    // bool TopbCorrect = HadbCorrect || LepbCorrect;
+    // bool TopbSwap = HadbToLepb || LepbToHadb;
+    // bool TopbToWPb = HadbToWPb || LepbToWPb;
+    // bool TopbToLJ = HadbToLJ || LepbToLJ;
     
-    // Code is already human readable. No need for explanation for return codes.
-    // top b swap
-    // if (WPbCorrect && HadbToLepb && LepbToHadb) return 1;
+    // // Code is already human readable. No need for explanation for return codes.
+    // // top b swap
+    // // if (WPbCorrect && HadbToLepb && LepbToHadb) return 1;
 
-    // // reco with a lj where it should be a b
-    // if (WPbCorrect && TopbToLJ && TopbCorrect) return 2;
-    // if (WPbCorrect && TopbToLJ && TopbSwap) return 2;
-    // if (WPbCorrect && HadbToLJ && LepbToLJ) return 2;
+    // // // reco with a lj where it should be a b
+    // // if (WPbCorrect && TopbToLJ && TopbCorrect) return 2;
+    // // if (WPbCorrect && TopbToLJ && TopbSwap) return 2;
+    // // if (WPbCorrect && HadbToLJ && LepbToLJ) return 2;
 
-    // // 
-    // if (WPbToTopb && TopbToWPb && TopbCorrect) return 3;
-    // if (WPbToTopb && TopbToWPb && TopbSwap) return 3;
+    // // // 
+    // // if (WPbToTopb && TopbToWPb && TopbCorrect) return 3;
+    // // if (WPbToTopb && TopbToWPb && TopbSwap) return 3;
 
-    // if (WPbToTopb && TopbToLJ && TopbCorrect) return 4;
-    // if (WPbToTopb && TopbToLJ && TopbSwap) return 4;
-    // if (WPbToTopb && HadbToLJ && LepbToLJ) return 4;
+    // // if (WPbToTopb && TopbToLJ && TopbCorrect) return 4;
+    // // if (WPbToTopb && TopbToLJ && TopbSwap) return 4;
+    // // if (WPbToTopb && HadbToLJ && LepbToLJ) return 4;
 
-    // if (WPbToLJ && HadbCorrect && LepbCorrect) return 5;
-    // if (WPbToLJ && HadbToLepb && LepbToHadb) return 5;
-    // if (WPbToLJ && TopbToLJ && TopbCorrect) return 6;
-    // if (WPbToLJ && TopbToLJ && TopbSwap) return 6;
-    // return 9; // Other undefined circumstances
-    out = 0;
-    if (TopbSwap) out += 1;
-    if (WPbToLJ || TopbToLJ) out += 10;
-    if (!WPbCorrect) out += 100;
-    return out;
+    // // if (WPbToLJ && HadbCorrect && LepbCorrect) return 5;
+    // // if (WPbToLJ && HadbToLepb && LepbToHadb) return 5;
+    // // if (WPbToLJ && TopbToLJ && TopbCorrect) return 6;
+    // // if (WPbToLJ && TopbToLJ && TopbSwap) return 6;
+    // // return 9; // Other undefined circumstances
+    // out = 0;
+    // if (TopbSwap) out += 1;
+    // if (WPbToLJ || TopbToLJ) out += 10;
+    // if (!WPbCorrect) out += 100;
+    // return out;
 
-    // 1: top b swap
-    // 2: Lj taking b place
-    // 3: W'b wrong
-    // 1 1 1 7
+    // // 1: top b swap
+    // // 2: Lj taking b place
+    // // 3: W'b wrong
+    // // 1 1 1 7
   }
 
   int GetbTagPermIndex(vector<Jet>& js) { // Input as in default Jets order: LJ0, LJ1, Hadb, Lepb, WPb

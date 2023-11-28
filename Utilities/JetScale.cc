@@ -24,12 +24,7 @@ class JetScale{
 public:
   JetScale(Configs* conf_) {
     conf = conf_;
-    GetFileName();
-    if (conf->AuxHistCreation && conf->IsMC) CreateScaleHists();
-    else {
-      ReadScaleHists();
-      SetUpMassDist();
-    }
+    Init();
   };
 
   const vector<double> etabins{0., 1.3, 2.5, 3.0, 5.2}; // size 5, 4 bins, ieta top at 3;
@@ -46,6 +41,15 @@ public:
     if ((!conf->AuxHistCreation && conf->UseMergedAuxHist) || !conf->IsMC) sampletype = "Merged";
     string filename = "Scale_" + conf->SampleYear + "_" + sampletype + ".root";
     FileName = conf->AuxHistBasePath + filename;
+  }
+
+  void Init() {
+    GetFileName();
+    if (conf->AuxHistCreation && conf->IsMC) CreateScaleHists();
+    else {
+      ReadScaleHists();
+      SetUpMassDist();
+    }
   }
 
   pair<int,int> FindBin(double et,double pt) {
@@ -122,6 +126,7 @@ public:
   }
 
   void ReadScaleHists() {// Read the jet response file. Then read and fit the jet response histos.
+    cout << "Trying to read from " << FileName << endl;
     ScaleFile = new TFile(FileName, "READ");
     cout << "Reading from Scale File: " << FileName << endl;
     // vector< vector<TH1F*> > jes;

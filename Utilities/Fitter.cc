@@ -22,6 +22,7 @@ class Fitter{
 public:
   Fitter(Configs *conf_) {
     conf = conf_;
+    DebugFitter = conf->Debug("Fitter");
     PUIDWP = conf->PUIDWP;
     bTagWP = conf->bTagWP;
     TruePerm.clear();
@@ -128,16 +129,18 @@ public:
     }
     SW.Start();
     mini->Minimize();
-    double ptime = SW.End();
-    FitterStatus fs;
-    fs.Status = mini->Status();
-    fs.NCalls = mini->NCalls();
-    fs.NIterations = mini->NIterations();
-    fs.SecondsTaken = ptime / 1000.;
-    fs.NCount = 1;
-    FS.Add(fs);
-    if (fs.Status == 0) FSSucc.Add(fs);
-    else FSFail.Add(fs);
+    if (DebugFitter) {
+      double ptime = SW.End();
+      FitterStatus fs;
+      fs.Status = mini->Status();
+      fs.NCalls = mini->NCalls();
+      fs.NIterations = mini->NIterations();
+      fs.SecondsTaken = ptime / 1000.;
+      fs.NCount = 1;
+      FS.Add(fs);
+      if (fs.Status == 0) FSSucc.Add(fs);
+      else FSFail.Add(fs);
+    }
 
     double Prob = 0;
     if (!(mini->Status())) {
@@ -210,11 +213,11 @@ public:
     // Debug block
     double BestPFitter = 0;
     vector<FitRecord> BestFitRecords;
-    FS.Reset();
-    FSSucc.Reset();
-    FSFail.Reset();
-    MinimizerRuntime = 0;
-    OtherRuntime = 0;
+    if (DebugFitter) {
+      FS.Reset();
+      FSSucc.Reset();
+      FSFail.Reset();
+    }
     // End of Debug Block
     for (unsigned ip = 0; ip < Perms.size(); ++ip) { // Loop over permutations
       bool OnTruePerm = (conf->WPType > -1 && Perms[ip] == TruePerm);
@@ -222,20 +225,18 @@ public:
       BaseHypo.ResetJets();
       BaseHypo.SetJetsFromPerm(AllJets, Perms[ip]);
       BaseHypo.SetbTagsFromPerm(AllbTags, Perms[ip]);
-      if (PermLevel > 0 && PermutationbTagCheck()) {
-        if (OnTruePerm) cout << "True Perm failed bTag Check" << endl;
+      if (PermCheckLevel > 0 && PermutationbTagCheck()) {
+        if (DebugFitter && OnTruePerm) cout << "True Perm failed bTag Check" << endl;
         continue;
       }
       int precheckresult = PermutationPreFitCheck();
-      if (PermLevel > 1 && precheckresult) {
-        if (OnTruePerm) cout << "True Perm failed PreFitCheck: " << precheckresult << endl;
+      if (PermCheckLevel > 1 && precheckresult) {
+        if (DebugFitter && OnTruePerm) cout << "True Perm failed PreFitCheck: " << precheckresult << endl;
         continue;
       }
-      SW.Start();
       double PFitter = MinimizeP();
-      MinimizerRuntime += SW.Check();
       if (PFitter < 0 && PFitter != -1) {
-        if (conf->WPType > -1 && Perms[ip] == TruePerm) cout << "True Perm failed to get positive P = " << PFitter << endl;
+        if (DebugFitter && conf->WPType > -1 && Perms[ip] == TruePerm) cout << "True Perm failed to get positive P = " << PFitter << endl;
         continue;
       }
       // Obtaining the scales set from minimizer which should yield the minimized likelihodd
@@ -278,7 +279,7 @@ public:
         TrueHypo = ScaledHypo;
       }
     }
-    if (FS.SecondsTaken > 0.5) {
+    if (DebugFitter && FS.SecondsTaken > 0.5) {
       cout << endl;
       FS.Print("Total");
       FSSucc.Print("Succeeded");
@@ -296,6 +297,7 @@ public:
   }
 
   Configs* conf;
+  bool DebugFitter;
   bool PUIDWP;
   bool bTagWP;
 
@@ -314,8 +316,7 @@ public:
 
   FitterStatus FS, FSSucc, FSFail;
   StopWatch SW;
-  int PermLevel;
-  double MinimizerRuntime, OtherRuntime;
+  int PermCheckLevel = 2;
 
   //Minimizer components
   bool MinimizerInited = false;

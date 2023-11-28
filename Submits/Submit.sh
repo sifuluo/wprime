@@ -1,6 +1,21 @@
 #!/bin/sh
 
 cd /afs/cern.ch/work/s/siluo/wprime
-root -l -b -q "Validation2.cc+($2,$3,$1,1)"
+
+python ErrDetector.py $2 $3 $1
+errcode=$?
+if [ ${errcode} -eq 0 ]; then
+  echo ErrorCode is ${errcode}, exiting
+  exit ${errcode}
+fi
+
+root -l -b -q "Validation.cc+($2,$3,$1,1)"
 # root -l -b -q "CreatebTagEffHist.cc+($2,$3,$1)"
-exit $?
+
+echo The root exit code is $?
+python ErrDetector.py $2 $3 $1
+errcode=$?
+echo ErrorCode is ${errcode}
+exit ${errcode}
+
+# exit 0

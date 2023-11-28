@@ -75,11 +75,11 @@ public:
     cout << "Output will be saved to " << ofname << endl;
     bool torun = false;
     cout << "Output Status: ";
-    if (conf->ErrorRerun() == 2) {
+    if (conf->ErrorRerunCode == 2) {
       cout << "FirstRun" << endl;
       torun = true;
     }
-    if (conf->ErrorRerun() == 1) {
+    if (conf->ErrorRerunCode == 1) {
       cout << "RetryFailedJob" << endl;
       torun = true;
     }
@@ -89,6 +89,7 @@ public:
     }
     if (!torun && conf->InRerunList) {
       cout << "InRerunList" << endl;
+      torun = true;
     }
     if (!torun) {
       cout << "File skipped. Ending job" << endl;

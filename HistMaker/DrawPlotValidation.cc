@@ -17,15 +17,17 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = -99, bool DoMCReweight =
   obs.push_back({"ST","ST"}); // 8
   obs.push_back({"WPrimeMassSimpleFL", "Simple m(W'_{H})"} ); // 9
   obs.push_back({"WPrimeMassSimpleLL", "Simple m(W'_{L})"} ); // 10
-  // obs.push_back({"WPrimeMass", "m(W')"} );  // 11
-  // obs.push_back({"WPrimeMassFL", "m(W'_{H})"} );  // 12
-  // obs.push_back({"WPrimeMassLL", "m(W'_{L})"} );  // 13
-  // obs.push_back({"Likelihood", "Likelihood"} );   // 14
+  obs.push_back({"WPrimeMass", "m(W')"} );  // 11
+  obs.push_back({"WPrimeMassFL", "m(W'_{H})"} );  // 12
+  obs.push_back({"WPrimeMassLL", "m(W'_{L})"} );  // 13
+  obs.push_back({"Likelihood", "Likelihood"} );   // 14
   int JetQuantitiesIndex = obs.size();
   for (unsigned ij = 0; ij < 5; ++ij) { // 5 for JetPt,Eta,Phi, and 10 for dR(Jeta,Jetb), in total 15 in the loop
-    obs.push_back({Form("Jet%iPt", ij), Form("Jet[%i] p_{T}", ij)});
-    obs.push_back({Form("Jet%iEta", ij), Form("Jet[%i] #eta", ij)});
-    obs.push_back({Form("Jet%iPhi", ij), Form("Jet[%i] #phi", ij)});
+    obs.push_back({Form("Jet%iPt", ij), Form("Jet[%i] p_{T}", ij)}); // 15, 18, 21, 24, 27 
+    obs.push_back({Form("Jet%iEta", ij), Form("Jet[%i] #eta", ij)}); // 16, 19, 22, 25, 28
+    obs.push_back({Form("Jet%iPhi", ij), Form("Jet[%i] #phi", ij)}); // 17, 20, 23, 26, 29
+  }
+  for (unsigned ij = 0; ij < 5; ++ij) {
     for (unsigned ij2 = ij + 1; ij2 < 5; ++ij2) {
       obs.push_back({Form("dR(Jet%i,Jet%i)",ij, ij2), Form("dR(Jet%i,Jet%i)",ij, ij2)});
     }
@@ -76,7 +78,7 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = -99, bool DoMCReweight =
   string ObservablesXTitle = obs[iobs].second;
 
   // string HistFilePath = "outputs/";
-  string HistFilePath = "/eos/user/s/siluo/WPrimeAnalysis/Validation/Hists/";
+  string HistFilePath = "/eos/user/s/siluo/WPrimeAnalysis/ValidationFitted/Hists/";
   string HistFilePrefix = SampleYear + "_Validation";
   string PlotNamePrefix = HistFilePrefix;
 
