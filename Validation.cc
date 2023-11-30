@@ -52,7 +52,7 @@ public:
   int nPV, nPVGood;
 
   GenHypothesis *gh;
-  int TruePerm;
+  int TruePerm, TruePermWPType;
   vector<int> TruePermVector;
   float TruePermLikelihood, TruePermWPrimeMass;
   vector<float> *PermScales, *TruePermScales, *TruePermSolvedScales;
@@ -141,6 +141,7 @@ public:
       TruePermSolvedScales->resize(4);
     }
     t->Branch("TruePerm", &TruePerm);
+    t->Branch("TruePermWPType", &TruePermWPType);
     t->Branch("TruePermLikelihood", &TruePermLikelihood);
     t->Branch("TruePermScales",&TruePermScales);
     t->Branch("TruePermSolvedScales", &TruePermSolvedScales);
@@ -208,6 +209,7 @@ public:
     dPhiMetLep = r->Met.DeltaPhi(r->TheLepton);
 
     TruePerm = 0;
+    TruePermWPType = -1;
     PermDiffCode = -1;
     TruePermVector = vector<int>(5,-1);
     TruePermScales->clear();
@@ -238,23 +240,37 @@ public:
       TLorentzVector vWprimeLL = r->Jets[0].GetV(i) + r->Jets[1].GetV(i) + r->TheLepton.GetV(i) + r->Met.GetV(i);
       WPrimeMassSimpleFL->at(i) = vWprimeFL.M();
       WPrimeMassSimpleLL->at(i) = vWprimeLL.M();
+
       if (!conf->RunFitter) continue;
       Ftr->SetTruePerm(TruePermVector);
-      if (i == 0) {
-        SetEventFitter(i);
-        Likelihood->at(i) = Ftr->Optimize();
-        if (Likelihood->at(i) < 0) continue;
-        Perm->at(i) = Ftr->BestPerm[0] * 10000 + Ftr->BestPerm[1] * 1000 + Ftr->BestPerm[2] * 100 + Ftr->BestPerm[3] * 10 + Ftr->BestPerm[4];
-        for (int j = 0; j < 4; ++j) PermScales->at(i * 4 + j) = Ftr->BestHypo.Scales[j];
-        WPType->at(i) = Ftr->BestHypo.WPType;
-        WPrimeMass->at(i) = Ftr->BestHypo.WP().M();
+      TruePermWPType = -1;
+      TruePermLikelihood = -1;
+      TruePermWPrimeMass = -1;
+      PermDiffCode = -1;
+
+      SetEventFitter(i);
+      Perm->at(i) = -1;
+      for (int j = 0; j < 4; ++j) PermScales->at(i * 4 + j) = -1;
+      WPType->at(i) = -1;
+      WPrimeMass->at(i) = -1;
+      Likelihood->at(i) = Ftr->Optimize();
+      if (Likelihood->at(i) < 0) {
+        continue;
+      }
+      Perm->at(i) = Ftr->BestPerm[0] * 10000 + Ftr->BestPerm[1] * 1000 + Ftr->BestPerm[2] * 100 + Ftr->BestPerm[3] * 10 + Ftr->BestPerm[4];
+      for (int j = 0; j < 4; ++j) PermScales->at(i * 4 + j) = Ftr->BestHypo.Scales[j];
+      WPType->at(i) = Ftr->BestHypo.WPType;
+      WPrimeMass->at(i) = Ftr->BestHypo.WP().M();
+      if (i == 0) { // Only compare the truth against the nominal
         if (HasGenHypo && Ftr->TrueHypo.WPType > -1) {
+          TruePermWPType = Ftr->TrueHypo.WPType;
           TruePermLikelihood = Ftr->TrueHypo.GetTotalP();
           TruePermWPrimeMass = Ftr->TrueHypo.WP().M();
           for (int j =0; j < 4; ++j) TruePermSolvedScales->at(j) = Ftr->TrueHypo.Scales[j];
           PermDiffCode = PM->ComparePerm(Ftr->BestPerm, TruePermVector);
         }
         else {
+          TruePermWPType = -1;
           TruePermLikelihood = -1;
           TruePermWPrimeMass = -1;
           PermDiffCode = -1;
@@ -262,11 +278,9 @@ public:
           // if (Ftr->TrueHypo.WPType < 0) cout << "Ftr TrueHypo WPType = " << Ftr->TrueHypo.WPType << endl;
         }
       }
-      else {
-        Likelihood->at(i) = -1;
-        WPType->at(i) = -1;
-        WPrimeMass->at(i) = -1;
-      }
+      // if (i > 0 && Likelihood->at(0) > 0) { // Testing the frequency of variances having the different perm
+      //   if (Perm->at(i) != Perm->at(0)) cout << "For variation " << i << " with Perm = " << Perm->at(i) << ", different with nominal perm: " << Perm->at(0) << endl;
+      // }
     }
 
     // cout << "2" <<endl;

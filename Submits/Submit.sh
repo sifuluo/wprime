@@ -1,7 +1,6 @@
 #!/bin/sh
 
 cd /afs/cern.ch/work/s/siluo/wprime
-
 python ErrDetector.py $2 $3 $1
 errcode=$?
 if [ ${errcode} -eq 0 ]; then

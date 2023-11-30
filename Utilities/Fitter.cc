@@ -23,6 +23,7 @@ public:
   Fitter(Configs *conf_) {
     conf = conf_;
     DebugFitter = conf->Debug("Fitter");
+    DebugFitRecords = conf->Debug("FitRecords");
     PUIDWP = conf->PUIDWP;
     bTagWP = conf->bTagWP;
     TruePerm.clear();
@@ -88,7 +89,7 @@ public:
     double p = ScaledHypo.GetPFitter();
     if (p < 0 || p > 1.) cout << Form("PScale = %f, PHadW = %f, PHadT = %f, PLep = %f", ScaledHypo.PScale, ScaledHypo.PHadW, ScaledHypo.PHadT, ScaledHypo.PLep) << endl;
 
-    FitRecords.push_back(ScaledHypo.MakeRecord());  // Debug tool
+    if (DebugFitRecords) FitRecords.push_back(ScaledHypo.MakeRecord());  // Debug tool
     // return 1-p. So minimizer will try to get higher p, while the return value is expected to be > 0
     return (-1.0 * p + 1.);
   }
@@ -239,7 +240,7 @@ public:
         if (DebugFitter && conf->WPType > -1 && Perms[ip] == TruePerm) cout << "True Perm failed to get positive P = " << PFitter << endl;
         continue;
       }
-      // Obtaining the scales set from minimizer which should yield the minimized likelihodd
+      // Obtaining the scales set from minimizer which should yield the minimized likelihood
       double ThisScale[4];
       for (unsigned isc = 0; isc < 4; ++isc) ThisScale[isc] = mini->X()[isc];
       MinimizePFunc(ThisScale); // Using the scales set trying to reproduce the ScaledHypos
@@ -327,6 +328,7 @@ public:
   static Hypothesis BaseHypo;
   static Hypothesis ScaledHypo;
 
+  static bool DebugFitRecords;
   static vector<FitRecord> FitRecords;
 };
 
@@ -337,6 +339,7 @@ ROOT::Math::Functor Fitter::func;
 Hypothesis Fitter::BaseHypo;
 Hypothesis Fitter::ScaledHypo;
 
+bool Fitter::DebugFitRecords;
 vector<FitRecord> Fitter::FitRecords;
 
 #endif

@@ -8,6 +8,7 @@
 #include "Configs.cc"
 #include "DataFormat.cc"
 #include "Hypothesis.cc"
+#include <set>
 
 class Permutations {
 public:

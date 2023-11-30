@@ -58,8 +58,8 @@ for iy, year in enumerate(SampleYears):
     lines.append("log          = logs/"+runname+"/"+runname+"_$(ProcID).log\n")
     lines.append("universe     = vanilla\n")
     lines.append('Requirements = (OpSysAndVer =?= "CentOS7")\n')
-    lines.append('+JobFlavour  = "testmatch"\n')
-    # lines.append('+JobFlavour  = "longlunch"\n')
+    # flavours: espresso 20min, microcentury 1h, longlunch 2h, workday 8h, tomorrow 1d, testmatch 3d, nextweek 1w
+    lines.append('+JobFlavour  = "nextweek"\n')
     lines.append("RequestCpus  = 2\n")
     lines.append("stream_error = True\n")
     lines.append("periodic_release =  (NumJobStarts < 10) && ((CurrentTime - EnteredCurrentStatus) > (5*60))\n")
