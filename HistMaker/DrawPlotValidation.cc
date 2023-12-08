@@ -6,6 +6,10 @@
 
 void DrawPlotValidation(int isampleyear = 3, int iobs = -99, bool DoMCReweight = false, bool DrawMCReweight = false, bool SaveUncerts = false) {
   vector<pair<string,string> > obs;
+  vector<TString> extensions;
+  // extensions.push_back(".root");
+  // extensions.push_back(".pdf");
+  extensions.push_back(".C");
   obs.push_back({"LeptonPt", "Lepton p_{T}"});  // 0
   obs.push_back({"LeptonEta", "Lepton #eta"} );  // 1
   obs.push_back({"LeptonPhi", "Lepton #phi"} );  // 2
@@ -136,9 +140,11 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = -99, bool DoMCReweight =
     TString PlotName = AllPlots->Plots[ir]->PlotName;
     TString PlotYear = SampleYear;
     TString pn  = "plots/" + SampleYear + "/" + PlotName;
-    if (DoMCReweight) pn += "_RW.pdf";
-    else pn += ".pdf";
-    c1->SaveAs(pn);
+    for (unsigned iext = 0; iext < extensions.size(); ++iext) {
+      if (DoMCReweight) pn += "_RW" + extensions[iext];
+      else pn += extensions[iext];
+      c1->SaveAs(pn);
+    }
     string sr = rm.StringRanges[ir];
     if (sr == "1153" || sr == "1163" || sr == "2153" || sr == "2163") if (SaveUncerts) AllPlots->SaveUncertContribution(ir, PlotName);
     delete c1;

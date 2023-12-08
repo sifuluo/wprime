@@ -165,4 +165,98 @@ public:
 
 };
 
+class HypothesisBranches {
+  HypothesisBranches(TString p, int nv = 9, TTree* t = nullptr) {
+    Prefix = p;
+    nVariations = nv;
+    if (t != nullptr) CreateBranches(t);
+  }
+  void CreateBranches(TTree *t) {
+    Perm = new vector<int>(nVariations);
+    PtPerm = new vector<int>(nVariations);
+    bTagPerm = new vector<int>(nVariations);
+    WPType = new vector<int>(nVariations);
+
+    PPtPerm = new vector<double>(nVariations);
+    PbTag = new vector<double>(nVariations);
+    Scales = new vector<double>(nVariations * 4);
+    PScales = new vector<double>(nVariations * 4);
+    TotalPScale = new vector<double>(nVariations);
+    WPdR = new vector<double>(nVariations);
+    PWPdR = new vector<double>(nVariations);
+    HadW = new vector<double>(nVariations);
+    HadT = new vector<double>(nVariations);
+    LepT = new vector<double>(nVariations);
+    PHadW = new vector<double>(nVariations);
+    PHadT = new vector<double>(nVariations);
+    PLep = new vector<double>(nVariations);
+    PFitter = new vector<double>(nVariations);
+    Likelihood = new vector<double>(nVariations);
+    WPrimeMass = new vector<double>(nVariations);
+
+    TString pp = Prefix + "_";
+    t->Branch(pp + "Perm", &Perm);
+    t->Branch(pp + "PtPerm", &PtPerm);
+    t->Branch(pp + "bTagPerm", &bTagPerm);
+    t->Branch(pp + "WPType", &WPType);
+
+    t->Branch(pp + "PPtPerm", &PPtPerm);
+    t->Branch(pp + "PbTag", &PbTag);
+    t->Branch(pp + "Scales", &Scales);
+    t->Branch(pp + "PScales", &PScales);
+    t->Branch(pp + "TotalPScale", &TotalPScale);
+    t->Branch(pp + "WPdR", &WPdR);
+    t->Branch(pp + "PWPdR", &PWPdR);
+    t->Branch(pp + "HadW", &HadW);
+    t->Branch(pp + "HadT", &HadT);
+    t->Branch(pp + "LepT", &LepT);
+    t->Branch(pp + "PHadW", &PHadW);
+    t->Branch(pp + "PHadT", &PHadT);
+    t->Branch(pp + "PLep", &PLep);
+    t->Branch(pp + "PFitter", &PFitter);
+    t->Branch(pp + "Likelihood", &Likelihood);
+    t->Branch(pp + "WPrimeMass", &WPrimeMass);
+  }
+  void FillHypothesis(Hypothesis& h, int ir) {
+    Perm->at(ir) = h.Perm;
+    PtPerm->at(ir) = h.PtPerm;
+    bTagPerm->at(ir) = h.bTagPerm;
+    WPType->at(ir) = h.WPType;
+
+    PPtPerm->at(ir) = h.PPtPerm;
+    PbTag->at(ir) = h.PbTag;
+    for (unsigned i = 0; i < 4; ++i) {
+      Scales->at(ir * 4 + i) = h.Scales[i];
+      PScales->at(ir * 4 + i) = h.PScales[i];
+    }
+    TotalPScale->at(ir) = h.GetTotalPScale();
+    WPdR->at(ir) = h.WPdR();
+    PWPdR->at(ir) = h.PWPdR;
+    HadW->at(ir) = h.HadW().M();
+    HadT->at(ir) = h.HadT().M();
+    LepT->at(ir) = h.LepT().M();
+    PHadW->at(ir) = h.PHadW;
+    PHadT->at(ir) = h.PHadT;
+    PLep->at(ir) = h.PLep;
+    PFitter->at(ir) = h.GetPFitter();
+    Likelihood->at(ir) = h.GetTotalP();
+    WPrimeMass->at(ir) = h.WP().M();
+  }
+
+  vector<int> *Perm, *PtPerm, *bTagPerm, *WPType; // [iVariation]
+  vector<double> *PPtPerm, *PbTag; // [iVariation]
+  vector<double> *Scales, *PScales; // [iVariation[4]], Each variation has 4 scales
+  vector<double> *TotalPScale; // [iVariation]
+  vector<double> *WPdR; // [iVariation]
+  vector<double> *PWPdR; // [iVariation]
+  vector<double> *HadW, *HadT, *LepT, *PHadW, *PHadT, *PLep; //[iVariation]
+  vector<double> *PFitter; // [iVariation]
+  vector<double> *Likelihood; // [iVariation]
+
+  vector<double> *WPrimeMass; // [iVariation]
+
+  TString Prefix;
+  int nVariations;
+};
+
 #endif

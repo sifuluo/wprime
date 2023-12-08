@@ -40,12 +40,14 @@ public:
   void SetJets(vector<Jet>& ajs, int iregion = 0) {
     AllJets.clear();
     AllbTags.clear();
+    AllbtagDeepFlavB.clear();
     for (unsigned i = 0; i < ajs.size(); ++i) {
       // Stay consistent with "check jet multiplicity" part at RegionReader() in NanoAODReader.cc
-      if (ajs[i].v(iregion).Pt() < 30.) continue;
-      if (!ajs[i].PUIDpasses[PUIDWP]) continue;
+      // if (ajs[i].v(iregion).Pt() < 30.) continue;
+      // if (!ajs[i].PUIDpasses[PUIDWP]) continue;
       AllJets.push_back(ajs[i].v(iregion));
       AllbTags.push_back(ajs[i].bTagPasses[bTagWP]);
+      AllbtagDeepFlavB.push_back(ajs[i].Jet_btagDeepFlavB);
     }
   }
 
@@ -85,9 +87,12 @@ public:
     ScaledHypo.PHadW = JS->EvalW(ScaledHypo.HadW());
     ScaledHypo.PHadT = JS->EvalHadTop(ScaledHypo.HadT());
 
-    ScaledHypo.PScale = ScaleLikelihood(scales);
+    for (unsigned i = 0; i < 4; ++i) {
+      ScaledHypo.PScales[i] = JS->JetScaleLikelihood(BaseHypo.Jets[i].Eta(), BaseHypo.Jets[i].Pt(), scales[i]);
+    }
+    // ScaledHypo.PScale = ScaleLikelihood(scales);
     double p = ScaledHypo.GetPFitter();
-    if (p < 0 || p > 1.) cout << Form("PScale = %f, PHadW = %f, PHadT = %f, PLep = %f", ScaledHypo.PScale, ScaledHypo.PHadW, ScaledHypo.PHadT, ScaledHypo.PLep) << endl;
+    if (p < 0 || p > 1.) cout << Form("PScale = %f, PHadW = %f, PHadT = %f, PLep = %f", ScaledHypo.GetTotalPScale(), ScaledHypo.PHadW, ScaledHypo.PHadT, ScaledHypo.PLep) << endl;
 
     if (DebugFitRecords) FitRecords.push_back(ScaledHypo.MakeRecord());  // Debug tool
     // return 1-p. So minimizer will try to get higher p, while the return value is expected to be > 0
@@ -208,11 +213,10 @@ public:
   double Optimize() {
     if (AllJets.size() < 5) return -2;
     MakePermutations();
-    double BestP = -1;
-    BestPerm = {0,0,0,0,0};
+    BestP = -1;
     TrueHypo.WPType = -1;
     // Debug block
-    double BestPFitter = 0;
+    BestPFitter = -1;
     vector<FitRecord> BestFitRecords;
     if (DebugFitter) {
       FS.Reset();
@@ -224,8 +228,10 @@ public:
       bool OnTruePerm = (conf->WPType > -1 && Perms[ip] == TruePerm);
       FitRecords.clear();
       BaseHypo.ResetJets();
-      BaseHypo.SetJetsFromPerm(AllJets, Perms[ip]);
-      BaseHypo.SetbTagsFromPerm(AllbTags, Perms[ip]);
+      BaseHypo.SetPerm(Perms[ip]);
+      BaseHypo.SetJetsFromPerm(AllJets);
+      BaseHypo.SetbTagsFromPerm(AllbTags);
+      BaseHypo.SetbtagDeepFlavBFromPerm(AllbtagDeepFlavB);
       if (PermCheckLevel > 0 && PermutationbTagCheck()) {
         if (DebugFitter && OnTruePerm) cout << "True Perm failed bTag Check" << endl;
         continue;
@@ -237,13 +243,14 @@ public:
       }
       double PFitter = MinimizeP();
       if (PFitter < 0 && PFitter != -1) {
-        if (DebugFitter && conf->WPType > -1 && Perms[ip] == TruePerm) cout << "True Perm failed to get positive P = " << PFitter << endl;
+        if (DebugFitter && OnTruePerm) cout << "True Perm failed to get positive P = " << PFitter << endl;
         continue;
       }
       // Obtaining the scales set from minimizer which should yield the minimized likelihood
       double ThisScale[4];
       for (unsigned isc = 0; isc < 4; ++isc) ThisScale[isc] = mini->X()[isc];
       MinimizePFunc(ThisScale); // Using the scales set trying to reproduce the ScaledHypos
+      ScaledHypo.PtPerm = PermEval->GetPtPerm(ScaledHypo.Jets);
       double massh = ScaledHypo.WPH().M();
       double massl = ScaledHypo.WPL().M();
       // Evaluating permutation likelihood based on their pT order and bTagging status.
@@ -256,27 +263,30 @@ public:
       if (PbTag_h * PPtPerm_h * PWPrimedR_h > PbTag_l * PPtPerm_l * PWPrimedR_l) {
         ScaledHypo.PbTag = PbTag_h;
         ScaledHypo.PPtPerm = PPtPerm_h;
-        ScaledHypo.PWPrimedR = PWPrimedR_h;
+        ScaledHypo.PWPdR = PWPrimedR_h;
         ScaledHypo.WPType = 0;
       }
       else {
         ScaledHypo.PbTag = PbTag_l;
         ScaledHypo.PPtPerm = PPtPerm_l;
-        ScaledHypo.PWPrimedR = PWPrimedR_l;
+        ScaledHypo.PWPdR = PWPrimedR_l;
         ScaledHypo.WPType = 1;
       }
       
       double ThisP = ScaledHypo.GetTotalP();
-      if (ThisP > 0 && ThisP > BestP) {
+      if (conf->WPType > -1 && Perms[ip].size() != TruePerm.size() && TruePerm.size() != 0) cout << "Perm size = " << Perms[ip].size() << " ,TruePermSize = " << TruePerm.size() << endl;
+      if (ThisP <= 0) continue;
+      if (ThisP > BestP) {
         BestP = ThisP;
-        BestPerm = Perms[ip];
         BestHypo = ScaledHypo;
         //Debug block
-        BestPFitter = PFitter;
         BestFitRecords = FitRecords;
       }
-      if (conf->WPType > -1 && Perms[ip].size() != TruePerm.size() && TruePerm.size() != 0) cout << "Perm size = " << Perms[ip].size() << " ,TruePermSize = " << TruePerm.size() << endl;
-      if (conf->WPType > -1 && Perms[ip] == TruePerm && ThisP > 0) {
+      if (ScaledHypo.GetPFitter() > BestPFitter) {
+        BestPFitter = ScaledHypo.GetPFitter();
+        BestPFitter = PFitter;
+      }
+      if (OnTruePerm) {
         TrueHypo = ScaledHypo;
       }
     }
@@ -305,15 +315,16 @@ public:
   Permutations* PermEval;
   vector<TLorentzVector> AllJets;
   vector<bool> AllbTags;
+  vector<double> AllbtagDeepFlavB;
   vector< vector<int> > Perms;
 
   vector<int> TruePerm;
   Hypothesis TrueHypo;
 
   double BestP;
-  double BestScales[4];
-  vector<int> BestPerm;
   Hypothesis BestHypo;
+  double BestPFitter;
+  Hypothesis BestFitterHypo;
 
   FitterStatus FS, FSSucc, FSFail;
   StopWatch SW;

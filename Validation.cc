@@ -42,6 +42,9 @@ public:
   float LeptonPt, LeptonPt_SU, LeptonPt_SD, LeptonPt_RU, LeptonPt_RD, LeptonEta, LeptonPhi;
 
   vector<float> *JetPt, *JetPt_SU, *JetPt_SD, *JetPt_RU, *JetPt_RD, *JetEta, *JetPhi, *JetM, *JetM_SU, *JetM_SD, *JetM_RU, *JetM_RD;
+  vector<float> *Jet_btagDeepFlavB;
+  vector<bool> *JetbTag;
+  
   float METPt, METPt_SU, METPt_SD, METPt_RU, METPt_RD, METPhi, METPhi_SU, METPhi_SD, METPhi_RU, METPhi_RD;
   float dPhiMetLep;
 
@@ -55,7 +58,7 @@ public:
   int TruePerm, TruePermWPType;
   vector<int> TruePermVector;
   float TruePermLikelihood, TruePermWPrimeMass;
-  vector<float> *PermScales, *TruePermScales, *TruePermSolvedScales;
+  vector<float> *PermScales, *TruePermTrueScales, *TruePermSolvedScales;
   vector<int> *WPType, *Perm;
   int PermDiffCode;
   vector<float> *WPrimeMassSimpleFL, *WPrimeMassSimpleLL, *Likelihood, *WPrimeMass;
@@ -97,6 +100,11 @@ public:
     t->Branch("JetEta",&JetEta);
     JetPhi = new vector<float>;
     t->Branch("JetPhi",&JetPhi);
+    JetbTag = new vector<bool>;
+    t->Branch("JetbTag", &JetbTag);
+    Jet_btagDeepFlavB = new vector<float>;
+    t->Branch("Jet_btagDeepFlavB", &Jet_btagDeepFlavB);
+
 
     t->Branch("METPt",&METPt);
     t->Branch("METPt_SU",&METPt_SU);
@@ -123,7 +131,7 @@ public:
     t->Branch("WPrimeMassSimpleLL", &WPrimeMassSimpleLL);
     
     if (conf->Type == 2) gh = new GenHypothesis(conf->WPType);
-    TruePermScales = new vector<float>;
+    TruePermTrueScales = new vector<float>;
     TruePermSolvedScales = new vector<float>;
 
     Perm = new vector<int>;
@@ -137,13 +145,13 @@ public:
       WPrimeMass->resize(9);
       Likelihood->resize(9);
       WPType->resize(9);
-      TruePermScales->resize(4);
+      TruePermTrueScales->resize(4);
       TruePermSolvedScales->resize(4);
     }
     t->Branch("TruePerm", &TruePerm);
     t->Branch("TruePermWPType", &TruePermWPType);
     t->Branch("TruePermLikelihood", &TruePermLikelihood);
-    t->Branch("TruePermScales",&TruePermScales);
+    t->Branch("TruePermTrueScales",&TruePermTrueScales);
     t->Branch("TruePermSolvedScales", &TruePermSolvedScales);
     t->Branch("TruePermWPrimeMass", &TruePermWPrimeMass);
     t->Branch("PermDiffCode", &PermDiffCode);
@@ -188,6 +196,8 @@ public:
     JetPt_RD->clear();
     JetEta->clear();
     JetPhi->clear();
+    JetbTag->clear();
+    Jet_btagDeepFlavB->clear();
     for (Jet& j : r->Jets) {
       if (!j.PUIDpasses[conf->PUIDWP]) continue;
       JetPt->push_back(j.Pt());
@@ -197,6 +207,8 @@ public:
       JetPt_RD->push_back(j.RD.Pt());
       JetEta->push_back(j.Eta());
       JetPhi->push_back(j.Phi());
+      JetbTag->push_back(j.bTagPasses[conf->bTagWP]);
+      Jet_btagDeepFlavB->push_back(j.Jet_btagDeepFlavB);
     }
 
     METPt = r->Met.Pt();
@@ -212,7 +224,7 @@ public:
     TruePermWPType = -1;
     PermDiffCode = -1;
     TruePermVector = vector<int>(5,-1);
-    TruePermScales->clear();
+    TruePermTrueScales->clear();
     bool HasGenHypo = false;
     if (conf->Type == 2) {
       gh->SetGenParts(r->GenParts);
@@ -224,7 +236,7 @@ public:
       gh->CreateHypothesisSet(r->TheLepton, r->Met);
       if (TruePermVector.size() == 5) for (unsigned ipe = 0; ipe < 5; ++ipe) {
         TruePerm += TruePermVector[ipe] * pow(10,(4 - ipe));
-        TruePermScales->push_back(gh->OutGenJets[ipe].Pt() / gh->OutJets[ipe].Pt());
+        TruePermTrueScales->push_back(gh->OutGenJets[ipe].Pt() / gh->OutJets[ipe].Pt());
       }
     }
     else {
@@ -232,6 +244,10 @@ public:
       // cout << Form("OutParts size = %d, OutGenJets size = %d, OutJets size = %d", gh->OutParts.size(), gh->OutGenJets.size(), gh->OutJets.size() ) << endl;
     }
 
+    PermDiffCode = -1;
+    TruePermWPType = -1;
+    TruePermLikelihood = -1;
+    TruePermWPrimeMass = -1;
     for (unsigned i = 0; i < 9; ++i) {
       TLorentzVector lepton = r->TheLepton.GetV(i);
       TLorentzVector met = r->Met.GetV(i);
@@ -243,10 +259,6 @@ public:
 
       if (!conf->RunFitter) continue;
       Ftr->SetTruePerm(TruePermVector);
-      TruePermWPType = -1;
-      TruePermLikelihood = -1;
-      TruePermWPrimeMass = -1;
-      PermDiffCode = -1;
 
       SetEventFitter(i);
       Perm->at(i) = -1;

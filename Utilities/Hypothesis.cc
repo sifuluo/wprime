@@ -14,21 +14,39 @@ public:
   };
 
   void ResetJets() {
-    PbTag = PScale = PLep = PHadW = PHadT = 1.0;
+    PbTag = PPtPerm = PWPdR = PLep = PHadW = PHadT = 0.0;
+    PScales = {0.0,0.0,0.0,0.0};
     Jets.clear();
     bTags.clear();
+    Jet_btagDeepFlavB.clear();
   }
 
-  void SetJetsFromPerm(vector<TLorentzVector> alljets, vector<int> perm){
-    if (Jets.size() < perm.size()) Jets.resize(perm.size());
+  void SetPerm(vector<int>& perm) {
+    PermV = perm;
+    Perm = 0;
     for (unsigned i = 0; i < perm.size(); ++i) {
-      Jets[i] = alljets[perm[i]];
+      Perm += perm[i] * pow(4 - i, 10);
     }
   }
-  void SetbTagsFromPerm(vector<bool> allbTags, vector<int> perm) {
-    if (bTags.size() < perm.size()) bTags.resize(perm.size());
-    for (unsigned i = 0; i < perm.size(); ++i) {
-      bTags[i] = allbTags[perm[i]];
+
+  void SetJetsFromPerm(vector<TLorentzVector> a_){
+    if (Jets.size() < PermV.size()) Jets.resize(PermV.size());
+    for (unsigned i = 0; i < PermV.size(); ++i) {
+      Jets[i] = a_[PermV[i]];
+    }
+  }
+  void SetbTagsFromPerm(vector<bool> a_) {
+    bTagPerm = 0;
+    if (bTags.size() < PermV.size()) bTags.resize(PermV.size());
+    for (unsigned i = 0; i < PermV.size(); ++i) {
+      bTags[i] = a_[PermV[i]];
+      if (a_[PermV[i]]) bTagPerm += pow(2,PermV.size() - i - 1);
+    }
+  }
+  void SetbtagDeepFlavBFromPerm(vector<double> a_) {
+    if (a_.size() < PermV.size()) Jet_btagDeepFlavB.resize(PermV.size());
+    for (unsigned i = 0; i < PermV.size(); ++i) {
+      Jet_btagDeepFlavB[i] = a_[PermV[i]];
     }
   }
 
@@ -72,32 +90,58 @@ public:
     else if (WPType == 1) return WPL();
     return TLorentzVector();
   }
+  double WPdR(int type = -1) {
+    if (type == -1) type = WPType;
+    if (type == 0) return HadT().DeltaR(WPb());
+    if (type == 1) return LepT().DeltaR(WPb());
+    cout << "Invalid type = " << type << " set for WPdR calculation" << endl;
+    return 0.;
+  }
+
+  double GetTotalPScale() {
+    double p = 1.0;
+    for (unsigned i = 0; i < 4; ++i) p *= PScales[i];
+    return p;
+  }
 
   double GetPFitter() {
-    return PScale * PLep * PHadW * PHadT;
+    return GetTotalPScale() * PLep * PHadW * PHadT;
   }
   
   double GetTotalP() {
-    return PbTag * PPtPerm * PWPrimedR * GetPFitter();
+    return PbTag * PPtPerm * PWPdR * GetPFitter();
   }
 
   FitRecord MakeRecord() {
     FitRecord fr;
     fr.Scales = Scales;
     fr.M = {HadW().M(), HadT().M(), LepT().M()};
-    fr.P = {PHadW, PHadT, PLep, PScale, GetPFitter()};
+    fr.P = {PHadW, PHadT, PLep, GetTotalPScale(), GetPFitter()};
     return fr;
   }
 
   int WPType = -1; // 0 for FL, 1 for LL;
-  double PbTag, PPtPerm, PWPrimedR, PScale, PLep, PHadW, PHadT;
-  vector<TLorentzVector> Jets;
+  vector<int> PermV;
+  int Perm;
+  vector<TLorentzVector> Jets; // Scaled. Revert to unscaled jets by dividing by the scales
+  int PtPerm;
+  double PPtPerm;
   vector<bool> bTags;
+  vector<double> Jet_btagDeepFlavB;
+  int bTagPerm;
+  double PbTag;
+  double PWPdR;
   TLorentzVector Lep, MET, Neu;
-  vector<double> Scales;
+
+  vector<double> Scales = {1.0,1.0,1.0,1.0};
+  vector<double> PScales = {1.0,1.0,1.0,1.0};
+  double PLep, PHadW, PHadT;
+
+  // WPdR,
+  // t_h, t_l, w_h
+  // Scales
+  // bTagPerm; (5 bit binary format)
 };
-
-
 
 // Gen Particles and Gen Hypothesis only
 struct PartDecay{

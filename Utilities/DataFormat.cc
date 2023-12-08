@@ -85,6 +85,7 @@ struct Jet : VarPO {
   int genJetIdx;
   int hadronFlavour;
   int partonFlavour;
+  float Jet_btagDeepFlavB;
   vector<bool> bTagPasses = {false, false, false}; // {loose, medium, tight}
   vector<vector<float> > bJetSFweightsCorr = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; // {nominal, up, down} x {loose, medium, tight}
   vector<vector<float> > bJetSFweightsUncorr = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; // {nominal, up, down} x {loose, medium, tight}

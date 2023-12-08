@@ -260,6 +260,7 @@ public:
       }
 
       //set btagging flags
+      tmp.Jet_btagDeepFlavB = evts->Jet_btagDeepFlavB[i];
       tmp.bTagPasses = bTag(evts->Jet_btagDeepFlavB[i], conf->SampleYear);
       
 
