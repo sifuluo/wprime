@@ -28,7 +28,7 @@ struct Configs {
     else if (st.Contains("LL")) WPType = 1;
     else WPType = -1;
     ErrorRerunCode = ErrorRerun();
-    ROOT::EnableImplicitMT();
+    // ROOT::EnableImplicitMT();
   };
 
   ~Configs() {
