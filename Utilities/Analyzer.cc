@@ -39,20 +39,15 @@ public:
       Ftr->SetJetScale(JS);
       Ftr->SetPermutation(PM);
     }
-    if (conf->EntryMax > 0 && conf->EntryMax < r->GetEntries()) EntryMax = conf->EntryMax;
-    else EntryMax = r->GetEntries();
-    cout << "Processing " << EntryMax << " events" << endl;
-    progress = new Progress(EntryMax, conf->ProgressInterval);
+    if (conf->EntriesMax > 0 && conf->EntriesMax < r->GetEntriesMax()) EntriesMax = conf->EntriesMax;
+    else EntriesMax = r->GetEntriesMax();
+    cout << "Processing " << EntriesMax << " events" << endl;
+    progress = new Progress(EntriesMax, conf->ProgressInterval);
   }
 
-  Long64_t GetEntryMax() {return EntryMax;}
+  Long64_t GetEntriesMax() {return EntriesMax;}
 
   Long64_t GetEntries() {return r->GetEntries();}
-
-  void SetEntryMax(Long64_t mx) {
-    EntryMax = mx;
-    progress->SetEntryMax(mx);
-  }
 
   bool HasZombieOutput(TString ofname) {
     TFile *ftest = new TFile(ofname,"READ");
@@ -146,7 +141,7 @@ public:
     if (conf->PrintProgress) progress->JobEnd();
   }
 
-  Long64_t EntryMax;
+  Long64_t EntriesMax;
   Long64_t iEvent;
   TFile *ofile;
   TTree *t;
@@ -166,6 +161,7 @@ public:
 };
 
 class HypothesisBranches {
+public:
   HypothesisBranches(TString p, int nv = 9, TTree* t = nullptr) {
     Prefix = p;
     nVariations = nv;
@@ -181,6 +177,7 @@ class HypothesisBranches {
     PbTag = new vector<double>(nVariations);
     Scales = new vector<double>(nVariations * 4);
     PScales = new vector<double>(nVariations * 4);
+    Jet_btagDeepFlavB = new vector<double>(nVariations * 4);
     TotalPScale = new vector<double>(nVariations);
     WPdR = new vector<double>(nVariations);
     PWPdR = new vector<double>(nVariations);
@@ -204,6 +201,7 @@ class HypothesisBranches {
     t->Branch(pp + "PbTag", &PbTag);
     t->Branch(pp + "Scales", &Scales);
     t->Branch(pp + "PScales", &PScales);
+    t->Branch(pp + "Jet_btagDeepFlavB", &Jet_btagDeepFlavB);
     t->Branch(pp + "TotalPScale", &TotalPScale);
     t->Branch(pp + "WPdR", &WPdR);
     t->Branch(pp + "PWPdR", &PWPdR);
@@ -217,6 +215,7 @@ class HypothesisBranches {
     t->Branch(pp + "Likelihood", &Likelihood);
     t->Branch(pp + "WPrimeMass", &WPrimeMass);
   }
+  
   void FillHypothesis(Hypothesis& h, int ir) {
     Perm->at(ir) = h.Perm;
     PtPerm->at(ir) = h.PtPerm;
@@ -228,6 +227,7 @@ class HypothesisBranches {
     for (unsigned i = 0; i < 4; ++i) {
       Scales->at(ir * 4 + i) = h.Scales[i];
       PScales->at(ir * 4 + i) = h.PScales[i];
+      Jet_btagDeepFlavB->at(ir * 4 + i) = h.Jet_btagDeepFlavB[i];
     }
     TotalPScale->at(ir) = h.GetTotalPScale();
     WPdR->at(ir) = h.WPdR();
@@ -243,9 +243,18 @@ class HypothesisBranches {
     WPrimeMass->at(ir) = h.WP().M();
   }
 
+  void Reset() {
+    for (vector<int>* vec : {Perm, PtPerm, bTagPerm, WPType}) {
+      *vec = vector<int>(vec->size(), -1);
+    }
+    for (vector<double>* vec : {PPtPerm, PbTag, Scales, PScales, Jet_btagDeepFlavB, TotalPScale, WPdR, PWPdR, HadW, HadT, LepT, PHadW, PHadT, PLep, PFitter, Likelihood, WPrimeMass}) {
+      *vec = vector<double>(vec->size(),0.);
+    }
+  }
+
   vector<int> *Perm, *PtPerm, *bTagPerm, *WPType; // [iVariation]
   vector<double> *PPtPerm, *PbTag; // [iVariation]
-  vector<double> *Scales, *PScales; // [iVariation[4]], Each variation has 4 scales
+  vector<double> *Scales, *PScales, *Jet_btagDeepFlavB; // [iVariation[4]], Each variation has 4 scales
   vector<double> *TotalPScale; // [iVariation]
   vector<double> *WPdR; // [iVariation]
   vector<double> *PWPdR; // [iVariation]

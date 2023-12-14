@@ -13,13 +13,6 @@ public:
     
   };
 
-  void ResetJets() {
-    PbTag = PPtPerm = PWPdR = PLep = PHadW = PHadT = 0.0;
-    PScales = {0.0,0.0,0.0,0.0};
-    Jets.clear();
-    bTags.clear();
-    Jet_btagDeepFlavB.clear();
-  }
 
   void SetPerm(vector<int>& perm) {
     PermV = perm;
@@ -44,7 +37,7 @@ public:
     }
   }
   void SetbtagDeepFlavBFromPerm(vector<double> a_) {
-    if (a_.size() < PermV.size()) Jet_btagDeepFlavB.resize(PermV.size());
+    if (Jet_btagDeepFlavB.size() < PermV.size()) Jet_btagDeepFlavB.resize(PermV.size());
     for (unsigned i = 0; i < PermV.size(); ++i) {
       Jet_btagDeepFlavB[i] = a_[PermV[i]];
     }
@@ -62,6 +55,14 @@ public:
       MET = MET + Jets[i] - Jets[i] * scales[i];
       Jets[i] = Jets[i] * scales[i];
     }
+  }
+
+  int JetsCheck() {
+    int nj = 0;
+    for (unsigned i = 0; i < 4; ++i) {
+      if (Jets[i].Pt() < 30.) nj++;
+    }
+    return nj;
   }
 
   TLorentzVector LepW() {
@@ -99,8 +100,7 @@ public:
   }
 
   double GetTotalPScale() {
-    double p = 1.0;
-    for (unsigned i = 0; i < 4; ++i) p *= PScales[i];
+    double p = PScales[0] * PScales[1] * PScales[2] * PScales[3];
     return p;
   }
 
@@ -118,6 +118,17 @@ public:
     fr.M = {HadW().M(), HadT().M(), LepT().M()};
     fr.P = {PHadW, PHadT, PLep, GetTotalPScale(), GetPFitter()};
     return fr;
+  }
+
+  void ResetJets() {
+    WPType = -1;
+    PermV.clear();
+    Perm = 0;
+    PbTag = PPtPerm = PWPdR = PLep = PHadW = PHadT = 0.;
+    Scales = PScales = {0.0,0.0,0.0,0.0};
+    Jets.clear();
+    bTags.clear();
+    Jet_btagDeepFlavB.clear();
   }
 
   int WPType = -1; // 0 for FL, 1 for LL;

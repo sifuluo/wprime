@@ -57,7 +57,23 @@ public:
     }
     cout << "Running with SampleYear = " << conf->SampleYear << ", SampleType = " << conf->SampleType <<  endl;
     evts = new Events(chain, conf->SampleYear, IsMC);
-    if (conf->InputFile != "All" && conf->FilesPerJob == 1) cout << "This iteration contains " << GetEntries() << " events" <<endl;
+    ChainEntries = GetEntries();
+    if (conf->InputFile != "All" && conf->FilesPerJob == 1) cout << "This file contains " << GetEntries() << " events" <<endl;
+    if (conf->FilesPerJob > 1.0 && conf->FilesPerJob != (int) conf->FilesPerJob) cout << "FilesPerJob should be integer if > 1.0!!!" << endl;
+    EntryBegin = 0;
+    EntryEnd = ChainEntries;
+    if (conf->FilesPerJob < 1.0 && conf->iFile >= 0) {
+      int EntriesPerJob = floor(((double) ChainEntries) * conf->FilesPerJob);
+      double JobsPerFile = 1.0 / conf->FilesPerJob;
+      if (JobsPerFile - floor(JobsPerFile) != 0) cout << "FilesPerJob divided by 1 is not an integer" << endl;
+      int iSeg = conf->iFile % ((int)JobsPerFile);
+      EntryBegin = iSeg * EntriesPerJob;
+      EntryEnd = (iSeg + 1) * EntriesPerJob;
+      if (iSeg + 1 == JobsPerFile) EntryEnd = ChainEntries;
+      cout << "This Iteration Divided the file containing " << ChainEntries << " entries into " << JobsPerFile << " jobs, each containing " << EntriesPerJob << " entries" << endl;
+    }
+    EntriesMax = EntryEnd - EntryBegin;
+    cout << "EntryBegin = " << EntryBegin << ", EntryEnd = " << EntryEnd << ". Running over " << EntriesMax << " events" << endl;
   };
 
   ~NanoAODReader() {
@@ -77,8 +93,15 @@ public:
     }
     else cout << "Reading from file " << filename << endl;
 
-    int startfile = conf->iFile * conf->FilesPerJob;
-    int endfile = (conf->iFile + 1) * conf->FilesPerJob - 1;
+    int startfile = conf->iFile;
+    int endfile = conf->iFile;
+    if (conf->FilesPerJob >= 1.) {
+      startfile = conf->iFile * conf->FilesPerJob;
+      endfile = (conf->iFile + 1) * conf->FilesPerJob - 1;
+    }
+    else {
+      startfile = endfile = floor(conf->iFile * conf->FilesPerJob);
+    }
     string rootf;
     int counter = -1;
     while (getline(infile, rootf)) {
@@ -93,14 +116,18 @@ public:
   }
 
   Long64_t GetEntries() {
-    EntryMax = chain->GetEntries();
-    return EntryMax;
+    ChainEntries = chain->GetEntries();
+    return ChainEntries;
   }
 
   Long64_t GetEntriesFast() {
-    EntryMax = chain->GetEntriesFast();
-    return EntryMax;
+    ChainEntries = chain->GetEntriesFast();
+    return ChainEntries;
   }
+
+  Long64_t GetEntryBegin() {return EntryBegin;}
+  Long64_t GetEntryEnd() {return EntryEnd;}
+  Long64_t GetEntriesMax() {return EntriesMax;}
 
   void SetbTag(bTagEff* bt) {
     bTE = bt;
@@ -125,7 +152,8 @@ public:
     Long64_t evtcode = evts->LoadTree(i);
     if (evtcode < 0) return -1;
     iEvent = i;
-    evts->GetEntry(i);
+    iEventInChain = iEvent + EntryBegin;
+    evts->GetEntry(iEventInChain);
     if (ReadMETFilterStatus() == false) return -2; //skip events not passing MET filter flags
     run = evts->run;
     luminosityBlock = evts->luminosityBlock;
@@ -917,19 +945,19 @@ public:
   }
 
   void RunEndSummary() {
-    double em = EntryMax;
+    double em = ChainEntries;
     cout << endl << "NanoAODReader Summary:" << endl;
     if (MuonSFZeroErrors > 0) {
       double nerrevts = MuonSFZeroErrorEvts;
-      cout << "Muon SF zeros occurance = " << MuonSFZeroErrors << " in " << nerrevts << " Events out of total Events " << EntryMax;
+      cout << "Muon SF zeros occurance = " << MuonSFZeroErrors << " in " << nerrevts << " Events out of total Events " << ChainEntries;
       cout << ", Event rate = " << nerrevts / em << endl;
     }
   }
 
   Configs *conf;
 
-  Long64_t iEvent;
-  Long64_t EntryMax;
+  Long64_t iEvent, iEventInChain, EntryBegin, EntryEnd;
+  Long64_t ChainEntries, EntriesMax;
 
   bTagSFReader *R_BTSF;
   PUIDSFReader *R_PUIDSF;

@@ -12,6 +12,7 @@
 #include "Dataset.cc"
 #include "UserSpecifics.cc"
 #include "ErrorLogDetector.cc"
+#include <TROOT.h>
 
 struct Configs {
   Configs(int isy_ = 2, int ist_ = 2, int ifile_ = 0) {
@@ -27,10 +28,15 @@ struct Configs {
     else if (st.Contains("LL")) WPType = 1;
     else WPType = -1;
     ErrorRerunCode = ErrorRerun();
+    ROOT::EnableImplicitMT();
   };
 
   ~Configs() {
     cout << "Configs Destructed" << endl;
+  }
+
+  void SignalFilesPerJob(double n) {
+    if (WPType > -1) FilesPerJob = n;
   }
 
   // Indices and items are emumerated in Constants.cc
@@ -49,9 +55,9 @@ struct Configs {
   TString InputFile = "";
 
   //Number of entry to process
-  Long64_t EntryMax = 0;
+  Long64_t EntriesMax = 0;
   //Number of files to process
-  int FilesPerJob = 1;
+  double FilesPerJob = 1.;
 
   int bTagWP = 2; //0 loose, 1 medium, 2 tight
   int PUIDWP = 2; //0 loose, 1 medium, 2 tight

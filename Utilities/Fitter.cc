@@ -214,37 +214,53 @@ public:
     if (AllJets.size() < 5) return -2;
     MakePermutations();
     BestP = -1;
-    TrueHypo.WPType = -1;
-    // Debug block
     BestPFitter = -1;
+    BestHypo.ResetJets();
+    TrueHypo.ResetJets();
+    TTHypo.ResetJets();
+    TruePermStatus = -1;
     vector<FitRecord> BestFitRecords;
     if (DebugFitter) {
       FS.Reset();
       FSSucc.Reset();
       FSFail.Reset();
     }
-    // End of Debug Block
     for (unsigned ip = 0; ip < Perms.size(); ++ip) { // Loop over permutations
       bool OnTruePerm = (conf->WPType > -1 && Perms[ip] == TruePerm);
+      if (OnTruePerm) TruePermStatus = 0;
       FitRecords.clear();
       BaseHypo.ResetJets();
       BaseHypo.SetPerm(Perms[ip]);
       BaseHypo.SetJetsFromPerm(AllJets);
       BaseHypo.SetbTagsFromPerm(AllbTags);
       BaseHypo.SetbtagDeepFlavBFromPerm(AllbtagDeepFlavB);
-      if (PermCheckLevel > 0 && PermutationbTagCheck()) {
-        if (DebugFitter && OnTruePerm) cout << "True Perm failed bTag Check" << endl;
+      if (OnTruePerm) TrueHypo = BaseHypo;
+      if (BaseHypo.JetsCheck()) {
+        if (OnTruePerm) TruePermStatus += 1;
         continue;
+      }
+      if (PermCheckLevel > 0 && PermutationbTagCheck()) {
+        if (OnTruePerm) {
+          TruePermStatus += 10;
+          if (DebugFitter) cout << "True Perm failed bTag Check" << endl;
+        }
+        else continue;
       }
       int precheckresult = PermutationPreFitCheck();
       if (PermCheckLevel > 1 && precheckresult) {
-        if (DebugFitter && OnTruePerm) cout << "True Perm failed PreFitCheck: " << precheckresult << endl;
-        continue;
+        if (OnTruePerm) {
+          TruePermStatus += 100;
+          if (DebugFitter) cout << "True Perm failed PreFitCheck: " << precheckresult << endl;
+        }
+        else continue;
       }
       double PFitter = MinimizeP();
       if (PFitter < 0 && PFitter != -1) {
-        if (DebugFitter && OnTruePerm) cout << "True Perm failed to get positive P = " << PFitter << endl;
-        continue;
+        if (OnTruePerm) {
+          TruePermStatus += 1000;
+          if (DebugFitter) cout << "True Perm failed to get positive P = " << PFitter << endl;
+        }
+        else continue;
       }
       // Obtaining the scales set from minimizer which should yield the minimized likelihood
       double ThisScale[4];
@@ -272,7 +288,6 @@ public:
         ScaledHypo.PWPdR = PWPrimedR_l;
         ScaledHypo.WPType = 1;
       }
-      
       double ThisP = ScaledHypo.GetTotalP();
       if (conf->WPType > -1 && Perms[ip].size() != TruePerm.size() && TruePerm.size() != 0) cout << "Perm size = " << Perms[ip].size() << " ,TruePermSize = " << TruePerm.size() << endl;
       if (ThisP <= 0) continue;
@@ -284,7 +299,7 @@ public:
       }
       if (ScaledHypo.GetPFitter() > BestPFitter) {
         BestPFitter = ScaledHypo.GetPFitter();
-        BestPFitter = PFitter;
+        TTHypo = ScaledHypo;
       }
       if (OnTruePerm) {
         TrueHypo = ScaledHypo;
@@ -320,11 +335,12 @@ public:
 
   vector<int> TruePerm;
   Hypothesis TrueHypo;
+  int TruePermStatus; // -1 init value; 0 normal; 1 failed Jet pT check; 10 failed bTagCheck; 100 failed PrefitCheck; 1000 failed fitter
 
   double BestP;
   Hypothesis BestHypo;
   double BestPFitter;
-  Hypothesis BestFitterHypo;
+  Hypothesis TTHypo;
 
   FitterStatus FS, FSSucc, FSFail;
   StopWatch SW;

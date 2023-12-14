@@ -55,13 +55,15 @@ public:
   int nPV, nPVGood;
 
   GenHypothesis *gh;
-  int TruePerm, TruePermWPType;
+  vector<float> *WPrimeMassSimpleFL, *WPrimeMassSimpleLL;
   vector<int> TruePermVector;
-  float TruePermLikelihood, TruePermWPrimeMass;
-  vector<float> *PermScales, *TruePermTrueScales, *TruePermSolvedScales;
-  vector<int> *WPType, *Perm;
+  HypothesisBranches *BestHypo, *TrueHypo, *TTHypo;
+  vector<float> *TruePermTrueScales;
+  // float TruePermLikelihood, TruePermWPrimeMass;
+  // vector<float> *PermScales,, *TruePermSolvedScales;
+  // vector<int> *WPType, *Perm;
+  // vector<float> *WPrimeMassSimpleFL, *WPrimeMassSimpleLL, *Likelihood, *WPrimeMass;
   int PermDiffCode;
-  vector<float> *WPrimeMassSimpleFL, *WPrimeMassSimpleLL, *Likelihood, *WPrimeMass;
 
   void BookBranches() {
     t->Branch("RegionIdentifier", &RegionIdentifier);
@@ -119,6 +121,12 @@ public:
 
     t->Branch("dPhiMetLep", &dPhiMetLep);
 
+    t->Branch("nPU", &nPU);
+    t->Branch("nTrueInt", &nTrueInt);
+
+    t->Branch("nPV", &nPV);
+    t->Branch("nPVGood", &nPVGood);
+
     mT = new vector<float>; // central , EleSU, EleSD, EleRU, EleRD, JetSU, JetSD, JetRU, JetRD
     mT->resize(9);
     t->Branch("mT", &mT);
@@ -132,50 +140,21 @@ public:
     
     if (conf->Type == 2) gh = new GenHypothesis(conf->WPType);
     TruePermTrueScales = new vector<float>;
-    TruePermSolvedScales = new vector<float>;
-
-    Perm = new vector<int>;
-    PermScales = new vector<float>;
-    WPrimeMass = new vector<float>; // central , EleSU, EleSD, EleRU, EleRD, JetSU, JetSD, JetRU, JetRD
-    Likelihood = new vector<float>; // central , EleSU, EleSD, EleRU, EleRD, JetSU, JetSD, JetRU, JetRD
-    WPType = new vector<int>; // central , EleSU, EleSD, EleRU, EleRD, JetSU, JetSD, JetRU, JetRD
-    if (conf->RunFitter) {
-      Perm->resize(9);
-      PermScales->resize(9 * 4);
-      WPrimeMass->resize(9);
-      Likelihood->resize(9);
-      WPType->resize(9);
-      TruePermTrueScales->resize(4);
-      TruePermSolvedScales->resize(4);
-    }
-    t->Branch("TruePerm", &TruePerm);
-    t->Branch("TruePermWPType", &TruePermWPType);
-    t->Branch("TruePermLikelihood", &TruePermLikelihood);
     t->Branch("TruePermTrueScales",&TruePermTrueScales);
-    t->Branch("TruePermSolvedScales", &TruePermSolvedScales);
-    t->Branch("TruePermWPrimeMass", &TruePermWPrimeMass);
     t->Branch("PermDiffCode", &PermDiffCode);
 
-    t->Branch("Perm", &Perm);
-    t->Branch("PermScales", PermScales);
-    t->Branch("WPrimeMass", &WPrimeMass);
-    t->Branch("Likelihood", &Likelihood);
-    t->Branch("WPType", &WPType);
-
-    t->Branch("nPU", &nPU);
-    t->Branch("nTrueInt", &nTrueInt);
-
-    t->Branch("nPV", &nPV);
-    t->Branch("nPVGood", &nPVGood);
+    BestHypo = new HypothesisBranches("Best");
+    TrueHypo = new HypothesisBranches("True");
+    TTHypo = new HypothesisBranches("TT");
+    BestHypo->CreateBranches(t);
+    TrueHypo->CreateBranches(t);
+    TTHypo->CreateBranches(t);
   }
 
   void FillBranchContent() {
-    // cout << "Regions are: " << endl;
     for(unsigned i = 0; i < 9; ++i){
       RegionIdentifier[i] = r->RegionAssociations.Regions[i];
-      // cout << RegionIdentifier[i] << ", ";
     }
-    // cout <<endl;
 
     for(unsigned i = 0; i < r->EventWeights.size(); ++i){
       EventWeight[i] = r->EventWeights[i].first;
@@ -220,8 +199,6 @@ public:
 
     dPhiMetLep = r->Met.DeltaPhi(r->TheLepton);
 
-    TruePerm = 0;
-    TruePermWPType = -1;
     PermDiffCode = -1;
     TruePermVector = vector<int>(5,-1);
     TruePermTrueScales->clear();
@@ -235,7 +212,6 @@ public:
       gh->MatchToLeptons(r->Leptons);
       gh->CreateHypothesisSet(r->TheLepton, r->Met);
       if (TruePermVector.size() == 5) for (unsigned ipe = 0; ipe < 5; ++ipe) {
-        TruePerm += TruePermVector[ipe] * pow(10,(4 - ipe));
         TruePermTrueScales->push_back(gh->OutGenJets[ipe].Pt() / gh->OutJets[ipe].Pt());
       }
     }
@@ -244,10 +220,6 @@ public:
       // cout << Form("OutParts size = %d, OutGenJets size = %d, OutJets size = %d", gh->OutParts.size(), gh->OutGenJets.size(), gh->OutJets.size() ) << endl;
     }
 
-    PermDiffCode = -1;
-    TruePermWPType = -1;
-    TruePermLikelihood = -1;
-    TruePermWPrimeMass = -1;
     for (unsigned i = 0; i < 9; ++i) {
       TLorentzVector lepton = r->TheLepton.GetV(i);
       TLorentzVector met = r->Met.GetV(i);
@@ -256,46 +228,38 @@ public:
       TLorentzVector vWprimeLL = r->Jets[0].GetV(i) + r->Jets[1].GetV(i) + r->TheLepton.GetV(i) + r->Met.GetV(i);
       WPrimeMassSimpleFL->at(i) = vWprimeFL.M();
       WPrimeMassSimpleLL->at(i) = vWprimeLL.M();
-
+      
       if (!conf->RunFitter) continue;
       Ftr->SetTruePerm(TruePermVector);
-
       SetEventFitter(i);
-      Perm->at(i) = -1;
-      for (int j = 0; j < 4; ++j) PermScales->at(i * 4 + j) = -1;
-      WPType->at(i) = -1;
-      WPrimeMass->at(i) = -1;
-      Likelihood->at(i) = Ftr->Optimize();
-      if (Likelihood->at(i) < 0) {
-        continue;
+      if (Ftr->Optimize() < 0) continue;
+      BestHypo->FillHypothesis(Ftr->BestHypo,i);
+      TTHypo->FillHypothesis(Ftr->TTHypo,i);
+      if (HasGenHypo && Ftr->TrueHypo.WPType > -1) {
+        TrueHypo->FillHypothesis(Ftr->TrueHypo,i);
+        if (i == 0) PermDiffCode = PM->ComparePerm(Ftr->BestHypo.Perm, Ftr->TrueHypo.Perm);
       }
-      Perm->at(i) = Ftr->BestPerm[0] * 10000 + Ftr->BestPerm[1] * 1000 + Ftr->BestPerm[2] * 100 + Ftr->BestPerm[3] * 10 + Ftr->BestPerm[4];
-      for (int j = 0; j < 4; ++j) PermScales->at(i * 4 + j) = Ftr->BestHypo.Scales[j];
-      WPType->at(i) = Ftr->BestHypo.WPType;
-      WPrimeMass->at(i) = Ftr->BestHypo.WP().M();
-      if (i == 0) { // Only compare the truth against the nominal
-        if (HasGenHypo && Ftr->TrueHypo.WPType > -1) {
-          TruePermWPType = Ftr->TrueHypo.WPType;
-          TruePermLikelihood = Ftr->TrueHypo.GetTotalP();
-          TruePermWPrimeMass = Ftr->TrueHypo.WP().M();
-          for (int j =0; j < 4; ++j) TruePermSolvedScales->at(j) = Ftr->TrueHypo.Scales[j];
-          PermDiffCode = PM->ComparePerm(Ftr->BestPerm, TruePermVector);
-        }
-        else {
-          TruePermWPType = -1;
-          TruePermLikelihood = -1;
-          TruePermWPrimeMass = -1;
-          PermDiffCode = -1;
-          // if (!HasGenHypo) cout << "Again, no true perm found" << endl;
-          // if (Ftr->TrueHypo.WPType < 0) cout << "Ftr TrueHypo WPType = " << Ftr->TrueHypo.WPType << endl;
-        }
-      }
+      // if (i == 0) { // Only compare the truth against the nominal
+      //   if (HasGenHypo && Ftr->TrueHypo.WPType > -1) {
+      //     TruePermWPType = Ftr->TrueHypo.WPType;
+      //     TruePermLikelihood = Ftr->TrueHypo.GetTotalP();
+      //     TruePermWPrimeMass = Ftr->TrueHypo.WP().M();
+      //     for (int j =0; j < 4; ++j) TruePermSolvedScales->at(j) = Ftr->TrueHypo.Scales[j];
+      //     PermDiffCode = PM->ComparePerm(Ftr->BestPerm, TruePermVector);
+      //   }
+      //   else {
+      //     TruePermWPType = -1;
+      //     TruePermLikelihood = -1;
+      //     TruePermWPrimeMass = -1;
+      //     PermDiffCode = -1;
+      //     // if (!HasGenHypo) cout << "Again, no true perm found" << endl;
+      //     // if (Ftr->TrueHypo.WPType < 0) cout << "Ftr TrueHypo WPType = " << Ftr->TrueHypo.WPType << endl;
+      //   }
+      // }
       // if (i > 0 && Likelihood->at(0) > 0) { // Testing the frequency of variances having the different perm
       //   if (Perm->at(i) != Perm->at(0)) cout << "For variation " << i << " with Perm = " << Perm->at(i) << ", different with nominal perm: " << Perm->at(0) << endl;
       // }
     }
-
-    // cout << "2" <<endl;
 
     nPU = 0;
     nTrueInt = 0;
@@ -312,6 +276,7 @@ int Validation(int isampleyear = 3, int isampletype = 24, int ifile = 0, bool Do
   Configs *conf = new Configs(isampleyear, isampletype, ifile);
   // if (conf->ErrorRerun() == 0) return 0;
   // conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/SingleMuon/2018/2B07B4C0-852B-9B4F-83FA-CA6B047542D1.root";
+  conf->InputFile = "All";
   conf->LocalOutput = false;
   conf->PrintProgress = true;
   conf->RunFitter = DoFitter;
@@ -320,17 +285,19 @@ int Validation(int isampleyear = 3, int isampletype = 24, int ifile = 0, bool Do
   conf->AcceptRegions({-4,-3,-2});
   conf->TWMassMode = 0;
   // conf->DebugList = {"LeptonRegion"};
-  // conf->ProgressInterval = 1;
-  // conf->EntryMax = 2000;
+  conf->ProgressInterval = 1;
+  // conf->EntriesMax = 2000;
+  conf->SignalFilesPerJob(0.1);
   
   ThisAnalysis *a = new ThisAnalysis(conf);
   if (!(a->SetOutput("ValidationFitted"))) return 0;
   int proceededEvts = 0;
-  for (Long64_t iEvent = 0; iEvent < a->GetEntryMax(); ++iEvent) {
+  for (Long64_t iEvent = 0; iEvent < a->GetEntriesMax(); ++iEvent) {
     if (a->ReadEvent(iEvent) < 0) continue;
     if (!a->WithinROI()) continue;
     // a->r->BranchSizeCheck();
     proceededEvts++;
+    continue;
     a->FillBranchContent();
     a->FillTree();
   }

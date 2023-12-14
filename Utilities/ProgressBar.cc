@@ -13,7 +13,7 @@ class Progress {
 public:
   Progress(Long64_t itotal, unsigned div = 1000) {
     time(&starttime);
-    SetEntryMax(itotal);
+    SetEntriesMax(itotal);
     dividend = div;
     barlength = 50;
     cout << "Process started at " << ctime(&starttime);
@@ -21,15 +21,15 @@ public:
     for (unsigned i = 0; i < barlength; ++i) bar += " ";
   };
 
-  void SetEntryMax(Long64_t itotal) {
-    EntryMax = itotal - 1;
+  void SetEntriesMax(Long64_t itotal) {
+    EntriesMax = itotal - 1;
     time(&checkedtime);
   };
 
   void Print(unsigned ie) {
-    if (EntryMax == 0) return;
-    if (ie % dividend == 0 || ie == EntryMax) {
-      rate = float(ie) / float(EntryMax);
+    if (EntriesMax == 0) return;
+    if (ie % dividend == 0 || ie == EntriesMax) {
+      rate = float(ie) / float(EntriesMax);
       per = rate * 100.;
       barloc = floor(rate * float(barlength));
       if (barloc < barlength) bar[barloc] = '>';
@@ -44,9 +44,9 @@ public:
       rtime_s = Form("Remaining: %i:%i:%i",int(rtime/3600), int(rtime/60) % 60, int(rtime) % 60);
       if (pcheckedtime < 5) rtime_s = "";
       //This is the style with the bar. Best used in dryrun.
-      // cout <<Form("\r[%s] %i / %lli, (%.1f%%), %s, %s",bar.Data(), ie, EntryMax, per, ptime_s.c_str(), rtime_s.c_str()) <<flush;
+      // cout <<Form("\r[%s] %i / %lli, (%.1f%%), %s, %s",bar.Data(), ie, EntriesMax, per, ptime_s.c_str(), rtime_s.c_str()) <<flush;
       //This is the style withou the bar. Best used in batch, because flushed text are also in the log.
-      cout <<Form("\r %i / %lli, (%.1f%%), %s, %s          ",ie, EntryMax, per, ptime_s.c_str(), rtime_s.c_str()) <<flush;
+      cout <<Form("\r %i / %lli, (%.1f%%), %s, %s          ",ie, EntriesMax, per, ptime_s.c_str(), rtime_s.c_str()) <<flush;
       // if (ie % 100 == 0) cout <<endl;
     }
   }
@@ -61,7 +61,7 @@ private:
   time_t starttime;
   time_t checkedtime;
   time_t currenttime;
-  Long64_t EntryMax;
+  Long64_t EntriesMax;
   unsigned dividend, barloc, barlength;
   float rate, per;
   double ptime, rtime, pcheckedtime;

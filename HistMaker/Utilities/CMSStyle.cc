@@ -15,7 +15,7 @@ void CMSFrame(TVirtualPad* pad, int year) {
 	float cmsTextSize   = 0.75;
 	float cmsTextOffset = 0.1;
 
-  TString extraText   = "Preliminary";
+  TString extraText   = "Work in progress";
   float extraTextFont = 52;  // default is helvetica-italics
 	float extraOverCmsTextSize  = 0.8; // ratio of extra text size and cmsTextSize
 
