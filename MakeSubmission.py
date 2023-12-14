@@ -45,6 +45,8 @@ for iy, year in enumerate(SampleYears):
 
     nf = len(open(fnfile).readlines())
     if nf == 0: continue
+    if "FL" in sampletype or "LL" in sampletype:
+      nf = nf * 10
     lines = []
     # lines.append("Proxy_path   = /afs/cern.ch/user/s/siluo/x509up\n")
     # lines.append("arguments    = $(Proxy_path) $(ProcID) "+str(iy)+ " " + str(isa) + "\n")

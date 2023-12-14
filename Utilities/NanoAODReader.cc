@@ -154,6 +154,7 @@ public:
     iEvent = i;
     iEventInChain = iEvent + EntryBegin;
     evts->GetEntry(iEventInChain);
+    // cout << endl << "Reading real iEvent in Chain = " << iEventInChain << endl;
     if (ReadMETFilterStatus() == false) return -2; //skip events not passing MET filter flags
     run = evts->run;
     luminosityBlock = evts->luminosityBlock;

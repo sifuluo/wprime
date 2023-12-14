@@ -276,7 +276,7 @@ int Validation(int isampleyear = 3, int isampletype = 24, int ifile = 0, bool Do
   Configs *conf = new Configs(isampleyear, isampletype, ifile);
   // if (conf->ErrorRerun() == 0) return 0;
   // conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/SingleMuon/2018/2B07B4C0-852B-9B4F-83FA-CA6B047542D1.root";
-  conf->InputFile = "All";
+  // conf->InputFile = "All";
   conf->LocalOutput = false;
   conf->PrintProgress = true;
   conf->RunFitter = DoFitter;
@@ -285,7 +285,7 @@ int Validation(int isampleyear = 3, int isampletype = 24, int ifile = 0, bool Do
   conf->AcceptRegions({-4,-3,-2});
   conf->TWMassMode = 0;
   // conf->DebugList = {"LeptonRegion"};
-  conf->ProgressInterval = 1;
+  // conf->ProgressInterval = 1;
   // conf->EntriesMax = 2000;
   conf->SignalFilesPerJob(0.1);
   
@@ -297,7 +297,6 @@ int Validation(int isampleyear = 3, int isampletype = 24, int ifile = 0, bool Do
     if (!a->WithinROI()) continue;
     // a->r->BranchSizeCheck();
     proceededEvts++;
-    continue;
     a->FillBranchContent();
     a->FillTree();
   }
