@@ -43,7 +43,7 @@ struct VarPO : PO {
   TLorentzVector& JERup(){return RU;}
   TLorentzVector& JERdown(){return RD;}
 
-  TLorentzVector& GetV(int iv = 0) {
+  TLorentzVector& GetVInternal(int iv = 0) {
     if (iv == 1) return SU;
     else if (iv == 2) return SD;
     else if (iv == 3) return RU;
@@ -78,7 +78,7 @@ struct GenJet : PO {
 
 struct Jet : VarPO {
   Jet(TLorentzVector v_ = TLorentzVector()) : VarPO(v_) {};
-  TLorentzVector& v ( int ir = 0) { return GetV(ir - 4); } // Jet variation index is 5 to 8 in region id.
+  TLorentzVector& v ( int ir = 0) { return GetVInternal(ir - 4); } // Jet variation index is 5 to 8 in region id.
   vector<bool> PUIDpasses = {false, false, false}; // {loose, medium, tight}
   vector<vector<float> > PUIDSFweights = {{1.,1.,1.}, {1.,1.,1.}, {1.,1.,1.}}; // {nominal, up, down} x {loose, medium, tight}
   int JetId;
@@ -100,7 +100,7 @@ struct Trigger : PO {
 
 struct Lepton : VarPO {
   Lepton(TLorentzVector v_ = TLorentzVector()) : VarPO(v_) {};
-  TLorentzVector& v(int ir = 0) { return GetV(ir);} // Ele variations index is 1 to 4
+  TLorentzVector& v(int ir = 0) { return GetVInternal(ir);} // Ele variations index is 1 to 4
   int charge;
   bool IsPrimary;
   bool IsLoose;
@@ -129,12 +129,12 @@ struct Muon: Lepton {
 
 struct MET : VarPO {
   MET(TLorentzVector v_ = TLorentzVector()) : VarPO(v_) {};
-  TLorentzVector& v ( int ir = 0) { return GetV(ir - 4); } // Same as Jet
+  TLorentzVector& v ( int ir = 0) { return GetVInternal(ir - 4); } // Same as Jet
 };
 
 struct GenMET : VarPO {
   GenMET(TLorentzVector v_ = TLorentzVector()) : VarPO(v_) {};
-  TLorentzVector& v ( int ir = 0) { return GetV(ir - 4); }
+  TLorentzVector& v ( int ir = 0) { return GetVInternal(ir - 4); }
 };
 
 struct EventWeight{

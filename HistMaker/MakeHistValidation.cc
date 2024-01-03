@@ -21,9 +21,9 @@ public:
   void FillHistograms() {}
 };
 
-int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1, bool DoMCReweight = false, bool DrawMCReweight = false) {
+int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1, int MCReweightStep = 0, double FilesPerJob = 1) { // Step 0: produce hists. Step 1: Create reweights. Step 2: apply reweights
   bool DoFitter = true;
-  if (isampletype != 2 && DoMCReweight) return 0;
+  if (isampletype != 2 && MCReweightStep == 2) return 0;
   if (ErrorLogDetected(isampleyear, isampletype, ifile) == 0) return 0;
   rm.AcceptRegions({1,2},{1},{5,6},{1,2,3,4,5,6});
   string basepath = "/eos/user/s/siluo/WPrimeAnalysis/ValidationFitted/";
@@ -40,7 +40,7 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
   if (isampletype != -1) {
     
   }
-  if (DoMCReweight) HistFilePrefix += "_RW";
+  if (MCReweightStep) HistFilePrefix += "_RW";
   else if (SampleType == "ttbar") HistFilePrefix += "_NRW";
   if (SampleType == "ZZ") return 0;
 
@@ -48,18 +48,19 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
   double MCRWVal = 0.; // Need to be assigned later
   MCReweightManager *mcrm = new MCReweightManager(MCRWVar); // MCReweight derive variable
   mcrm->Verbose = false;
-  if ((DoMCReweight && (SampleType == "ttbar" || SampleType == "")) || DrawMCReweight) {
-    mcrm->Init();
+  if ((MCReweightStep == 2 && (SampleType == "ttbar" || SampleType == "")) || MCReweightStep == 1) {
+    mcrm->AddbTagRegion(1, {1});
+    mcrm->AddbTagRegion(2, {2,3,4});
     string SourcePath = basepath + "Hists/";
     string SourcePrefix = SampleYear + "_Validation";
     // TString rwfn = StandardNames::HistFileName(basepath + "Hists/", HistFilePrefix, "ReweightSF");
-    if (DrawMCReweight || !mcrm->ReadFromFile(SourcePath, SourcePrefix)) {
+    if (MCReweightStep == 1 || !mcrm->ReadFromFile(SourcePath, SourcePrefix)) {
       mcrm->ReadFromFiles(SourcePath, SourcePrefix);
       mcrm->SaveToFile(SourcePath, SourcePrefix);
     }
   }
 
-  if (DrawMCReweight) return 0;
+  if (MCReweightStep == 1) return 0;
 
   HistCol.SetSampleTypes(SampleTypes);
   HistCol.AddObservable("LeptonPt",50,0,500);
@@ -96,11 +97,21 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
   float NormFactor = dlib.GetNormFactor(SampleType, isampleyear);
   cout << endl << "Start processing " << SampleType << endl;
   string SamplePath = SampleYear + "_" + SampleType + "/" + SampleYear + "_" + SampleType;
-  if (ifile != -1) SamplePath += Form("_%i.root",ifile);
-  else SamplePath += "*.root";
-  TString InFilePath = basepath + itpath + SamplePath;
-  cout << "The InputFile path is " << InFilePath << endl;
-  t->Add(InFilePath);
+  if (ifile < 0) {
+    SamplePath += "*.root";
+    TString InFilePath = basepath + itpath + SamplePath;
+    cout << "The InputFile path is " << InFilePath << endl;
+    t->Add(InFilePath);
+  }
+  else {
+    for (int isubfile = 0; isubfile < FilesPerJob; ++isubfile) {
+      int ii = ifile * FilesPerJob + isubfile;
+      string sp = SamplePath + Form("_%i.root",ii);
+      TString InFilePath = basepath + itpath + sp;
+      cout << "The InputFile path is " << InFilePath << endl;
+      t->Add(InFilePath);
+    }
+  }
   InterTree *r = new InterTree(t);
   Long64_t EntryMax = t->GetEntries();
   // Long64_t EntryMax = t->GetEntriesFast();
@@ -182,7 +193,7 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
         WPrimeMassSimpleFL = r->WPrimeMassSimpleFL->at(iv);
         WPrimeMassSimpleLL = r->WPrimeMassSimpleLL->at(iv);
       }
-      if (SampleType == "ttbar" && DoMCReweight) {
+      if (SampleType == "ttbar" && MCReweightStep == 2) {
         MCRWVal = ST;
         float mcrweight = mcrm->GetSF1DF(MCRWVal, RegionIdentifier);
         EventWeight *= mcrweight;

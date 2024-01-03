@@ -221,11 +221,11 @@ public:
     }
 
     for (unsigned i = 0; i < 9; ++i) {
-      TLorentzVector lepton = r->TheLepton.GetV(i);
-      TLorentzVector met = r->Met.GetV(i);
+      TLorentzVector lepton = r->TheLepton.v(i);
+      TLorentzVector met = r->Met.v(i);
       mT->at(i) = pow(pow(lepton.Pt()+met.Pt(),2)-pow(lepton.Px()+met.Px(),2)-pow(lepton.Py()+met.Py(),2),.5);
-      TLorentzVector vWprimeFL = r->Jets[0].GetV(i) + r->Jets[1].GetV(i) + r->Jets[3].GetV(i) + r->Jets[4].GetV(i);
-      TLorentzVector vWprimeLL = r->Jets[0].GetV(i) + r->Jets[1].GetV(i) + r->TheLepton.GetV(i) + r->Met.GetV(i);
+      TLorentzVector vWprimeFL = r->Jets[0].v(i) + r->Jets[1].v(i) + r->Jets[3].v(i) + r->Jets[4].v(i);
+      TLorentzVector vWprimeLL = r->Jets[0].v(i) + r->Jets[1].v(i) + r->TheLepton.v(i) + r->Met.v(i);
       WPrimeMassSimpleFL->at(i) = vWprimeFL.M();
       WPrimeMassSimpleLL->at(i) = vWprimeLL.M();
       
@@ -272,22 +272,26 @@ public:
   }
 };
 
-int Validation(int isampleyear = 3, int isampletype = 24, int ifile = 0, bool DoFitter = true) {
+int Validation(int isampleyear = 3, int isampletype = 24, int ifile = 0, double DoFitterFilesPerJob = 0, int TestRun = 0) {
   Configs *conf = new Configs(isampleyear, isampletype, ifile);
   // if (conf->ErrorRerun() == 0) return 0;
   // conf->InputFile = "/eos/user/p/pflanaga/andrewsdata/skimmed_samples/SingleMuon/2018/2B07B4C0-852B-9B4F-83FA-CA6B047542D1.root";
   // conf->InputFile = "All";
-  conf->LocalOutput = false;
   conf->PrintProgress = true;
-  conf->RunFitter = DoFitter;
   conf->UseMergedAuxHist = true;
-  conf->AcceptRegions({1,2},{1},{5,6},{1,2,3,4,5,6});
+  conf->AcceptRegions({1,2},{1},{5,6},{1,2,3,4});
   conf->AcceptRegions({-4,-3,-2});
   conf->TWMassMode = 0;
   // conf->DebugList = {"LeptonRegion"};
-  // conf->ProgressInterval = 1;
-  // conf->EntriesMax = 2000;
-  conf->SignalFilesPerJob(0.1);
+  if (DoFitterFilesPerJob) {
+    conf->RunFitter = true;
+    conf->FilesPerJob = DoFitterFilesPerJob;
+  }
+  if (TestRun >= 1) { // Benchmark run time
+    conf->ProgressInterval = 1;
+    conf->LocalOutput = true;
+  }
+  if (TestRun >= 2) conf->EntriesMax = 2000; // for debug
   
   ThisAnalysis *a = new ThisAnalysis(conf);
   if (!(a->SetOutput("ValidationFitted"))) return 0;
