@@ -5,68 +5,61 @@ This is an analysis framework to read from the nanoAOD files, process the conten
 
 ## Step 1: Listing files to run over
 This package runs on Andrew's skimmed samples.
-To create a file list. Running the python scipt ```python GetLocalFileNames.py```
-After line 22, the samples going to be run are listed with their folder name.
-Right now the default configuration is for running tWprime analysis with signal samples loaded from line 42 to line 49.
-Note the syntax to append a dataset is ```datasets.append(["name"])```. with the ```name```parameter being a list of string.
+To create a file list. Running the python scipt ```python3 GetLocalFileNames.py```
+
+Note the syntax to append a dataset is ```datasets.append(["in_name","out_name"])```, Because some datasets are simplified internally.
 
 
 ## Step 2: Creating folders and submission scripts
 ```python MakeSubmission.py``` takes care of this. And the products are intended to run on lxplus condor system.
-You will need to configure the ```SampleTypes``` to the dataset you want to process.
-It is a list of strings of the folder names same as in the Step 1.
-The submission scripts are located in ```Submits/```
-This script also creates folders in the EOS, that is configured at line 18 and 19.
+The SampleTypes can be customized, and the default will be the list set in the previous code ```GetLocalFileNames.py```
+Beware to mind the parameters ```EOSPath``` and ```EOSSubFolderName```, which direct the target location of the outputs, you may need to set it to your own EOS path.
+Also since we are not using the fitter yet, check ```FileSplit``` value to be 0 to disable the fitter and file splitting function.
 
 
-## Step 3: Configure the Submit.sh
-In ```Submits/Submit.sh``` line 4 is the macro to be run that needs to be configured.
-And the line 3 before that should be changed to your working folder.
+## Step 3: Create auxiliary hists
+bTagging efficiency plots are always required for any further analysis.
+By running ```root CreatebTagEffHist.cc+({iYear},{iSampleType})``` bTagging efficiency plots will be made and stored at EOSPath/AuxHists/
+Note not to run on Data datasets, because those will not have any truth information and may result in crash.
+
+For ttbar, where the number of events is extremely high, you can run the jobs on condor.
+In path ```wprime/Submits/Submit.sh``` you may comment out the line that runs ```root -b -q "Validation.cc()"``` and uncomment the next line that runs ```CreatebTagEffHist.cc``` instead.
+And it is ready to submit the ttbar job by cd into ```wprime/Submits/``` and do command like ```condor_submit 2018_ttbar.sub``` if 2018 is the year you are aiming for.
+After running the batch job, remember to hadd those batch files at EOSPath/AuxHists/batch/ into one to stay consistent with the other datasets in EOSPath/AuxHists/
+
+Next we need to merge those plots from different datasets into a merged files to be used by all later steps:
+Simply cd into ```wprime/``` and do ```root MergeAuxHists.cc+({iYear},0)``` will merge the bTag Efficiency files by the datasets cross-section and luminosity.
+
+If fitter is going to be activated in the analysis, jet response plots and permutation distribution plots must also be produced.
+Similar to bTagging efficiencies, now the command to run is ```root CreateAuxHists.cc+({iYear},{iSampleType})```
+However, unlike bTagging efficiencies, Jet responses is only designed to be run on signal samples. And considering their relatively small sample size, batch function is not added.
+
+After producing the individual auxiliary plot for each dataset, merge them with ```root MergeAuxHists.cc+({iYear},1)```
+
+Now the main code should be ready to roll.
 
 ## Step 4: Main analysis code
-In the base path of this package is where your analysis macro should be placed.
-The ```Validation.cc``` and ```PileupDist.cc``` are examples of how the framework is used.
+The main code is ```Validation.cc+({iYear},{iSampleType},{iFile},{FilesPerJob},{IsTestRun})```
+Note the FilesPerJob is designed for splitting long-running files into number of jobs, which should yield an integer if divided by 1.0.
+FilesPerJob is defaulted to 0, which disables both the fitter and the file splitting. Any non-zero value will enable the fitter, including 1.0.
 
-In the first parts, you need to define a derived class of Analyzer,
-eg. ```class ThisAnalysis : public Analyzer {  }```.
-In this class, you need to define the variables and analysis functions.
-
-In addition to that, you need to define ```void BookBranches()``` where the branches going to be saved in the output tree and/or histograms to be saved are declared.
-
-Then in ```void FillBranchContent() {} ``` is the main part of analysis that eventually assigns value to the tree branches and fills the histograms.
-
-After the class definition, the code main function acts as an interface between the input arguments and the Analyzer.
-This function has to have the same name as the macro's filename.
-The input parameters are the indices of sample year, sample type, trigger index, and file index.
-
-The correspondence relation between indices and actual value is enumerated in ```Utilities/Constants.cc```.
-
-In the main function, a ```Configs``` instance need to be initialized with the four parameters. Then you can initialize your derived ```Analyzer``` object with the ```Configs```.
-
-```Analyzer.SetOutput("folder")``` needs to be specified and the folder should stay consistent with the one set in Step 2.
-
-A loop over events follows and there you need two lines in it:
-
-```if (Analyzer.ReadEvent(iEvent)) continue;``` 
-
-```Analyzer.FillBranchContent();```
-
-After the loop simply save the file and close it:
-
-```Analyzer.SaveOutput(); Analyzer.CloseOutput();```
-
-In the previous statements, ```Analyzer. ``` should be replaced by the name of your derived analyzer instance. And depending on whether it is a pointer or object, an arrow or a dot is to be used.
-
-Detailed configurations will be explained next.
+If ```IsTestRun``` is not 0, the output path will be ```wprime/outputs/``` instead of the EOS paths, and the progress printing interval will be 1 event instead of 1000.
 
 ### Step 5: Submitting the job
-Before batch submitting the job, you need first compile the code once with something like: ```root Validation.cc+(0,1,2,3)```,
-where the four parameters are corresponding to the ones set in the main analysis code.
+Before batch submitting the job, you need first compile the code once with something like: ```root Validation.cc+(3,1,0,0,1)```,
+where the parameters correspond to the ones set in the main analysis code.
 Otherwise the jobs will all try to compile the code and lead to conflicts.
-This step can also serve as test run.
+This step can also serve as a test run.
 
-After it compiled, you can simple go to ```Submits/``` and do ```condor_submit xxx.sub```,
-where the .sub files are created by MakeSubmission.py
+After it compiled, please check ```MakeSubmission.py```
+if you are going to run fitter, then confirm ```FileSplit = 10``` or any other desired integer that can be divided by 1.0 to get a definite number.
+Otherwise keep ```FileSplit = 0```
+And run ```python3 MakeSubmission.py``` again to update the submission scripts
+
+Then one can cd to ```wprime/Submits/``` and submit the jobs with ```condor_submit xxx.sub```
+
+
+### Under construction below here
 
 ### Step 6: Plotting from the tree
 https://github.com/sifuluo/DrawTools is the package that takes care of the output tree and draw plots.
