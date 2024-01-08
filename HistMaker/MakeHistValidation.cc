@@ -21,8 +21,11 @@ public:
   void FillHistograms() {}
 };
 
-int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1, int MCReweightStep = 0, double FilesPerJob = 1) { // Step 0: produce hists. Step 1: Create reweights. Step 2: apply reweights
+int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1, int MCReweightStep = 0) { // Step 0: produce hists. Step 1: Create reweights. Step 2: apply reweights
   bool DoFitter = true;
+  double FilesPerJob = 10.;
+  vector<string> BatchFileKeywords = {"ttbar","top","FL","LL"}; // Consistent with MakeSubmission.py
+  if (SampleType == "ttbar") FilesPerJob = 10.; // Consistent with MakeSubmission.py
   if (isampletype != 2 && MCReweightStep == 2) return 0;
   if (ErrorLogDetected(isampleyear, isampletype, ifile) == 0) return 0;
   rm.AcceptRegions({1,2},{1},{5,6},{1,2,3,4,5,6});
@@ -37,20 +40,23 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
   string SampleType = SampleTypes[isampletype];
   HistFilePath = HistFilePath + "Hists/";
   if (ifile > -1) HistFilePath = HistFilePath + SampleYear + "_" + SampleType + "/";
-  if (isampletype != -1) {
-    
-  }
   if (MCReweightStep) HistFilePrefix += "_RW";
   else if (SampleType == "ttbar") HistFilePrefix += "_NRW";
   if (SampleType == "ZZ") return 0;
 
   string MCRWVar = "ST";
-  double MCRWVal = 0.; // Need to be assigned later
+  vector<double> MCRWBinning = {200,300,350,850,900,950,1000,1100,1200,1300,1500,2000};
+  int inspos = 3; // position to insert repeatative bins.
+  for (int bv = 400; binv <= 800; binv += 20) {
+    MCRWBinning.insert(MCRWBinning.begin() + inspos, binv);
+  }
+  double MCRWVal = 0.; // Evaluated quantity in the MCReweight
   MCReweightManager *mcrm = new MCReweightManager(MCRWVar); // MCReweight derive variable
   mcrm->Verbose = false;
   if ((MCReweightStep == 2 && (SampleType == "ttbar" || SampleType == "")) || MCReweightStep == 1) {
-    mcrm->AddbTagRegion(1, {1});
-    mcrm->AddbTagRegion(2, {2,3,4});
+    mcrm->AddbTagRegion(1, {1,2}); // 1 tagged reweight will be applied on 1 tagged and 2 tagged region, for validation
+    mcrm->AddbTagRegion(2, {3,4}); // 2 tagged region will be applied on signal regions
+    mcrm->SetXaxis(MCRWBinning);
     string SourcePath = basepath + "Hists/";
     string SourcePrefix = SampleYear + "_Validation";
     // TString rwfn = StandardNames::HistFileName(basepath + "Hists/", HistFilePrefix, "ReweightSF");
@@ -104,6 +110,12 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
     t->Add(InFilePath);
   }
   else {
+    bool InKeyWord = false;
+    TString stts = SampleType;
+    for (unsigned ikw = 0; ikw < BatchFileKeywords.size(); ++ikw) {
+      if (stts.Contains(BatchFileKeywords[i])) InKeyWord = true;
+    }
+    if (!InKeyWord) FilesPerJob = 1.0;
     for (int isubfile = 0; isubfile < FilesPerJob; ++isubfile) {
       int ii = ifile * FilesPerJob + isubfile;
       string sp = SamplePath + Form("_%i.root",ii);
@@ -195,7 +207,7 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
       }
       if (SampleType == "ttbar" && MCReweightStep == 2) {
         MCRWVal = ST;
-        float mcrweight = mcrm->GetSF1DF(MCRWVal, RegionIdentifier);
+        float mcrweight = mcrm->GetSF1DF(MCRWVal, RegionIdentifier, iv);
         EventWeight *= mcrweight;
         if ((mcrweight > 3.0 || mcrweight < 0.3)) {
           cout << "Extreme reweight = " << mcrweight << ", at var = " << ST <<endl;

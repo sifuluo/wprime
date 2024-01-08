@@ -44,7 +44,7 @@ public:
     SF1DF->resize(VarSize);
   }
 
-  void SetXaxis(vector<double> xs) {
+  void SetXaxis(vector<double>& xs) {
     nbins = xs.size() - 1;
     for (unsigned i = 0; i < xs.size(); ++i) {
       xaxis[i] = xs[i];
@@ -100,34 +100,6 @@ public:
       if (note != "") cout << "Adding " << note << " in region " << SourceRegion << " with hist: " << h_->GetName() << endl;
     }
   }
-
-  // void AddData(TH1F* h_) {
-  //   if (h_ == nullptr) return;
-  //   if (DataHist == nullptr) {
-  //     DataHist = (TH1F*) h_->Clone();
-  //     DataHist->SetDirectory(0);
-  //     cout << "init Data in region" << SourceRegion << " with hist: " << h_->GetName() << endl;
-  //   }
-  //   else {
-  //     DataHist->Add(h_);
-  //     cout << "Adding Data in region" << SourceRegion << " with hist: " << h_->GetName() << endl;
-  //   }
-  // }
-
-  // void AddMC(TH1F* h_, int iv = 0) {
-  //   if (h_ == nullptr) return;
-  //   if (OtherMCHists[iv] == nullptr) {
-  //     OtherMCHists[iv] = (TH1F*) h_->Clone();
-  //     OtherMCHists[iv]->SetDirectory(0);
-  //   }
-  //   else OtherMCHists[iv]->Add(h_);
-  // }
-
-  // void Addttbar(TH1F* h_, int iv = 0) {
-  //   if (h_ == nullptr) return;
-  //   ttbarHists[iv] = (TH1F*) h_->Clone();
-  //   ttbarHists[iv]->SetDirectory(0);
-  // }
 
   void ReadFromFiles(string path, string prefix, string obs) { // Reads histograms of observables to make reweight
     Observable = obs;
@@ -209,21 +181,21 @@ public:
     }
     xmin = SF1D->GetBinLowEdge(StartBin);
     xmax = SF1D->GetBinLowEdge(EndBin + 1);
-    cout << "SF Value at 685.592GeV from" << SourceRegion << " is " << SF1D->GetBinContent(SF1D->FindBin(685.592)) << endl;
-    cout << "SF Evaled value is " << SF1DF->Eval(685.592) << endl;
+    cout << "SF Value at 685.592GeV from" << SourceRegion << " is " << SF1D[0]->GetBinContent(SF1D[0]->FindBin(685.592)) << endl;
+    cout << "SF Evaled value of the central is " << SF1DF[0]->Eval(685.592) << endl;
     return true;
   }
 
-  float GetSF1D(double v) {
-    return SF1D->GetBinContent(SF1D->FindBin(v));
+  float GetSF1D(double v, int iv) {
+    return SF1D[iv]->GetBinContent(SF1D[iv]->FindBin(v));
   }
-  float GetSF1DF(double v, bool Verbose = true) {
+  float GetSF1DF(double v, int iv, bool Verbose = true) {
     float sf = 1.0;
-    if (v < xmax && v > xmin) sf = SF1DF->Eval(v);
-    if (v <= xmin) sf = SF1DF->Eval(xmin);
-    if (v >= xmax) sf = SF1DF->Eval(xmax);
+    if (v < xmax && v > xmin) sf = SF1DF[iv]->Eval(v);
+    if (v <= xmin) sf = SF1DF[iv]->Eval(xmin);
+    if (v >= xmax) sf = SF1DF[iv]->Eval(xmax);
     if (sf > 3.0 || sf < 0.3) {
-      cout << SF1D->GetName() << " function at " << v << " has extreme value of " << sf << endl;
+      cout << SF1D[iv]->GetName() << " function at " << v << " has extreme value of " << sf << endl;
     }
     return sf;
   }
@@ -234,7 +206,7 @@ public:
   string StringRange;
   string Observable;
   unsigned nbins;
-  double xaxis[100];
+  double xaxis[200];
   int StartBin, EndBin;
   float xmin, xmax;
   TH1F* DataHist = nullptr;
@@ -259,13 +231,12 @@ public:
     rws.push_back(new MCReweight(2160 + nbtag, rwr));
   }
 
-  void AddApplicationRegions(int baser, vector<int> appregions = {}) {
-    
-    vector<int> thiscoverage = vector<int>(appregions.size());
-    for (unsigned i = 0; i < appregions.size(); ++i) {
-      thiscoverage[i] = baser + appregions[i];
+  void SetXaxis(vector<double>& xs) {
+    for (unsigned i = 0; i < rws.size(); ++i) {
+      rws[i]->SetXaxis(xs);
     }
   }
+
 
   void ReadFromFiles(string path, string prefix) {
     for (unsigned i = 0; i < rws.size(); ++i) {
@@ -318,28 +289,27 @@ public:
 
   }
 
-  float GetSF1D(double v, int rid) {
+  float GetSF1D(double v, int rid, int iv) {
     int irws = -1;
     for (unsigned i = 0; i < rws.size(); ++i) {
       if (rws[i]->SourceRegionInt / 10 != rid / 10 ) continue; 
       if 
     }
-    if (irws > -1) return rws[i]->GetSF1D(v);
+    if (irws > -1) return rws[i]->GetSF1D(v, iv);
     return 1.0;
   }
 
-  float GetSF1DF(double v, int rid) {
+  float GetSF1DF(double v, int rid, int iv) {
     int irws = -1;
     for (unsigned i = 0; i < rws.size(); ++i) {
       if (rws[i]->SourceRegionInt / 10 != rid / 10) continue; 
 
     }
-    if (irws > -1) return rws[i]->GetSF1DF(v, Verbose);
+    if (irws > -1) return rws[i]->GetSF1DF(v, iv, Verbose);
     return 1.0;
   }
 
   vector<MCReweight*> rws;
-  int MaxRWbTags = 0;
   string Observable;
   bool Verbose;
 

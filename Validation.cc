@@ -230,6 +230,9 @@ public:
       WPrimeMassSimpleLL->at(i) = vWprimeLL.M();
       
       if (!conf->RunFitter) continue;
+      BestHypo->Reset();
+      TrueHypo->Reset();
+      TTHypo->Reset();
       Ftr->SetTruePerm(TruePermVector);
       SetEventFitter(i);
       if (Ftr->Optimize() < 0) continue;
