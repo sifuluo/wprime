@@ -485,6 +485,13 @@ public:
     LowerDummy->GetYaxis()->SetRangeUser(0, 2.4);
     LowerDummy->GetYaxis()->SetNdivisions(505);
 
+    // Decrease X limits if they're too large
+    if (xup >= 10000)
+    {
+      MCStack->GetXaxis()->SetRangeUser(0, 2000);
+      LowerDummy->GetXaxis()->SetRangeUser(0, 2000);
+    }
+
     if (XBinLabels.size() != 0) {
       int nb_ = nbins;
       if (XBinLabels.size() < nbins) nb_ = XBinLabels.size();
