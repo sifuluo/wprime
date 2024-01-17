@@ -73,14 +73,14 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
       HistCol.AddObservable(ob, 45, 0, 45);
     }
   }
-  HistCol.AddObservable("METPt",100,0,2000);
+  HistCol.AddObservable("METPt",500,0,10000);
   HistCol.AddObservable("METPhi",64,-3.2,3.2);
   HistCol.AddObservable("dPhiMetLep",90,-4.5,4.5);
-  HistCol.AddObservable("mT",100,0,2000);
-  HistCol.AddObservable("HT",200,0,2000);
-  HistCol.AddObservable("ST",200,0,2000);
-  HistCol.AddObservable("WPrimeMassSimpleFL",100,0,2000);
-  HistCol.AddObservable("WPrimeMassSimpleLL",100,0,2000);
+  HistCol.AddObservable("mT",500,0,10000);
+  HistCol.AddObservable("HT",500,0,10000); 
+  HistCol.AddObservable("ST",500,0,10000);
+  HistCol.AddObservable("WPrimeMassSimpleFL",500,0,10000);
+  HistCol.AddObservable("WPrimeMassSimpleLL",500,0,10000);
   // HistCol.AddObservable("WPrimeMass",100,0,2000);
   // HistCol.AddObservable("WPrimeMassFL",100,0,2000);
   // HistCol.AddObservable("WPrimeMassLL",100,0,2000);
