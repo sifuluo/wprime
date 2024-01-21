@@ -24,20 +24,23 @@ public:
 int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1, int MCReweightStep = 0) { // Step 0: produce hists. Step 1: Create reweights. Step 2: apply reweights
   bool DoFitter = true;
   double FilesPerJob = 10.;
+  if (ErrorLogDetected(isampleyear, isampletype, ifile) == 0) return 0;
+
+  vector<string> SampleTypes = dlib.DatasetNames;
+  string SampleType = SampleTypes[isampletype];
+  string SampleYear = dlib.SampleYears[isampleyear];
+
   vector<string> BatchFileKeywords = {"ttbar","top","FL","LL"}; // Consistent with MakeSubmission.py
   if (SampleType == "ttbar") FilesPerJob = 10.; // Consistent with MakeSubmission.py
   if (isampletype != 2 && MCReweightStep == 2) return 0;
-  if (ErrorLogDetected(isampleyear, isampletype, ifile) == 0) return 0;
+  
   rm.AcceptRegions({1,2},{1},{5,6},{1,2,3,4,5,6});
   string basepath = "/eos/user/s/siluo/WPrimeAnalysis/ValidationFitted/";
   string itpath = "";
-  string SampleYear = dlib.SampleYears[isampleyear];
   // string HistFilePath = "outputs/";
   string HistFilePath = basepath;
   string HistFilePrefix = SampleYear + "_Validation";
-  Histograms HistCol;
-  vector<string> SampleTypes = dlib.DatasetNames;
-  string SampleType = SampleTypes[isampletype];
+  
   HistFilePath = HistFilePath + "Hists/";
   if (ifile > -1) HistFilePath = HistFilePath + SampleYear + "_" + SampleType + "/";
   if (MCReweightStep) HistFilePrefix += "_RW";
@@ -47,7 +50,7 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
   string MCRWVar = "ST";
   vector<double> MCRWBinning = {200,300,350,850,900,950,1000,1100,1200,1300,1500,2000};
   int inspos = 3; // position to insert repeatative bins.
-  for (int bv = 400; binv <= 800; binv += 20) {
+  for (int binv = 400; binv <= 800; binv += 20) {
     MCRWBinning.insert(MCRWBinning.begin() + inspos, binv);
   }
   double MCRWVal = 0.; // Evaluated quantity in the MCReweight
@@ -68,6 +71,9 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
 
   if (MCReweightStep == 1) return 0;
 
+  unsigned ivRwStatUp = rm.Variations.size();
+  if (MCReweightStep == 2) rm.AddVariationSource("RwStat");
+  Histograms HistCol;
   HistCol.SetSampleTypes(SampleTypes);
   HistCol.AddObservable("LeptonPt",50,0,500);
   HistCol.AddObservable("LeptonEta",90,-4.5,4.5);
@@ -96,9 +102,7 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
     HistCol.AddObservable("Likelihood",100,-10,0);
   }
   HistCol.CreateHistograms(HistFilePath, HistFilePrefix, SampleType, ifile);
-  Progress* progress = new Progress(0,10000);
-
-
+  
   TChain* t = new TChain("t");
   float NormFactor = dlib.GetNormFactor(SampleType, isampleyear);
   cout << endl << "Start processing " << SampleType << endl;
@@ -113,7 +117,7 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
     bool InKeyWord = false;
     TString stts = SampleType;
     for (unsigned ikw = 0; ikw < BatchFileKeywords.size(); ++ikw) {
-      if (stts.Contains(BatchFileKeywords[i])) InKeyWord = true;
+      if (stts.Contains(BatchFileKeywords[ikw])) InKeyWord = true;
     }
     if (!InKeyWord) FilesPerJob = 1.0;
     for (int isubfile = 0; isubfile < FilesPerJob; ++isubfile) {
@@ -125,12 +129,12 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
     }
   }
   InterTree *r = new InterTree(t);
-  Long64_t EntryMax = t->GetEntries();
-  // Long64_t EntryMax = t->GetEntriesFast();
-  // Long64_t EntryMax = 2000000;
-  progress->SetEntryMax(EntryMax);
+  Long64_t EntriesMax = t->GetEntries();
+  // Long64_t EntriesMax = t->GetEntriesFast();
+  // Long64_t EntriesMax = 2000000;
+  Progress* progress = new Progress(EntriesMax,10000);
   int n_nan_weight = 0;
-  for (Long64_t ievt = 0; ievt < EntryMax; ++ievt) {
+  for (Long64_t ievt = 0; ievt < EntriesMax; ++ievt) {
     r->GetEntry(ievt);
     progress->Print(ievt);
     // checkpoint(0);
@@ -181,9 +185,9 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
       float WPrimeMass, Likelihood;
       int WPType;
       if (DoFitter) {
-        WPrimeMass = r->WPrimeMass->at(0);
-        Likelihood = r->Likelihood->at(0);
-        WPType = r->WPType->at(0);
+        WPrimeMass = r->Best_WPrimeMass->at(0);
+        Likelihood = r->Best_Likelihood->at(0);
+        WPType = r->Best_WPType->at(0);
       }
       if (iv > 0 && iv < 9) { // Variations on Physical quantities
         // "EleScaleUp", "EleScaleDown", "EleResUp", "EleResDown", "JESup", "JESdown", "JERup", "JERdown"
@@ -208,6 +212,8 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
       if (SampleType == "ttbar" && MCReweightStep == 2) {
         MCRWVal = ST;
         float mcrweight = mcrm->GetSF1DF(MCRWVal, RegionIdentifier, iv);
+        if (iv == ivRwStatUp) mcrweight += mcrm->GetSF1DFError(MCRWVal, RegionIdentifier);
+        else if (iv == ivRwStatUp + 1) mcrweight -= mcrm->GetSF1DFError(MCRWVal, RegionIdentifier);
         EventWeight *= mcrweight;
         if ((mcrweight > 3.0 || mcrweight < 0.3)) {
           cout << "Extreme reweight = " << mcrweight << ", at var = " << ST <<endl;

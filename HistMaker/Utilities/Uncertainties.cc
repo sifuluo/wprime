@@ -7,10 +7,12 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <algorithm>
 
 using namespace std;
 
 class Uncertainties{
+public:
   Uncertainties() {
 
   };
@@ -19,6 +21,7 @@ class Uncertainties{
     if (h == nullptr) return {};
     // hcentral = (TH1F*)h->Clone();
     hcentral = h;
+    MinY = 0;
     nbins = hcentral->GetNbinsX();
     xlow = hcentral->GetXaxis()->GetXmin();
     xup = hcentral->GetXaxis()->GetXmax();
@@ -95,23 +98,45 @@ class Uncertainties{
     return out;
   }
 
+  TGraph* CreateErrorGraph(int ErrorBandFillStyle = 3002) {
+    double x[1000];
+    double y[1000];
+    int lp = nbins * 4 - 1;
+    for (unsigned i = 0; i < nbins; ++i) {
+      x[2*i] = x[lp-2*i] = hcentral->GetXaxis()->GetBinLowEdge(i+1);
+      x[2*i+1] = x[lp-2*i-1] = hcentral->GetXaxis()->GetBinUpEdge(i+1);
+    }
+    for (unsigned i = 0; i < nbins; ++i) {
+      y[2*i] = y[2*i+1] = y[lp-2*i] = y[lp-2*i-1] = MinY;
+      double cent = hcentral->GetBinContent(i+1);
+      if (cent <= MinY) continue;
+      y[2*i] = y[2*i+1] = cent + sqrt(errup[i]);
+      y[lp-2*i] = y[lp-2*i-1] = cent - sqrt(errlow[i]);
+    }
+    ErrorBand = new TGraph(nbins * 4,x,y);
+    ErrorBand->SetLineWidth(0);
+    ErrorBand->SetFillStyle(ErrorBandFillStyle);
+    return ErrorBand;
+  }
+
   /* Block specially designed for MCReweighting*/
   
-  void Minus(Uncertainties* u) {
-    for (unsigned i = 0; i < nbins; ++i) {
-      center[i] = center[i] - u->center[i];
-      errup[i] = errup[i] + u->errup[i];
-      errlow[i] = errlow[i] + u->errlow[i];
-    }
-  }
+  // void Minus(Uncertainties* u) {
+  //   for (unsigned i = 0; i < nbins; ++i) {
+  //     center[i] = center[i] - u->center[i];
+  //     errup[i] = errup[i] + u->errup[i];
+  //     errlow[i] = errlow[i] + u->errlow[i];
+  //   }
+  // }
 
-  void Divide(Uncertainties* u) {
-    for (unsigned i = 0; i < nbins; ++i)
-  }
+  // void Divide(Uncertainties* u) {
+  //   for (unsigned i = 0; i < nbins; ++i)
+  // }
 
   TH1F* hcentral;
+  TGraph *ErrorBand;
   unsigned nbins;
-  double xlow, xup;
+  double xlow, xup, MinY;
   vector<double> center, errup, errlow;
 };
 
