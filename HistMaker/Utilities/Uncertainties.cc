@@ -98,22 +98,37 @@ public:
     return out;
   }
 
-  TGraph* CreateErrorGraph(int ErrorBandFillStyle = 3002) {
+  TGraph* CreateErrorGraph(int style = 0, int ErrorBandFillStyle = 3002) { // style 0: rectangle bins, style 1: connecting bin center values
     double x[1000];
     double y[1000];
-    int lp = nbins * 4 - 1;
-    for (unsigned i = 0; i < nbins; ++i) {
-      x[2*i] = x[lp-2*i] = hcentral->GetXaxis()->GetBinLowEdge(i+1);
-      x[2*i+1] = x[lp-2*i-1] = hcentral->GetXaxis()->GetBinUpEdge(i+1);
+    if (style == 0) {
+      int lp = nbins * 4 - 1;
+      for (unsigned i = 0; i < nbins; ++i) {
+        x[2*i] = x[lp-2*i] = hcentral->GetXaxis()->GetBinLowEdge(i+1);
+        x[2*i+1] = x[lp-2*i-1] = hcentral->GetXaxis()->GetBinUpEdge(i+1);
+      }
+      for (unsigned i = 0; i < nbins; ++i) {
+        y[2*i] = y[2*i+1] = y[lp-2*i] = y[lp-2*i-1] = MinY;
+        double cent = hcentral->GetBinContent(i+1);
+        if (cent <= MinY) continue;
+        y[2*i] = y[2*i+1] = cent + sqrt(errup[i]);
+        y[lp-2*i] = y[lp-2*i-1] = cent - sqrt(errlow[i]);
+      }
+      ErrorBand = new TGraph(nbins * 4,x,y);
     }
-    for (unsigned i = 0; i < nbins; ++i) {
-      y[2*i] = y[2*i+1] = y[lp-2*i] = y[lp-2*i-1] = MinY;
-      double cent = hcentral->GetBinContent(i+1);
-      if (cent <= MinY) continue;
-      y[2*i] = y[2*i+1] = cent + sqrt(errup[i]);
-      y[lp-2*i] = y[lp-2*i-1] = cent - sqrt(errlow[i]);
+    else if (style == 1) {
+      int lp = nbins * 2 - 1;
+      for (unsigned i = 0; i < nbins; ++i) {
+        x[lp - i] = x[i] = hcentral->GetXaxis()->GetBinCenter(i+1);
+      }
+      for (unsigned i = 0; i < nbins; ++i) {
+        if (center[i] != hcentral->GetBinContent(i + 1) ) cout << "center value fault!!!" << endl;
+        y[i] = center[i] + sqrt(errup[i]);
+        y[lp-i] = center[i] - sqrt(errlow[i]);
+      }
+      ErrorBand = new TGraph(nbins * 2, x,y);
     }
-    ErrorBand = new TGraph(nbins * 4,x,y);
+    
     ErrorBand->SetLineWidth(0);
     ErrorBand->SetFillStyle(ErrorBandFillStyle);
     return ErrorBand;

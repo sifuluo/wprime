@@ -51,7 +51,8 @@ public:
     else if (B1[3] == 2 && B2[3] == 2) l3 = " #font[12]{e},";
     else l3 = "#font[12]{{#mu}/e},";
 
-    if (B1[2] == 1 && B2[2] == 1) l2 = "Sig. Like";
+    // if (B1[2] == 1 && B2[2] == 1) l2 = "Sig. Like";
+    if (B1[2] == 1 && B2[2] == 1) l2 = "";
     else if (B1[2] == 2 && B2[2] == 2) l2 = "Bkg. Est.";
     else l2 = "Inclusive";
 

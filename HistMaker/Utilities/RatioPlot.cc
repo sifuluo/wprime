@@ -61,6 +61,10 @@ public:
     //SigHists will be dynamically sized since it is [iSig][iVar] structure.
   }
 
+  void YEnlarge(double ye) {
+    TrueMaximumScale *= ye;
+  }
+
   void AddData(TH1F* h_) {
     DataHist = (TH1F*)h_->Clone();
     DataHist->SetDirectory(0);
@@ -149,9 +153,9 @@ public:
       StackDummy = new TH1F("","",nbins,xlow, xup);
       // StackDummy->SetLineWidth(0);
       MCStack->Add(StackDummy);
-      // double x[2] = {xlow, xup};
-      // double y[2] = {1.,1.};
-      // MCErrorRatioGraph = new TGraph(2,x,y);
+      double x[2] = {xlow, xup};
+      double y[2] = {1.,1.};
+      MCErrorRatioGraph = new TGraph(2,x,y);
     }
     if (!HasMC && !HasData && HasSig) {
       for (unsigned i = 0; i < SigNames.size(); ++i) {
@@ -417,14 +421,14 @@ public:
   TString GetMCPurityLatex() {
     TString out = "";
     for (unsigned i = 0; i < MCNames.size(); ++i) {
-      out += Form("#color[%i]{(%.2f%%)} ", MCHists[i]->GetLineColor(), MCHists[i]->Integral() / MCSummed[0]->Integral() * 100. );
+      out += Form("#color[%i]{(%.2f%%)} ", MCHists[i]->GetLineColor(), MCHists[i]->Integral(0,-1) / MCSummed[0]->Integral(0,-1) * 100. );
     }
     return out;
   }
 
   double GetMCPurity(TString sn) {
     for (unsigned i = 0; i < MCNames.size(); ++i) {
-      if (MCNames[i] == sn) return MCHists[i]->Integral() / MCSummed[0]->Integral();
+      if (MCNames[i] == sn) return MCHists[i]->Integral(0,-1) / MCSummed[0]->Integral(0,-1);
     }
     return 0;
   }
@@ -525,13 +529,18 @@ public:
     latex.DrawLatex(x,y,st);
   }
 
-  void SaveUncertContribution(TString pn) {
+  void SaveInfos(TString pn) {
     TString OutFileName = pn + ".txt";
     ofstream f(OutFileName);
+    f << "Uncertainties Contributions:" << "\n";
     f << "StatUp = " << MCStatUncertIntegral[1] / MCStatUncertIntegral[0] - 1. << "\n";
     f << "StatDown = " << MCStatUncertIntegral[2] / MCStatUncertIntegral[0] - 1. << "\n";
     for (unsigned i = 1; i < VarSize; ++i) {
       f << Variations[i] << " = " << MCSystUncertIntegral[i] / MCSystUncertIntegral[0] << "\n";
+    }
+    f << "\nMC Purity:\n";
+    for (unsigned i = 0; i < MCNames.size(); ++i) {
+      f << Form("[%s]: %.2f%% \n", MCNames[i].Data(), MCHists[i]->Integral(0,-1) / MCSummed[0]->Integral(0,-1) * 100. );
     }
     f.close();
   }
@@ -588,6 +597,12 @@ public:
 
 };
 
-
+struct PlotObservable {
+  string Observable;
+  string XTitle;
+  int LegPos = 0;
+  double YEnlarge = 1.;
+  string YTitle = "";
+};
 
 #endif

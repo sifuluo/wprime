@@ -241,11 +241,13 @@ void DrawPlotAuxHist(int iter = 0) {
   }
 
   if (iter == 3) { // MCReweight
-    TString HistPath = "/afs/cern.ch/user/s/siluo/EOS/WPrimeAnalysis/ValidationFitted/Hists";
+    gStyle->SetOptFit(0);
+    TString HistPath = "/afs/cern.ch/user/s/siluo/EOS/WPrimeAnalysis/ValidationFitted/Hists/";
     TString HistName = conf->SampleYear + "_Validation_ReweightSF.root";
     TString FileName = HistPath + HistName;
     TFile *f = new TFile(FileName,"READ");
     vector<string> Regions = {"1151", "1161", "2151", "2161", "1152", "1162", "2152", "2162"};
+    vector<string> RTitle = {"#font[12]{#mu} 5j1b", "#font[12]{#mu} 6j1b", "#font[12]{e} 5j1b", "#font[12]{e} 6j1b", "#font[12]{#mu} 5j2b", "#font[12]{#mu} 6j2b","#font[12]{e} 5j2b", "#font[12]{e} 6j2b"};
     vector<string> Variations = rm.Variations;
     for (unsigned ir = 0; ir < Regions.size(); ++ir) {
       Uncertainties *unc = new Uncertainties();
@@ -272,15 +274,17 @@ void DrawPlotAuxHist(int iter = 0) {
       gr->SetFillColor(1);
       TCanvas *c1 = new TCanvas("c1","c1",800,800);
       c1->cd();
+      unc->hcentral->GetYaxis()->SetRangeUser(0.5,2.);
+      TString HistTitle = "; ST ((Data - Other MC)/ttbar) in region    " + RTitle[ir] + "; Scale Factor";
+      unc->hcentral->SetTitle(HistTitle);
+      unc->hcentral->GetXaxis()->CenterTitle();
       unc->hcentral->Draw();
       f1->Draw("same");
-      gr->Draw("same");
+      gr->Draw("samef");
       CMSFrame(c1,isampleyear);
       TString outputname = outputpath + "ReweightSF_" + Regions[ir] + ".pdf";
       c1->SaveAs(outputname);
       delete c1;
     }
-
-    
   }
 }
