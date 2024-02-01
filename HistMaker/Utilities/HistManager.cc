@@ -172,7 +172,7 @@ public:
 
   void DrawPlot(int ir, TVirtualPad* p_, int year) {
     Plots[ir]->SetPad(p_);
-    Plots[ir]->DrawPlot(year);
+    Plots[ir]->DrawPlot(year, po.xmin, po.xmax);
     Plots[ir]->UPad->cd();
     TLatex latex;
     latex.SetNDC();

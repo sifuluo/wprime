@@ -280,7 +280,7 @@ void DrawPlotAuxHist(int iter = 0) {
       unc->hcentral->GetXaxis()->CenterTitle();
       unc->hcentral->Draw();
       f1->Draw("same");
-      gr->Draw("samef");
+      // gr->Draw("samef");
       CMSFrame(c1,isampleyear);
       TString outputname = outputpath + "ReweightSF_" + Regions[ir] + ".pdf";
       c1->SaveAs(outputname);

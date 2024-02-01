@@ -1,10 +1,10 @@
 #include "Utilities/DrawDataFormat.cc"
 
 void CombineForCombine(int isampleyear = 3) {
-  string basepath = "/eos/user/s/siluo/WPrimeAnalysis/Validation/";
+  string basepath = "/eos/user/s/siluo/WPrimeAnalysis/ValidationFitted/";
   string itpath = "";
   string SampleYear = dlib.SampleYears[isampleyear];
-  string Observable = "WPrimeMassSimpleFL";
+  string Observable = "WPrimeMass";
   TString OutFileName = "CombineFiles/" + SampleYear + "_" + Observable + ".root";
   TFile *OutFile = new TFile(OutFileName,"RECREATE");
   OutFile->cd();
@@ -12,6 +12,7 @@ void CombineForCombine(int isampleyear = 3) {
   vector<string> SampleTypes = dlib.DatasetNames;
   vector<string> GroupNames = dlib.GroupNames;
   vector<string> Regions = rm.StringRanges;
+  rm.AddVariationSource("RwStat");
   vector<string> Variations = rm.Variations;
 
   vector<vector<vector<TH1F*> > > OutHists; // OutHists[iGroup][iVariation][iRegion]
@@ -27,7 +28,7 @@ void CombineForCombine(int isampleyear = 3) {
     string SampleType = SampleTypes[ist];
     string HistFilePath = basepath + "Hists/";
     string HistFilePrefix = SampleYear + "_Validation";
-    if (SampleType == "ttbar") HistFilePrefix += "_RW";
+    if (SampleType == "ttbar") HistFilePrefix += "_RW2On2";
     if (SampleType == "ZZ") continue;
     string GroupName = dlib.GetGroup(SampleType);
     int ig = dlib.GetGroupIndexFromGroupName(GroupName);
@@ -35,7 +36,9 @@ void CombineForCombine(int isampleyear = 3) {
       cout << "Cannot find the group for SampleType: " << SampleType << "Skipping the Dataset" <<endl;
       continue;
     }
-    if (GroupName == "Data") GroupName = "data_obs";
+    if (GroupName == "Data") {
+      GroupName = "data_obs";
+    }
     TString HistFileName = StandardNames::HistFileName(HistFilePath, HistFilePrefix, Observable, SampleType);
     TFile *HistFile = new TFile(HistFileName,"READ");
     if (!HistFile) continue;

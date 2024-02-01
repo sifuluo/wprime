@@ -3,6 +3,7 @@
 #include "Utilities/MCReweight.cc"
 #include "TF1.h"
 #include "TROOT.h"
+#include "TMath.h"
 
 void DrawPlotValidation(int isampleyear = 3, int iobs = -99, int DoMCReweight = 0, bool SaveInfos = false) {
   vector<PlotObservable> obs;
@@ -13,10 +14,10 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = -99, int DoMCReweight = 
   obs.push_back({"LeptonPt", "Lepton p_{T}"});  // 0
   obs.push_back({"LeptonEta", "Lepton #eta", 0, 3.} );  // 1
   obs.push_back({"LeptonPhi", "Lepton #phi", 0, 3.} );  // 2
-  obs.push_back({"METPt", "#slash{E}_{T} p_{T}"} ); // 3
+  obs.push_back({"METPt", "#slash{E}_{T} p_{T}", 0, 1., 0, 500} ); // 3
   obs.push_back({"METPhi", "#slash{E}_{T} #phi"} ); // 4
   obs.push_back({"dPhiMetLep","#Delta#phi(#slash{E}_{T},l)", 0, 3.}); // 5
-  obs.push_back({"mT", "m_{T}"} );  // 6
+  obs.push_back({"mT", "m_{T}",0,1.,0.,400} );  // 6
   obs.push_back({"HT", "H_{T}"} );  // 7
   obs.push_back({"ST","ST"}); // 8
   obs.push_back({"WPrimeMassSimpleFL", "Simple m(W'_{H})"} ); // 9
@@ -25,9 +26,9 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = -99, int DoMCReweight = 
   obs.push_back({"WPrimeMassFL", "m(W'_{H})"} );  // 12
   obs.push_back({"WPrimeMassLL", "m(W'_{L})"} );  // 13
   obs.push_back({"Likelihood", "log(Likelihood)", 1} );   // 14
-  obs.push_back({"LikelihoodCorrect", "Correct Perm Likelihood", 1}); // 15
-  obs.push_back({"LikelihoodEffCorrect", "Effectively Correct Perm Likelihood", 1}); // 16
-  obs.push_back({"LikelihoodInCorrect", "Incorrect Perm Likelihood", 1}); // 17
+  obs.push_back({"LikelihoodCorrect", "Correct Perm log(Likelihood)", 1}); // 15
+  obs.push_back({"LikelihoodEffCorrect", "Effectively Correct Perm log(Likelihood)", 1}); // 16
+  obs.push_back({"LikelihoodInCorrect", "Incorrect Perm log(Likelihood)", 1}); // 17
   int JetQuantitiesIndex = obs.size();
   for (unsigned ij = 0; ij < 5; ++ij) { // 5 for JetPt,Eta,Phi, and 10 for dR(Jeta,Jetb), in total 15 in the loop
     obs.push_back({Form("Jet%iPt", ij), Form("Jet[%i] p_{T}", ij)}); // 18, 21, 24, 27, 30 
@@ -103,7 +104,8 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = -99, int DoMCReweight = 
       c1->SaveAs(pn);
     }
     string sr = rm.StringRanges[ir];
-    if (sr == "1153" || sr == "1163" || sr == "2153" || sr == "2163") if (SaveInfos) {
+    // if (sr == "1153" || sr == "1163" || sr == "2153" || sr == "2163") 
+    if (SaveInfos) {
       TString uncname = PlotName;
       if (DoMCReweight == 1) uncname += "RW";
       else if (DoMCReweight == 2) uncname += "RW2On2";

@@ -453,12 +453,16 @@ public:
     LPad->SetGridy();
   }
 
-  bool DrawPlot(int year) { // return false if nothing to draw
+  bool DrawPlot(int year, double cxmin = -1, double cxmax = -1) { // return false if nothing to draw
     if (!HasData && !HasMC && !SigNames.size()) return false;
+    if (cxmin < 0) cxmin = xlow;
+    if (cxmax < 0) cxmax = xup;
+
     UPad->cd();
-    
     if (CanvasMaximum > 0) MCStack->SetMaximum(CanvasMaximum);
     else MCStack->SetMaximum(TrueMaximum * TrueMaximumScale);
+    MCStack->Draw();
+    MCStack->GetXaxis()->SetRangeUser(cxmin, cxmax);
     MCStack->Draw("hist");
 
     if (MCErrorGraph != nullptr && HasMC) {
@@ -485,7 +489,7 @@ public:
 
     LPad->cd();
     LowerDummy->SetTitle(LTitle);
-    LowerDummy->GetXaxis()->SetRangeUser(xlow, xup);
+    LowerDummy->GetXaxis()->SetRangeUser(cxmin, cxmax);
     LowerDummy->GetYaxis()->SetRangeUser(0, 2.4);
     LowerDummy->GetYaxis()->SetNdivisions(505);
 
@@ -602,6 +606,8 @@ struct PlotObservable {
   string XTitle;
   int LegPos = 0;
   double YEnlarge = 1.;
+  double xmin = -1;
+  double xmax = -1;
   string YTitle = "";
 };
 

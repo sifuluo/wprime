@@ -1,9 +1,24 @@
-{ 
+#include "TFile.h"
+#include "TH1.h"
+#include "TString.h"
+#include "TLegend.h"
+#include "TGraph.h"
+#include "TTree.h"
+#include "TCanvas.h"
+#include <vector>
+#include <string>
+#include <iostream>
+
+#include "Utilities/CMSStyle.cc"
+
+void Brazil(){ 
   TString SampleYear = "2018";
-  TString Observable = "WPrimeMassSimpleFL";
-  TString Region = "1153";
+  // TString Observable = "SimpleWPrimeMass";
+  TString Observable = "WPrimeMass";
+  // TString Region = "1153";
+  TString Region = "All";
   string inputr = "";
-  cout << "Please input a region to process, such as: " << Region << endl; 
+  cout << "Please input a region to process, such as: " << Region << ", leaving blank means 'All'" << endl; 
   cin >> inputr;
   if (inputr != "") Region = inputr;
 
@@ -92,6 +107,7 @@
   double l1 = 0.12*w1;
   double r1 = 0.04*w1;
   TCanvas *c = new TCanvas("c","c",100,100,w1,h1);
+  
   c->SetFillColor(0);
   c->SetBorderMode(0);
   c->SetFrameFillStyle(0);
@@ -115,9 +131,14 @@
   fr->GetXaxis()->SetNdivisions(512);
   fr->GetYaxis()->CenterTitle(true);
   fr->GetYaxis()->SetTitle("95% CL_{s} limit on #sigma_{sig} [fb]");
-  fr->GetXaxis()->SetTitle("Simplified m(W'_{h}) [GeV]");
+  // fr->GetXaxis()->SetTitle("Simplified m(W'_{h}) [GeV]");
+  fr->GetXaxis()->SetTitle("m(W') [GeV]");
   fr->SetMinimum(0);
-  fr->SetMaximum(frameuplimit*1.05);
+  if (Region == "All") fr->SetMaximum(160);
+  else {
+      fr->SetMaximum(frameuplimit*1.2);
+      fr->SetMaximum(450);
+    }
   fr->GetXaxis()->SetLimits(200,1200);
 
   gryellow->SetFillColor(kOrange);
@@ -137,7 +158,7 @@
 
   fr->Draw("sameaxis");
 
-  TLegend *leg = new TLegend(0.5,0.6,0.9,0.76);
+  TLegend *leg = new TLegend(0.5,0.7,0.9,0.86);
   leg->SetFillStyle(0);
   leg->SetBorderSize(0);
   leg->SetTextSize(0.041);
@@ -147,6 +168,20 @@
   leg->AddEntry(gryellow, "#pm 2 std. dev.","f");
   leg->Draw();
 
+  if (Region != "All") {
+    TLatex latex;
+    latex.SetNDC();
+    latex.SetTextSize(0.035);
+    latex.SetTextAlign(23);
+    TString st;
+    if (Region == "1153") st = "#mu, 5 Jets, 3 bTags";
+    else if (Region == "1163") st = "#mu, 6 Jets, 3 bTags";
+    else if (Region == "2153") st = "e, 5 Jets, 3 bTags";
+    else if (Region == "2163") st = "e, 6 Jets, 3 bTags";
+    latex.DrawLatex((leg->GetX1() + leg->GetX2()) / 2., leg->GetY1() - 0.025, st);
+  }
+
+  CMSFrame(c,3);
   c->SaveAs(OutPlotName);
 
 }

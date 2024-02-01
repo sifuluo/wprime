@@ -292,7 +292,10 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
         else if (WPType == 1) HistCol.Fill("WPrimeMassLL", WPrimeMass);
         else cout << "Wrong WPType read : " << WPType << endl;
         HistCol.Fill("Likelihood", log10(Likelihood));
-        if (r->PermDiffCode == 0) HistCol.Fill("LikelihoodCorrect",log10(Likelihood));
+        if (r->PermDiffCode == 0) {
+          HistCol.Fill("LikelihoodCorrect",log10(Likelihood));
+          HistCol.Fill("LikelihoodEffCorrect", log10(Likelihood));
+        }
         if (r->PermDiffCode == 1) HistCol.Fill("LikelihoodEffCorrect", log10(Likelihood));
         if (r->PermDiffCode == 2) HistCol.Fill("LikelihoodInCorrect", log10(Likelihood));
       }
