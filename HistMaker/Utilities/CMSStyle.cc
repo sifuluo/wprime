@@ -7,7 +7,7 @@
 #include "TStyle.h"
 #include "../../Utilities/Dataset.cc"
 
-void CMSFrame(TVirtualPad* pad, int year) {
+void CMSFrame(TVirtualPad* pad, int year, bool NoData = false, bool NoLumi = false) {
 	// text sizes and text offsets with respect to the top frame
 	// in unit of the top margin size
   TString cmsText     = "CMS";
@@ -15,7 +15,8 @@ void CMSFrame(TVirtualPad* pad, int year) {
 	float cmsTextSize   = 0.75;
 	float cmsTextOffset = 0.1;
 
-  TString extraText   = "Work in progress";
+  TString extraText   = "Work In Progress";
+  if (NoData) extraText = "Simulation Work In Progress";
   float extraTextFont = 52;  // default is helvetica-italics
 	float extraOverCmsTextSize  = 0.8; // ratio of extra text size and cmsTextSize
 
@@ -23,7 +24,8 @@ void CMSFrame(TVirtualPad* pad, int year) {
   double lumi = 0;
   if (year < 4) lumi = CMSLumiYears[year];
   else lumi = CMSLumiYears[0] + CMSLumiYears[1] + CMSLumiYears[2] + CMSLumiYears[3];
-  TString lumiText = Form("%.2f fb^{-1} (13TeV)", lumi);
+  TString lumiText = Form("%.1f fb^{-1} (13TeV)", lumi);
+  if (NoData && NoLumi) lumiText = dlib.SampleYears[year] + " Simulation (13TeV)";
 	float lumiTextFont     = 42;
   float lumiTextSize     = 0.6;
   float lumiTextOffset   = 0.1;

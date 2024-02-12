@@ -20,6 +20,10 @@ void DrawPlotAuxHist(int iter = 0) {
   string outputpath = "AuxPlots/";
   setTDRStyle();
 
+  TLatex latex;
+  latex.SetNDC();
+  latex.SetTextSize(0.035);
+  latex.SetTextAlign(23);
   if (iter == 0) { // bTagging efficiency
     string sampletype = "Merged";
     string filename = "bTagEff_" + conf->SampleYear + "_" + sampletype + ".root";
@@ -54,9 +58,9 @@ void DrawPlotAuxHist(int iter = 0) {
     }
     h->GetXaxis()->SetRangeUser(3 , 5);
     h->GetYaxis()->SetRangeUser(20,3000);
-    h->SetTitle(";b-tagging efficiencies;Jet p_{T}");
+    h->SetTitle(";Jet flavour;Jet p_{T}; b-tagging efficiencies");
 
-    h->GetXaxis()->CenterTitle();
+    // h->GetXaxis()->CenterTitle();
     h->GetXaxis()->SetBinLabel(h->FindBin(3.), "u/d/s/g");
     h->GetXaxis()->SetBinLabel(h->FindBin(4.), "c");
     h->GetXaxis()->SetBinLabel(h->FindBin(5.), "b");
@@ -65,11 +69,12 @@ void DrawPlotAuxHist(int iter = 0) {
 
     TCanvas *c1 = new TCanvas("c1","c1",800,800);
     c1->UseCurrentStyle();
-    c1->SetRightMargin(0.12);
+    // c1->SetRightMargin(0.12);
     h->GetZaxis()->SetRangeUser(0.0005,1.);
-    h->Draw("colz");
+    h->Draw("text");
+    c1->SetLogy();
     c1->SetLogz();
-    CMSFrame(c1, isampleyear);
+    CMSFrame(c1, isampleyear, true, true);
     TString outputname = outputpath + "bTagEff.pdf";
     c1->SaveAs(outputname);
     delete c1;
@@ -88,11 +93,11 @@ void DrawPlotAuxHist(int iter = 0) {
     // tdrGrid(1);
     for (unsigned i = 0; i < 9; ++i) {
       PermSamples.push_back(Form("FL%i", (i + 3) * 100));
-      LegName.push_back(Form("m(W_{h}) = %i", (i + 3) * 100));
+      LegName.push_back(Form("m(W'_{h}) = %i", (i + 3) * 100));
     }
     for (unsigned i = 0; i < 9; ++i) {
       PermSamples.push_back(Form("LL%i", (i + 3) * 100));
-      LegName.push_back(Form("m(W_{l}) = %i", (i + 3) * 100));
+      LegName.push_back(Form("m(W'_{l}) = %i", (i + 3) * 100));
     }
     for (unsigned imass = 0; imass < 9; ++imass) {
       for (unsigned ih = 0; ih < 2; ++ih) {
@@ -120,24 +125,24 @@ void DrawPlotAuxHist(int iter = 0) {
             h1->GetXaxis()->SetBinLabel(ib+1, Form("%05i",PtPerms[ib]));
           }
           h1->GetXaxis()->SetLabelSize(0.02);
-          h1->SetTitle(";p_{T} Permutations Distribution; Likelihood Weight");
+          h1->SetTitle(";p_{T} Permutations; Likelihood Weight");
           h1->GetXaxis()->SetTitleOffset(1.3);
         }
         else {
           for (unsigned ib = 0; ib < bTagPerms.size(); ++ib) {
             h1->GetXaxis()->SetBinLabel(ib+1, Form("%05i",bTagPerms[ib]));
-            h1->SetTitle(";bTagging Permutations Distribution; Likelihood Weight");
+            h1->SetTitle(";b tagging Permutations; Likelihood Weight");
           }
         }
-        h1->GetXaxis()->CenterTitle();
+        // h1->GetXaxis()->CenterTitle();
         h1->Draw("hist");
         h2->Draw("samehist");
-        TLegend *leg1 = new TLegend(0.6,0.65,0.85,0.9,"","NDC");
-        leg1->SetBorderSize(1);
-        leg1->AddEntry(h1,LegName[imass],"l");
-        leg1->AddEntry(h2,LegName[imass+9],"l");
-        leg1->Draw();
-        CMSFrame(c1,isampleyear);
+        TLegend *leg = new TLegend(0.6,0.65,0.85,0.9,"","NDC");
+        leg->SetBorderSize(0);
+        leg->AddEntry(h1,LegName[imass],"l");
+        leg->AddEntry(h2,LegName[imass+9],"l");
+        leg->Draw();
+        CMSFrame(c1,isampleyear,true,true);
         TString outputname = outputpath + prefix + Form("M%i.pdf",(imass+3)*100);
         c1->SaveAs(outputname);
         delete c1;
@@ -149,11 +154,15 @@ void DrawPlotAuxHist(int iter = 0) {
     WPrimedRHist->Scale(1./WPrimedRHist->GetMaximum());
     TCanvas *c1 = new TCanvas("c1","c1",800,800);
     c1->cd();
-    WPrimedRHist->SetTitle(";#Delta R(t,b) of m(W'_{h}) = 500 GeV; Likelihood Weight");
-    WPrimedRHist->GetXaxis()->CenterTitle();
+    WPrimedRHist->SetTitle(";#Delta R(t_{h}, b_{W'}); Likelihood Weight");
+    // WPrimedRHist->GetXaxis()->CenterTitle();
     WPrimedRHist->GetXaxis()->SetTitleOffset(1.3);
     WPrimedRHist->Draw("hist");
-    CMSFrame(c1,isampleyear);
+    TLegend *leg = new TLegend(0.6,0.65,0.85,0.9,"","NDC");
+    leg->SetBorderSize(0);
+    leg->AddEntry(WPrimedRHist,"m(W'_{h}) = 500 GeV","l");
+    leg->Draw();
+    CMSFrame(c1,isampleyear,true,true);
     TString outputname = outputpath + "WPrimedR.pdf";
     c1->SaveAs(outputname);
     delete c1;
@@ -174,7 +183,7 @@ void DrawPlotAuxHist(int iter = 0) {
     TFile *ScaleFile = new TFile(FileName,"READ");
     for (unsigned ieta = 0; ieta < etabins.size() - 1; ++ieta) {
       TString ProfName = Form("Eta%i",ieta);
-      TString ProfTitle = Form(";p_{T} in %.1f<|#eta|<%.1f; Jet response", etabins[ieta], etabins[ieta + 1]);
+      TString ProfTitle = Form(";p_{T} [GeV] in %.1f<|#eta|<%.1f; Jet response", etabins[ieta], etabins[ieta + 1]);
       double xbins[24];
       for (unsigned ipt = 0; ipt < ptbins[ieta].size(); ++ipt) xbins[ipt] = ptbins[ieta][ipt];
       TH1F *prof = new TH1F(ProfName, ProfTitle, ptbins[ieta].size() - 1, xbins);
@@ -192,18 +201,26 @@ void DrawPlotAuxHist(int iter = 0) {
         h1->Fit(f1, "RMQ0", "", 0., 2.);
         TCanvas *c1 = new TCanvas("c1","c1",800,800);
         c1->cd();
-        TString HistTitle = Form(";Jet Response on %.1f<|#eta|<%.1f , %.0f<p_{T}<%.0f;Likelihood Weight",etabins[ieta],etabins[ieta+1],ptbins[ieta][ipt],ptbins[ieta][ipt+1]);
+        TString HistTitle = ";Jet Response;Likelihood Weight";
+        TString EtaRange = Form("%.1f < #left| #eta #right| < %.1f", etabins[ieta],etabins[ieta+1]);
+        TString PtRange = Form("%.0f < p_{T} (GeV) < %.0f", ptbins[ieta][ipt],ptbins[ieta][ipt+1]);
         h1->SetTitle(HistTitle);
-        h1->GetXaxis()->CenterTitle();
+        // h1->GetXaxis()->CenterTitle();
         h1->GetXaxis()->SetRangeUser(0,3);
         h1->Draw("hist");
         f1->Draw("same");
-        TLegend *leg1 = new TLegend(0.6,0.65,0.85,0.9,"","NDC");
-        leg1->SetBorderSize(1);
-        leg1->AddEntry(h1,"Disribution","l");
-        leg1->AddEntry(f1,"Fit","l");
-        leg1->Draw();
-        CMSFrame(c1,isampleyear);
+        TLegend *leg = new TLegend(0.6,0.65,0.85,0.9,"","NDC");
+        leg->SetBorderSize(0);
+        leg->AddEntry(h1,"Disribution","l");
+        leg->AddEntry(f1,"Gaussian Fit","l");
+        leg->Draw();
+        double texx = (leg->GetX1() + leg->GetX2()) / 2.0;
+        double texy = leg->GetY1() - 0.025;
+        latex.DrawLatex(texx, texy, EtaRange);
+        texy -= 1.15 * latex.GetTextSize();
+        latex.DrawLatex(texx, texy, PtRange);
+
+        CMSFrame(c1,isampleyear,true, true);
         TString outputname = outputpath + Form("Scale_eta_%.1f_%.1f_pt_%.0f_%.0f.pdf",etabins[ieta], etabins[ieta+1],ptbins[ieta][ipt],ptbins[ieta][ipt+1]);
         c1->SaveAs(outputname);
         delete c1;
@@ -212,28 +229,36 @@ void DrawPlotAuxHist(int iter = 0) {
       }
       TCanvas *c1 = new TCanvas("c1","c1",800,800);
       c1->cd();
-      prof->GetXaxis()->CenterTitle();
+      // prof->GetXaxis()->CenterTitle();
       prof->GetXaxis()->SetRange(2,prof->GetNbinsX());
       prof->Draw("E0");
-      CMSFrame(c1,isampleyear);
+      CMSFrame(c1,isampleyear,true, true);
       c1->SetLogx();
       TString outputname = outputpath + Form("ScaleProfile_eta_%.1f_%.1f.pdf",etabins[ieta], etabins[ieta+1]);
       c1->SaveAs(outputname);
       delete c1;
     }
     vector<TString> MassNames = {"LeptMass","HadtMass","HadWMass"};
+    vector<TString> MassTitle = {"m(t_{l})", "m(t_{h})", "m(W_{h})"};
+    vector<TString> ParTitle = {"t_{l}", "t_{h}", "W_{h}"};
     for (unsigned im = 0; im < MassNames.size(); ++im) {
       TH1F* h1 = (TH1F*) ScaleFile->Get(MassNames[im]);
       h1->SetDirectory(0);
       h1->Scale(1./h1->GetMaximum());
+      h1->SetTitle(";" + MassTitle[im] + "; Likelihood Weight");
       if (im == 0) h1->SetTitle(";m(t_{l}); Likelihood Weight");
       else if (im == 1) h1->SetTitle(";m(t_{h}); Likelihood Weight");
       else if (im == 2) h1->SetTitle(";m(W_{h}); Likelihood Weight");
-      h1->GetXaxis()->CenterTitle();
+      // h1->GetXaxis()->CenterTitle();
       TCanvas *c1 = new TCanvas("c1","c1",800,800);
       c1->cd();
+      TLegend *leg = new TLegend(0.6,0.65,0.95,0.9,"","NDC");
+      leg->SetBorderSize(0);
+      TString massleg = "#splitline{Reconstructed " + ParTitle[im] + "}{#splitline{with matched jet angle}{and GenJet p_{T}}}";
+      leg->AddEntry(h1, massleg, "l");
       h1->Draw("hist");
-      CMSFrame(c1,isampleyear);
+      leg->Draw();
+      CMSFrame(c1,isampleyear,true, true);
       TString outputname = outputpath + MassNames[im] + ".pdf";
       c1->SaveAs(outputname);
       delete c1;
@@ -247,7 +272,7 @@ void DrawPlotAuxHist(int iter = 0) {
     TString FileName = HistPath + HistName;
     TFile *f = new TFile(FileName,"READ");
     vector<string> Regions = {"1151", "1161", "2151", "2161", "1152", "1162", "2152", "2162"};
-    vector<string> RTitle = {"#font[12]{#mu} 5j1b", "#font[12]{#mu} 6j1b", "#font[12]{e} 5j1b", "#font[12]{e} 6j1b", "#font[12]{#mu} 5j2b", "#font[12]{#mu} 6j2b","#font[12]{e} 5j2b", "#font[12]{e} 6j2b"};
+    vector<string> RTitle = {"#font[12]{#mu}, 5 jets 1 btags", "#font[12]{#mu}, 6 jets 1 btags", "#font[12]{e}, 5 jets 1 btags", "#font[12]{e}, 6 jets 1 btags", "#font[12]{#mu}, 5 jets 2 btags", "#font[12]{#mu}, 6 jets 2 btags","#font[12]{e}, 5 jets 2 btags", "#font[12]{e}, 6 jets 2 btags"};
     vector<string> Variations = rm.Variations;
     for (unsigned ir = 0; ir < Regions.size(); ++ir) {
       Uncertainties *unc = new Uncertainties();
@@ -275,11 +300,17 @@ void DrawPlotAuxHist(int iter = 0) {
       TCanvas *c1 = new TCanvas("c1","c1",800,800);
       c1->cd();
       unc->hcentral->GetYaxis()->SetRangeUser(0.5,2.);
-      TString HistTitle = "; ST ((Data - Other MC)/ttbar) in region    " + RTitle[ir] + "; Scale Factor";
+      TString HistTitle = "; ST; Scale Factor";
       unc->hcentral->SetTitle(HistTitle);
-      unc->hcentral->GetXaxis()->CenterTitle();
+      // unc->hcentral->GetXaxis()->CenterTitle();
       unc->hcentral->Draw();
       f1->Draw("same");
+      TLegend *leg = new TLegend(0.4,0.45,0.95,0.9,"","NDC");
+      leg->SetBorderSize(0);
+      TString regleg = "#splitline{Binned ratio of (Data - Other MC)/ttbar}{in Region: " + RTitle[ir] + "}";
+      leg->AddEntry(unc->hcentral, regleg, "l");
+      leg->AddEntry(f1,"Fit","l");
+      leg->Draw();
       // gr->Draw("samef");
       CMSFrame(c1,isampleyear);
       TString outputname = outputpath + "ReweightSF_" + Regions[ir] + ".pdf";

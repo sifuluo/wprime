@@ -96,7 +96,7 @@ int MakeHistValidation(int isampleyear = 3, int isampletype = 0, int ifile = -1,
     HistCol.AddObservable(Form("Jet%iPhi",ij),90,-4.5,4.5);
     for (unsigned ij2 = ij + 1; ij2 < 5; ++ij2) {
       string ob = Form("dR(Jet%i,Jet%i)",ij, ij2);
-      HistCol.AddObservable(ob, 45, 0, 45);
+      HistCol.AddObservable(ob, 45, 0, 4.5);
     }
   }
   HistCol.AddObservable("METPt",100,0,2000);

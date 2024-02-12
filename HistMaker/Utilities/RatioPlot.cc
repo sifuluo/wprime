@@ -369,7 +369,7 @@ public:
     double x2 = lpos[2];
     double y2 = lpos[3];
     leg = new TLegend(x1,y1,x2,y2,"","NDC");
-    leg->SetBorderSize(1);
+    leg->SetBorderSize(0);
     leg->SetNColumns(2);
   }
 
@@ -498,7 +498,7 @@ public:
       if (XBinLabels.size() < nbins) nb_ = XBinLabels.size();
       for (int ib = 1; ib <= nb_; ++ib) LowerDummy->GetXaxis()->SetBinLabel(ib, XBinLabels[ib - 1]);
     }
-    LowerDummy->GetXaxis()->CenterTitle();
+    // LowerDummy->GetXaxis()->CenterTitle();
     LowerDummy->GetXaxis()->SetTitleSize(gStyle->GetTitleSize() / 0.3 * 0.7);
     LowerDummy->GetXaxis()->SetTitleOffset(gStyle->GetTitleOffset());
     LowerDummy->GetXaxis()->SetLabelSize(gStyle->GetLabelSize() / 0.3 * 0.7);
@@ -520,7 +520,7 @@ public:
       }
     }
     
-    CMSFrame(UPad,year);
+    CMSFrame(UPad,year,IsSR);
     return true;
   }
 
@@ -604,11 +604,12 @@ public:
 struct PlotObservable {
   string Observable;
   string XTitle;
-  int LegPos = 0;
+  string YTitle = "";
   double YEnlarge = 1.;
   double xmin = -1;
   double xmax = -1;
-  string YTitle = "";
+  int LegPos = 0;
+  vector<double> LegendPos = {0.65,0.65,0.9,0.9};
 };
 
 #endif

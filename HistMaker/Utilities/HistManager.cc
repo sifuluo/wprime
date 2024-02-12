@@ -34,6 +34,7 @@ public:
     SampleTypes = dlib.DatasetNames;
     Variations = rm.Variations;
     Regions = rm.StringRanges;
+    rebin = 1;
   };
 
   // void SetObservable(string ob) {
@@ -50,7 +51,15 @@ public:
     if (o.YTitle == "") o.YTitle = "Number of Entries";
     if (o.LegPos == 0) LegendPos = {0.65,0.65,0.9,0.9};
     if (o.LegPos == 1) LegendPos = {0.2,0.65,0.45,0.9};
+    if (o.LegPos == 2) LegendPos = {0.5,0.5,0.9,0.9};
+    if (o.LegPos == 3) LegendPos = {0.55,0.55,0.9,0.9};
+    if (o.LegPos == 4) LegendPos = {0.6,0.6,0.9,0.9};
+    if (o.LegPos == -1) LegendPos = o.LegendPos;
     po = o;
+  }
+
+  void Rebin(int r) {
+    rebin = r;
   }
 
   void SetSampleTypes(vector<string> sts) {
@@ -112,6 +121,7 @@ public:
             // cout << hn << " is nullptr" <<endl;
             continue;
           }
+          if (rebin > 1) h->Rebin(rebin);
           // if (po.Observable == "METPt") h->GetXaxis()->SetRangeUser(0,1000); // Very special case, should be changed in MakeHistValidation step instead
           if (PlotGroupHists[ig][iv] == nullptr) { // First hist for the group
             PlotGroupHists[ig][iv] = (TH1F*) h->Clone();
@@ -203,6 +213,7 @@ public:
   // string Observable;
   // string XTitle, YTitle;
   PlotObservable po;
+  int rebin;
   vector<string> SampleTypes, Variations, Regions;
   vector<RatioPlot*> Plots; // [Region]
   vector<TFile*> InFiles; // [iSampleType]

@@ -41,6 +41,7 @@ struct Dataset {
 
 struct DatasetGroup {
   string GroupName;
+  TString LegendName;
   int Color;
   int Type;
   vector<string> DatasetNames;
@@ -50,23 +51,22 @@ struct DatasetGroup {
     dummy->SetLineColor(Color);
   }
   void AddLegend(TLegend *l) {
-    TString gname = GroupName;
-    if (dummy == nullptr) dummy = new TH1F(gname + "_dummy","dummy",2,0,2);
+    if (dummy == nullptr) dummy = new TH1F(LegendName + "_dummy","dummy",2,0,2);
     dummy->SetLineColor(Color);
     if (Type == 0) {
       dummy->SetLineStyle(1);
       dummy->SetMarkerStyle(20);
-      l->AddEntry(dummy, gname, "p");
+      l->AddEntry(dummy, LegendName, "ep");
     }
     else if (Type == 1) {
       dummy->SetLineStyle(1);
       dummy->SetFillColor(Color);
-      l->AddEntry(dummy, gname, "f");
+      l->AddEntry(dummy, LegendName, "f");
     }
     else if (Type == 2) {
       dummy->SetLineStyle(2);
       dummy->SetLineWidth(2);
-      l->AddEntry(dummy, gname, "l");
+      l->AddEntry(dummy, LegendName, "l");
     }
   }
 };
@@ -191,6 +191,14 @@ public:
           Groups[ds.GroupName].Color = ds.Color;
           Groups[ds.GroupName].Type = ds.Type;
           Groups[ds.GroupName].GroupName = ds.GroupName;
+          Groups[ds.GroupName].LegendName = ds.GroupName;
+          if (ds.GroupName == "ttbar") Groups[ds.GroupName].LegendName = "t#bar{t}";
+          if (ds.GroupName == "wjets") Groups[ds.GroupName].LegendName = "W + jets";
+          if (ds.GroupName == "single_top") Groups[ds.GroupName].LegendName = "Single top";
+          if (ds.GroupName == "diboson") Groups[ds.GroupName].LegendName = "Di-boson";
+          for (int im = 3; im <= 11; ++im) {
+            if (ds.GroupName == Form("M%d00",im)) Groups[ds.GroupName].LegendName = Form("M = %d00 GeV",im);
+          }
         }
         Groups[ds.GroupName].DatasetNames.push_back(ds.Name);
       }
