@@ -26,6 +26,7 @@
 #include "DrawDataFormat.cc"
 #include "CMSStyle.cc"
 #include "RatioPlot.cc"
+#include "HistsForCombine.cc"
 
 class HistManager{
 public:
@@ -138,6 +139,18 @@ public:
         }
       }
       
+      HistsForCombine *hc;
+      bool InCombineRegion = (Regions[ir] == "1153" || Regions[ir] == "1163" || Regions[ir] == "2153" || Regions[ir] == "2163");
+      bool dohc = false;
+      if (po.Observable == "WPrimeMass" && InCombineRegion) {
+        hc = new HistsForCombine("SimpleShapes", Regions[ir]);
+        dohc = true;
+      }
+      if (po.Observable == "WPrimeMassSimpleFL" && InCombineRegion) {
+        hc = new HistsForCombine("SimpleWpMassFL", Regions[ir]);
+        dohc = true;
+      }
+      
       for (unsigned ig = 0; ig < GroupNames.size(); ++ig) {
         string gn = GroupNames[ig];
         bool gpadded = false;
@@ -153,7 +166,9 @@ public:
           gpadded = true;
           // cout << "Adding " << PlotGroupHists[ig][iv]->GetName() << endl;
           if (NormalizePlot) PlotGroupHists[ig][iv]->Scale(1./PlotGroupHists[ig][iv]->Integral());
+          // if (rebin > 1) PlotGroupHists[ig][iv]->Rebin(rebin);
           Plots[ir]->AddHist(gn, PlotGroupHists[ig][iv], dlib.Groups[gn].Type,iv);
+          if (dohc && gn != "Data") hc->AddHist(gn, PlotGroupHists[ig][iv],iv);
         }
         for (unsigned iv = 0; iv < Variations.size(); ++iv) {
           delete PlotGroupHists[ig][iv];
@@ -163,6 +178,10 @@ public:
       Plots[ir]->SetLogy(DoLogy);
       Plots[ir]->Legend(LegendPos);
       dlib.AddLegend(Plots[ir]->leg,IsSR);
+      if (dohc) {
+        hc->MakeDummyData();
+        hc->Done();
+      }
     }
   }
 

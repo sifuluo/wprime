@@ -7,62 +7,6 @@
 #include "TStyle.h"
 #include "../../Utilities/Dataset.cc"
 
-void CMSFrame(TVirtualPad* pad, int year, bool NoData = false, bool NoLumi = false) {
-	// text sizes and text offsets with respect to the top frame
-	// in unit of the top margin size
-  TString cmsText     = "CMS";
-  float cmsTextFont   = 61;  // default is helvetic-bold
-	float cmsTextSize   = 0.75;
-	float cmsTextOffset = 0.1;
-
-  TString extraText   = "Work In Progress";
-  if (NoData) extraText = "Simulation Work In Progress";
-  float extraTextFont = 52;  // default is helvetica-italics
-	float extraOverCmsTextSize  = 0.8; // ratio of extra text size and cmsTextSize
-
-	vector<double> CMSLumiYears = dlib.CMSLumiYears;
-  double lumi = 0;
-  if (year < 4) lumi = CMSLumiYears[year];
-  else lumi = CMSLumiYears[0] + CMSLumiYears[1] + CMSLumiYears[2] + CMSLumiYears[3];
-  TString lumiText = Form("%.1f fb^{-1} (13TeV)", lumi);
-  if (NoData && NoLumi) lumiText = dlib.SampleYears[year] + " Simulation (13TeV)";
-	float lumiTextFont     = 42;
-  float lumiTextSize     = 0.6;
-  float lumiTextOffset   = 0.1;
-
-
-  float H = float(pad->GetWh()) * pad->GetHNDC();
-	float W = float(pad->GetWw()) * pad->GetWNDC();
-	float l = pad->GetLeftMargin();
-	float t = pad->GetTopMargin();
-	float r = pad->GetRightMargin();
-	// float b = pad->GetBottomMargin();
-	// cout << "Pad H = " << H << ", Pad W = " << W <<endl;
-  TLatex latex;
-  latex.SetNDC();
-  latex.SetTextAngle(0);
-  latex.SetTextColor(1);
-
-	pad->cd();
-	// CMS
-	latex.SetTextAlign(11);// (1.left, 2.center, 3.right) (1.bottom, 2.center, 3.top)
-	latex.SetTextFont(cmsTextFont);
-	latex.SetTextSize(cmsTextSize*t);
-	latex.DrawLatex(l,1-t+cmsTextOffset*t,cmsText);
-
-	// extraText
-	latex.SetTextAlign(11);
-	latex.SetTextFont(extraTextFont);
-	latex.SetTextSize(cmsTextSize * extraOverCmsTextSize*t);
-	latex.DrawLatex(l+(cmsTextSize*t*2.2*H/W), 1-t+cmsTextOffset*t,extraText);
-
-	// lumiText
-  latex.SetTextAlign(31); // (1.left, 2.center, 3.right) (1.bottom, 2.center, 3.top)
-  latex.SetTextFont(lumiTextFont);
-	latex.SetTextSize(lumiTextSize*t);
-	latex.DrawLatex(1-r,1-t+lumiTextOffset*t,lumiText);
-}
-
 // tdrGrid: Turns the grid lines on (true) or off (false)
 
 void tdrGrid(bool gridOn) {
@@ -122,7 +66,7 @@ void setTDRStyle() {
   tdrStyle->SetMarkerStyle(20);
 
 //For the fit/function:
-  tdrStyle->SetOptFit(1);
+  tdrStyle->SetOptFit(0);
   tdrStyle->SetFitFormat("5.4g");
   tdrStyle->SetFuncColor(2);
   tdrStyle->SetFuncStyle(1);
@@ -153,6 +97,7 @@ void setTDRStyle() {
   tdrStyle->SetPadBottomMargin(0.13);
   tdrStyle->SetPadLeftMargin(0.16);
   tdrStyle->SetPadRightMargin(0.02);
+  tdrStyle->SetPadRightMargin(0.04);
 
 // For the Global title:
 
@@ -220,6 +165,65 @@ void setTDRStyle() {
 
   tdrStyle->cd();
 
+}
+
+void CMSFrame(TVirtualPad* pad, int year, bool NoData = false, bool NoLumi = false) {
+	// text sizes and text offsets with respect to the top frame
+	// in unit of the top margin size
+  TString cmsText     = "CMS";
+  float cmsTextFont   = 61;  // default is helvetic-bold
+	float cmsTextSize   = 0.75;
+	float cmsTextOffset = 0.1;
+
+  TString extraText   = "Work In Progress";
+  if (NoData) extraText = "Simulation Work In Progress";
+  float extraTextFont = 52;  // default is helvetica-italics
+	float extraOverCmsTextSize  = 0.8; // ratio of extra text size and cmsTextSize
+
+	vector<double> CMSLumiYears = dlib.CMSLumiYears;
+  double lumi = 0;
+  if (year < 4) lumi = CMSLumiYears[year];
+  else lumi = CMSLumiYears[0] + CMSLumiYears[1] + CMSLumiYears[2] + CMSLumiYears[3];
+  TString lumiText = Form("%.1f fb^{-1} (13TeV)", lumi);
+  if (NoData && NoLumi) {
+    // lumiText = dlib.SampleYears[year] + " Simulation (13TeV)";
+    lumiText = "";
+  }
+	float lumiTextFont     = 42;
+  float lumiTextSize     = 0.6;
+  float lumiTextOffset   = 0.1;
+
+
+  float H = float(pad->GetWh()) * pad->GetHNDC();
+	float W = float(pad->GetWw()) * pad->GetWNDC();
+	float l = pad->GetLeftMargin();
+	float t = pad->GetTopMargin();
+	float r = pad->GetRightMargin();
+	// float b = pad->GetBottomMargin();
+	// cout << "Pad H = " << H << ", Pad W = " << W <<endl;
+  TLatex latex;
+  latex.SetNDC();
+  latex.SetTextAngle(0);
+  latex.SetTextColor(1);
+
+	pad->cd();
+	// CMS
+	latex.SetTextAlign(11);// (1.left, 2.center, 3.right) (1.bottom, 2.center, 3.top)
+	latex.SetTextFont(cmsTextFont);
+	latex.SetTextSize(cmsTextSize*t);
+	latex.DrawLatex(l,1-t+cmsTextOffset*t,cmsText);
+
+	// extraText
+	latex.SetTextAlign(11);
+	latex.SetTextFont(extraTextFont);
+	latex.SetTextSize(cmsTextSize * extraOverCmsTextSize*t);
+	latex.DrawLatex(l+(cmsTextSize*t*2.2*H/W), 1-t+cmsTextOffset*t,extraText);
+
+	// lumiText
+  latex.SetTextAlign(31); // (1.left, 2.center, 3.right) (1.bottom, 2.center, 3.top)
+  latex.SetTextFont(lumiTextFont);
+	latex.SetTextSize(lumiTextSize*t);
+	latex.DrawLatex(1-r,1-t+lumiTextOffset*t,lumiText);
 }
 
 #endif

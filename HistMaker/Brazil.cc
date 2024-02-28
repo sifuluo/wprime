@@ -11,7 +11,7 @@
 
 #include "Utilities/CMSStyle.cc"
 
-void Brazil(){
+void Brazil(int iter = 0){
   TString SampleYear = "2018";
   TString Observable = "WPrimeMass";
   vector<TString> Regions = {"1153", "1163", "2153", "2163", "All"};
@@ -20,17 +20,28 @@ void Brazil(){
   vector<TGraph*> RegionMedians;
   RegionMedians.resize(4);
 
-  TString folder = "Rebin4";
+  TString basefolder = "CombinedFiles/";
+  TString folder = "BinW20/";
 
-  Observable = "SimpleWPrimeMass";
-  Regions = {"All"}; // Test purpose
-  RegionTexts = {""};
-  folder = ".";
+  if (iter == 1) {
+    folder = "BinW40/";
+  }
+  if (iter == 2) {
+    folder = "BinW80/";
+  }
+  if (iter == 3) {
+    Regions = {"All"}; // Test purpose
+    RegionTexts = {""};
+    folder = "SimpleWpBinW20/";
+  }
+  // basefolder = "CombinedFiles/Denis/";
+  // folder = folder + "Denis";
+
   
   for (unsigned ir = 0; ir < Regions.size(); ++ ir) {
     TString Region = Regions[ir];
-    TString InFileName = folder + "/Limits_" + SampleYear + "_" + Observable + "_" + Region + ".root";
-    TString OutPlotName = folder + "/LimitBrazil_" + SampleYear + "_" + Observable + "_" + Region + ".pdf";
+    TString InFileName = basefolder + folder + "Limits_" + SampleYear + "_" + Observable + "_" + Region + ".root";
+    TString OutPlotName = "Brazil/" + folder + "LimitBrazil_" + SampleYear + "_" + Observable + "_" + Region + ".pdf";
     TFile *f = new TFile(InFileName);
     TTree *t = (TTree*)f->Get("limit");
     double b_limit, b_mass;
@@ -138,11 +149,12 @@ void Brazil(){
     fr->GetYaxis()->SetTitleOffset(0.9);
     fr->GetXaxis()->SetNdivisions(512);
     // fr->GetYaxis()->CenterTitle(true);
-    fr->GetYaxis()->SetTitle("95% CL_{s} upper limit on #sigma_{sig} [fb]");
-    fr->GetXaxis()->SetTitle("m(W') [GeV]");
-    fr->GetXaxis()->SetTitle("Simplified m(W'_{h}) [GeV]");
+    // fr->GetYaxis()->SetTitle("95% CL_{s} upper limit on #sigma_{sig} [fb]");
+    fr->GetYaxis()->SetTitle("#sigma_{W'} [fb]");
+    if (iter == 3) fr->GetXaxis()->SetTitle("m(W'_{h}) [GeV]");
+    else fr->GetXaxis()->SetTitle("m(W') [GeV]");
     fr->SetMinimum(0);
-    fr->SetMaximum(frameuplimit*1.2);
+    fr->SetMaximum(frameuplimit*1.4);
     
     // if (Region == "All") fr->SetMaximum(160);
     // else {
@@ -152,12 +164,14 @@ void Brazil(){
     fr->GetXaxis()->SetLimits(200,1200);
 
     gryellow->SetFillColor(kOrange);
-    gryellow->SetLineColor(kOrange);
+    // gryellow->SetLineColor(kOrange);
+    gryellow->SetLineWidth(0);
     gryellow->SetFillStyle(1001);
     gryellow->Draw("F");
 
     grgreen->SetFillColor(kGreen+1);
-    grgreen->SetLineColor(kGreen+1);
+    // grgreen->SetLineColor(kGreen+1);
+    grgreen->SetLineWidth(0);
     grgreen->SetFillStyle(1001);
     grgreen->Draw("Fsame");
 
@@ -168,12 +182,14 @@ void Brazil(){
 
     fr->Draw("sameaxis");
 
-    TLegend *leg = new TLegend(0.5,0.7,0.9,0.86);
+    TLegend *leg = new TLegend(0.5,0.65,0.9,0.86);
     leg->SetFillStyle(0);
     leg->SetBorderSize(0);
     leg->SetTextSize(0.041);
     leg->SetTextFont(42);
-    leg->AddEntry(grmedian, "Asymptotic CL_{s} expected","L");
+    leg->AddEntry((TObject*)0, "95% CL_{s} upper limits","");
+    // leg->AddEntry(grmedian, "Asymptotic CL_{s} expected","L");
+    leg->AddEntry(grmedian, "Median expected","L");
     leg->AddEntry(grgreen, "#pm 1 std. dev.","f");
     leg->AddEntry(gryellow, "#pm 2 std. dev.","f");
     leg->Draw();
@@ -182,10 +198,12 @@ void Brazil(){
       RegionMedians[ir] = grmedian;
       TLatex latex;
       latex.SetNDC();
-      latex.SetTextSize(0.035);
-      latex.SetTextAlign(23);
+      latex.SetTextSize(0.041);
+      // latex.SetTextAlign(23);
+      latex.SetTextAlign(13);
       TString st = RegionTexts[ir];
-      latex.DrawLatex((leg->GetX1() + leg->GetX2()) / 2., leg->GetY1() - 0.025, st);
+      // latex.DrawLatex((leg->GetX1() + leg->GetX2()) / 2., leg->GetY1() - 0.025, st);
+      latex.DrawLatex(0.2, 0.8, st);
     }
 
     CMSFrame(c,3,true);
@@ -226,18 +244,20 @@ void Brazil(){
   fr->GetYaxis()->SetTitleOffset(0.9);
   fr->GetXaxis()->SetNdivisions(512);
   // fr->GetYaxis()->CenterTitle(true);
-  fr->GetYaxis()->SetTitle("Expected upper limit on #sigma_{sig} [fb]");
-  // fr->GetXaxis()->SetTitle("Simplified m(W'_{h}) [GeV]");
-  fr->GetXaxis()->SetTitle("m(W') [GeV]");
+  // fr->GetYaxis()->SetTitle("Expected upper limit on #sigma_{sig} [fb]");
+  fr->GetYaxis()->SetTitle("#sigma_{W'} [fb]");
+  if (iter == 3) fr->GetXaxis()->SetTitle("Simplified m(W'_{h}) [GeV]");
+  else fr->GetXaxis()->SetTitle("m(W') [GeV]");
   fr->SetMinimum(0);
-  fr->SetMaximum(350);
+  fr->SetMaximum(600);
   fr->GetXaxis()->SetLimits(200,1200);
 
-  TLegend *leg = new TLegend(0.5,0.55,0.9,0.86);
+  TLegend *leg = new TLegend(0.45,0.55,0.9,0.9);
   leg->SetFillStyle(0);
   leg->SetBorderSize(0);
   leg->SetTextSize(0.041);
   leg->SetTextFont(42);
+  leg->AddEntry((TObject*)0, "95% CL_{s} upper limits medians","");
   
   vector<int> colors = {1,2,3,4};
   for (unsigned ir = 0; ir < 4; ++ir) {
@@ -249,7 +269,7 @@ void Brazil(){
   }
   leg->Draw();
   CMSFrame(c,3,true);
-  TString OutPlotName = folder + "/LimitBrazil_" + SampleYear + "_" + Observable + "_Compare" + ".pdf";
+  TString OutPlotName = "Brazil/" + folder + "/LimitBrazil_" + SampleYear + "_" + Observable + "_Compare" + ".pdf";
   c->SaveAs(OutPlotName);
 
 }

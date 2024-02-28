@@ -11,18 +11,19 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = -99, int DoMCReweight = 
   // extensions.push_back(".root");
   extensions.push_back(".pdf");
   // extensions.push_back(".C");
+  int rebin = 1;
   // PlotObservable(Observable Name, Xtitle, YTitle, YEnlarge, xmin, xmax, LegendPosType, LegendPos)
   obs.push_back({"LeptonPt", "Lepton p_{T} [GeV]", "Number of Entries / 10 GeV", 1., -1, -1, 2, {}});  // 0
   obs.push_back({"LeptonEta", "Lepton #eta", "Number of Entries / 0.1", 3., -1, -1, 0, {}} );  // 1
   obs.push_back({"LeptonPhi", "Lepton #phi", "Number of Entries / 0.1", 3., -1, -1, 0, {}} );  // 2
-  obs.push_back({"METPt", "#slash{E}_{T} p_{T} [GeV]", "Number of Entries / 20 GeV", 1., 0, 500, 2, {}} ); // 3
-  obs.push_back({"METPhi", "#slash{E}_{T} #phi", "Number of Entries / 0.1", 0.7, -1, -1, 2, {}} ); // 4
+  obs.push_back({"METPt", "p_{T}^{miss} [GeV]", "Number of Entries / 20 GeV", 1., 0, 500, 2, {}} ); // 3
+  obs.push_back({"METPhi", "#phi_{p_{T}^{miss}}", "Number of Entries / 0.1", 0.7, -1, -1, 2, {}} ); // 4
   obs.push_back({"dPhiMetLep","#Delta#phi(#slash{E}_{T},l)", "Number of Entries / 0.1", 3., -1, -1, 0, {}}); // 5
   obs.push_back({"mT", "m_{T} [GeV]", "Number of Entries / 20 GeV", 1., 0., 400, 0, {}} );  // 6
   obs.push_back({"HT", "H_{T} [GeV]", "Number of Entries / 10 GeV", 1., -1, -1, 0, {}} );  // 7
   obs.push_back({"ST","S_{T} [GeV]", "Number of Entries / 10 GeV", 1., -1, -1, 0, {}}); // 8
-  obs.push_back({"WPrimeMassSimpleFL", "Simple m(W'_{H}) [GeV]", "Number of Entries / 20 GeV", 1., -1, -1, 2, {}} ); // 9
-  obs.push_back({"WPrimeMassSimpleLL", "Simple m(W'_{L}) [GeV]", "Number of Entries / 20 GeV", 1., -1, -1, 2, {}} ); // 10
+  obs.push_back({"WPrimeMassSimpleFL", "Simple m(W'_{H}) [GeV]", "Number of Entries / 20 GeV", 1., -1, -1, 0, {}} ); // 9
+  obs.push_back({"WPrimeMassSimpleLL", "Simple m(W'_{L}) [GeV]", "Number of Entries / 20 GeV", 1., -1, -1, 0, {}} ); // 10
   obs.push_back({"WPrimeMass", "m(W') [GeV]", "Number of Entries / 20 GeV", 1., -1, -1, 2, {}} );  // 11
   obs.push_back({"WPrimeMassFL", "m(W'_{H}) [GeV]", "Number of Entries / 20 GeV", 1., -1, -1, 2, {}} );  // 12
   obs.push_back({"WPrimeMassLL", "m(W'_{L}) [GeV]", "Number of Entries / 20 GeV", 1., -1, -1, 2, {}} );  // 13
@@ -88,9 +89,11 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = -99, int DoMCReweight = 
   // AllPlots->SetTitles(ObservablesXTitle);
   AllPlots->SetPrefix(PlotNamePrefix);
   // Special rebinning for W' mass
-  // int rebin_ = 1;
-  // AllPlots->Rebin(rebin_);
-  // obs[iobs].YTitle = Form("Number of Entries / %d GeV", 20 * rebin_);
+  if (!(iobs >=9 && iobs <= 13)) rebin = 1; // rebin only applies to WprimeMass related plots
+  if (rebin  > 1) {
+    AllPlots->Rebin(rebin);
+    obs[iobs].YTitle = Form("Number of Entries / %d GeV", 20 * rebin);
+  }
   // End of special rebinning
   AllPlots->SetObservable(obs[iobs]);
   // AllPlots->SetDrawSensitivity(true);
@@ -101,8 +104,8 @@ void DrawPlotValidation(int isampleyear = 3, int iobs = -99, int DoMCReweight = 
     TCanvas* c1 = new TCanvas("c1","c1",800,800);
     AllPlots->CreateAuxiliaryPlots(ir);
     AllPlots->DrawPlot(ir, c1, isampleyear);
-    // TString PlotName = AllPlots->Plots[ir]->PlotName + Form("Rebin%d",rebin_);
     TString PlotName = AllPlots->Plots[ir]->PlotName;
+    if (rebin > 1) PlotName = AllPlots->Plots[ir]->PlotName + Form("Rebin%d",rebin);
     TString PlotYear = SampleYear;
     TString pn  = "plots/" + SampleYear + "/" + PlotName;
     for (unsigned iext = 0; iext < extensions.size(); ++iext) {

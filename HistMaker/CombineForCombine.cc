@@ -72,3 +72,71 @@ void CombineForCombine(int isampleyear = 3) {
   OutFile->Save();
 
 }
+
+void CombineForCombine(int isampleyear = 3) {
+  string basepath = "/eos/user/s/siluo/WPrimeAnalysis/ValidationFitted/Hists/";
+  vector<string> Regions = {"1153","1163","2153","2163"};
+  string SampleYear = dlib.SampleYears[isampleyear];
+  string Observable = "WPrimeMass";
+  string OutObservable = "Wprime";
+  vector<string> SampleTypes = dlib.DatasetNames;
+  vector<string> GroupNames = dlib.GroupNames;
+  vector<TFile*> outfiles;
+  for (unsigned i = 0; i < Regions.size(); ++i) {
+    TString outfilename = "CombinedFiles/SimpleShapes_" + OutObservable + Regions[i]+ ".root";
+    outfiles.push_back(new TFile(outfilename,"RECREATE"));
+  }
+
+  vector<vector<vector<TH1F*> > > OutHists // [iGroup][iVariation][iRegion]
+  for (unsigned ig = 0; ig < GroupNames.size(); ++ig) {
+    OutHists[ig].resize(Variations.size());
+    for (unsigned iv = 0; iv < Variations.size(); ++iv) {
+      OutHists[ig][iv].resize(Regions.size());
+    }
+  }
+
+  for (unsigned ist = 0; ist < SampleTypes.size(); ++ist) {
+    // string HistFilePath = "outputs/"; // FIXME: Everytime after MakeHistValidtion.cc A run of Hadd.sh is needed to push histograms and reweight hists together.
+    string SampleType = SampleTypes[ist];
+    string HistFilePath = basepath;
+    string HistFilePrefix = SampleYear + "_Validation";
+    if (SampleType == "ttbar") HistFilePrefix += "_RW2On2"; // Or "_RW" same thing for 3 btags region
+    if (SampleType == "ZZ") continue;
+    string GroupName = dlib.GetGroup(SampleType);
+    int ig = dlib.GetGroupIndexFromGroupName(GroupName);
+    if (ig < 0) {
+      cout << "Cannot find the group for SampleType: " << SampleType << "Skipping the Dataset" <<endl;
+      continue;
+    }
+    if (GroupName == "Data") {
+      GroupName = "data_obs";
+    }
+    TString HistFileName = StandardNames::HistFileName(HistFilePath, HistFilePrefix, Observable, SampleType);
+    TFile *HistFile = new TFile(HistFileName,"READ");
+    if (!HistFile) continue;
+    if (HistFile->IsZombie()) continue;
+    for (unsigned ir = 0; ir < Regions.size(); ++ir) {
+      string Region = Regions[ir];
+      for (unsigned iv = 0; iv < Variations.size(); ++iv) {
+        TString inhistname = StandardNames::HistName(SampleType, Observable, Region, Variations[iv]);
+        TH1F *h = (TH1F*)HistFile->Get(inhistname);
+        if (h == nullptr) {
+          cout << "Trying but faild to get " << inhistname << endl;
+          continue;
+        }
+        if (OutHists[ig][iv][ir] == nullptr) {
+          OutHists[ig][iv][ir] = (TH1F*)h->Clone();
+          TString outhistname = StandardNames::HistName(GroupName, Observable, Region, Variations[iv]);
+          OutHists[ig][iv][ir]->SetName(outhistname);
+          OutHists[ig][iv][ir]->SetDirectory(OutFile);
+        }
+        else {
+          OutHists[ig][iv][ir]->Add(h);
+        }
+        delete h;
+      }
+    }
+    HistFile->Close();
+    delete HistFile;
+  }
+}

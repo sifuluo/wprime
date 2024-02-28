@@ -117,6 +117,7 @@ public:
   }
   
   void MakeVariations() {
+    Variations = {""};
     AddVariationSource("EleScale"); // 1 2
     AddVariationSource("EleRes"); // 3 4
     AddVariationSource("JES"); // 5 6
@@ -132,6 +133,26 @@ public:
     AddVariationSource("PUreweightSF"); // 25 26
     AddVariationSource("PDF"); // 27 28
     AddVariationSource("LHEScale"); // 29 30
+  }
+
+  void MakeCombineVariations() {
+    Variations = {""};
+    AddVariationSource("electronScale"); // 1 2
+    AddVariationSource("electronRes"); // 3 4
+    AddVariationSource("JES"); // 5 6
+    AddVariationSource("JER"); // 7 8
+    AddVariationSource("electron"); // 9 10
+    AddVariationSource("muonTrigger"); // 11 12
+    AddVariationSource("muonId"); // 13 14
+    AddVariationSource("muonIso"); // 15 16
+    AddVariationSource("BjetTagCorr"); // 17 18
+    AddVariationSource("BjetTagUncorr2018"); // 19 20
+    AddVariationSource("PUID"); // 21 22 
+    AddVariationSource("L1PreFiring"); // 23 24
+    AddVariationSource("PUreweight"); // 25 26
+    AddVariationSource("PDF"); // 27 28
+    AddVariationSource("LHEScale"); // 29 30
+    // AddVariationSource("RwStat"); // 31 32
   }
 
   void AcceptRegions(vector<int> a, vector<int> b, vector<int> c, vector<int> d) {

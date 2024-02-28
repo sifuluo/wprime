@@ -58,7 +58,7 @@ void DrawPlotAuxHist(int iter = 0) {
     }
     h->GetXaxis()->SetRangeUser(3 , 5);
     h->GetYaxis()->SetRangeUser(20,3000);
-    h->SetTitle(";Jet flavour;Jet p_{T}; b-tagging efficiencies");
+    h->SetTitle(";Jet flavour;Jet p_{T} [GeV]; b-tagging efficiencies");
 
     // h->GetXaxis()->CenterTitle();
     h->GetXaxis()->SetBinLabel(h->FindBin(3.), "u/d/s/g");
@@ -68,10 +68,14 @@ void DrawPlotAuxHist(int iter = 0) {
     // h->GetYaxis()->CenterTitle();
 
     TCanvas *c1 = new TCanvas("c1","c1",800,800);
+    c1->cd();
     c1->UseCurrentStyle();
-    // c1->SetRightMargin(0.12);
+    c1->SetRightMargin(0.18);
     h->GetZaxis()->SetRangeUser(0.0005,1.);
-    h->Draw("text");
+    h->GetZaxis()->SetTitleOffset(1.4);
+    // h->GetZaxis()->SetLabelSize(0.05);
+    gStyle->SetPaintTextFormat("0.4f");
+    h->Draw("textcolz");
     c1->SetLogy();
     c1->SetLogz();
     CMSFrame(c1, isampleyear, true, true);
@@ -93,11 +97,11 @@ void DrawPlotAuxHist(int iter = 0) {
     // tdrGrid(1);
     for (unsigned i = 0; i < 9; ++i) {
       PermSamples.push_back(Form("FL%i", (i + 3) * 100));
-      LegName.push_back(Form("m(W'_{h}) = %i", (i + 3) * 100));
+      LegName.push_back(Form("m(W'_{h}) = %i GeV", (i + 3) * 100));
     }
     for (unsigned i = 0; i < 9; ++i) {
       PermSamples.push_back(Form("LL%i", (i + 3) * 100));
-      LegName.push_back(Form("m(W'_{l}) = %i", (i + 3) * 100));
+      LegName.push_back(Form("m(W'_{l}) = %i GeV", (i + 3) * 100));
     }
     for (unsigned imass = 0; imass < 9; ++imass) {
       for (unsigned ih = 0; ih < 2; ++ih) {
@@ -120,6 +124,7 @@ void DrawPlotAuxHist(int iter = 0) {
         }
         TCanvas *c1 = new TCanvas("c1","c1",800,800);
         c1->cd();
+        c1->UseCurrentStyle();
         if (ih == 0) {
           for (unsigned ib = 0; ib < PtPerms.size(); ++ib) {
             h1->GetXaxis()->SetBinLabel(ib+1, Form("%05i",PtPerms[ib]));
@@ -137,7 +142,7 @@ void DrawPlotAuxHist(int iter = 0) {
         // h1->GetXaxis()->CenterTitle();
         h1->Draw("hist");
         h2->Draw("samehist");
-        TLegend *leg = new TLegend(0.6,0.65,0.85,0.9,"","NDC");
+        TLegend *leg = new TLegend(0.5,0.65,0.75,0.9,"","NDC");
         leg->SetBorderSize(0);
         leg->AddEntry(h1,LegName[imass],"l");
         leg->AddEntry(h2,LegName[imass+9],"l");
@@ -154,6 +159,7 @@ void DrawPlotAuxHist(int iter = 0) {
     WPrimedRHist->Scale(1./WPrimedRHist->GetMaximum());
     TCanvas *c1 = new TCanvas("c1","c1",800,800);
     c1->cd();
+    c1->UseCurrentStyle();
     WPrimedRHist->SetTitle(";#Delta R(t_{h}, b_{W'}); Likelihood Weight");
     // WPrimedRHist->GetXaxis()->CenterTitle();
     WPrimedRHist->GetXaxis()->SetTitleOffset(1.3);
@@ -165,11 +171,12 @@ void DrawPlotAuxHist(int iter = 0) {
     CMSFrame(c1,isampleyear,true,true);
     TString outputname = outputpath + "WPrimedR.pdf";
     c1->SaveAs(outputname);
+    // c1->SaveAs("plots2/wprimedr.C");
     delete c1;
   }
 
   if (iter == 2) { // JetScales
-    gStyle->SetOptFit(0);
+    // gStyle->SetOptFit(0);
     const vector<double> etabins{0., 1.3, 2.5, 3.0, 5.2}; // size 5, 4 bins, ieta top at 3;
     const vector<vector<double> > ptbins{
       {0.,30.,32.,34.,37.,40.,45.,50.,57.,65.,75.,90.,110.,130., 150.,180.,220., 260., 300.,350.,400.,500.,1000.,10000.}, // 23 bins, 24 numbers
@@ -183,7 +190,8 @@ void DrawPlotAuxHist(int iter = 0) {
     TFile *ScaleFile = new TFile(FileName,"READ");
     for (unsigned ieta = 0; ieta < etabins.size() - 1; ++ieta) {
       TString ProfName = Form("Eta%i",ieta);
-      TString ProfTitle = Form(";p_{T} [GeV] in %.1f<|#eta|<%.1f; Jet response", etabins[ieta], etabins[ieta + 1]);
+      TString ProfTitle = ";p_{T} [GeV]; Jet response";
+      TString EtaRange = Form("%.1f < #left| #eta #right| < %.1f", etabins[ieta],etabins[ieta+1]);
       double xbins[24];
       for (unsigned ipt = 0; ipt < ptbins[ieta].size(); ++ipt) xbins[ipt] = ptbins[ieta][ipt];
       TH1F *prof = new TH1F(ProfName, ProfTitle, ptbins[ieta].size() - 1, xbins);
@@ -201,8 +209,9 @@ void DrawPlotAuxHist(int iter = 0) {
         h1->Fit(f1, "RMQ0", "", 0., 2.);
         TCanvas *c1 = new TCanvas("c1","c1",800,800);
         c1->cd();
+        setTDRStyle();
+        c1->UseCurrentStyle();
         TString HistTitle = ";Jet Response;Likelihood Weight";
-        TString EtaRange = Form("%.1f < #left| #eta #right| < %.1f", etabins[ieta],etabins[ieta+1]);
         TString PtRange = Form("%.0f < p_{T} (GeV) < %.0f", ptbins[ieta][ipt],ptbins[ieta][ipt+1]);
         h1->SetTitle(HistTitle);
         // h1->GetXaxis()->CenterTitle();
@@ -223,19 +232,36 @@ void DrawPlotAuxHist(int iter = 0) {
         CMSFrame(c1,isampleyear,true, true);
         TString outputname = outputpath + Form("Scale_eta_%.1f_%.1f_pt_%.0f_%.0f.pdf",etabins[ieta], etabins[ieta+1],ptbins[ieta][ipt],ptbins[ieta][ipt+1]);
         c1->SaveAs(outputname);
+        // if (ieta == 0 && ipt == 5) c1->SaveAs("plots2/normal.C");
         delete c1;
         prof->SetBinContent(ipt + 1, f1->GetParameter(1));
         prof->SetBinError(ipt + 1, f1->GetParameter(2));
       }
       TCanvas *c1 = new TCanvas("c1","c1",800,800);
       c1->cd();
+      c1->UseCurrentStyle();
+      c1->SetLogx();
       // prof->GetXaxis()->CenterTitle();
       prof->GetXaxis()->SetRange(2,prof->GetNbinsX());
+      prof->GetXaxis()->SetLabelSize(0.035);
+      prof->GetYaxis()->SetLabelSize(0.035);
+      prof->GetXaxis()->SetLabelOffset(0.005);
+      prof->GetYaxis()->SetLabelOffset(0.005);
+      prof->GetXaxis()->SetTitleSize(0.035);
+      prof->GetYaxis()->SetTitleSize(0.035);
+      prof->GetXaxis()->SetTitleOffset(1.3);
+      prof->GetYaxis()->SetTitleOffset(1.3);
       prof->Draw("E0");
+      TLegend *leg = new TLegend(0.6,0.75,0.85,0.9,"","NDC");
+      leg->SetBorderSize(0);
+      leg->SetTextSize(0.042);
+      leg->AddEntry(prof,EtaRange,"ep");
+      leg->Draw();
+      // latex.DrawLatex(0.7,0.9,EtaRange);
       CMSFrame(c1,isampleyear,true, true);
-      c1->SetLogx();
       TString outputname = outputpath + Form("ScaleProfile_eta_%.1f_%.1f.pdf",etabins[ieta], etabins[ieta+1]);
       c1->SaveAs(outputname);
+      // c1->SaveAs("plots2/abnormal.C");
       delete c1;
     }
     vector<TString> MassNames = {"LeptMass","HadtMass","HadWMass"};
@@ -245,13 +271,11 @@ void DrawPlotAuxHist(int iter = 0) {
       TH1F* h1 = (TH1F*) ScaleFile->Get(MassNames[im]);
       h1->SetDirectory(0);
       h1->Scale(1./h1->GetMaximum());
-      h1->SetTitle(";" + MassTitle[im] + "; Likelihood Weight");
-      if (im == 0) h1->SetTitle(";m(t_{l}); Likelihood Weight");
-      else if (im == 1) h1->SetTitle(";m(t_{h}); Likelihood Weight");
-      else if (im == 2) h1->SetTitle(";m(W_{h}); Likelihood Weight");
+      h1->SetTitle(";" + MassTitle[im] + " [GeV]; Likelihood Weight");
       // h1->GetXaxis()->CenterTitle();
       TCanvas *c1 = new TCanvas("c1","c1",800,800);
       c1->cd();
+      c1->UseCurrentStyle();
       TLegend *leg = new TLegend(0.6,0.65,0.95,0.9,"","NDC");
       leg->SetBorderSize(0);
       TString massleg = "#splitline{Reconstructed " + ParTitle[im] + "}{#splitline{with matched jet angle}{and GenJet p_{T}}}";
@@ -299,13 +323,15 @@ void DrawPlotAuxHist(int iter = 0) {
       gr->SetFillColor(1);
       TCanvas *c1 = new TCanvas("c1","c1",800,800);
       c1->cd();
+      c1->UseCurrentStyle();
       unc->hcentral->GetYaxis()->SetRangeUser(0.5,2.);
-      TString HistTitle = "; ST; Scale Factor";
+      TString HistTitle = "; S_{T} [GeV]; Scale Factor";
       unc->hcentral->SetTitle(HistTitle);
       // unc->hcentral->GetXaxis()->CenterTitle();
+      // unc->hcentral->GetXaxis()->SetRangeUser(unc->hcentral->GetXaxis()->GetXmin(), unc->hcentral->GetXaxis()->GetXmax() * 1.05);
       unc->hcentral->Draw();
       f1->Draw("same");
-      TLegend *leg = new TLegend(0.4,0.45,0.95,0.9,"","NDC");
+      TLegend *leg = new TLegend(0.4,0.55,0.95,0.9,"","NDC");
       leg->SetBorderSize(0);
       TString regleg = "#splitline{Binned ratio of (Data - Other MC)/ttbar}{in Region: " + RTitle[ir] + "}";
       leg->AddEntry(unc->hcentral, regleg, "l");

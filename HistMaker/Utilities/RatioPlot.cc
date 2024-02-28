@@ -4,6 +4,7 @@
 #include "TString.h"
 #include "TH1.h"
 #include "THStack.h"
+#include "TCanvas.h"
 #include "TPad.h"
 #include "TLegend.h"
 #include "TGraph.h"
@@ -353,6 +354,7 @@ public:
         ExpOverMC[isig]->SetDirectory(0);
         ExpOverMC[isig]->Add(MCSummed[0]);
         ExpOverMC[isig]->Divide(MCSummed[0]);
+        ExpOverMC[isig]->SetFillColor(0);
       }
     }
     if (!IsSR && HasData) {
@@ -536,6 +538,8 @@ public:
   void SaveInfos(TString pn) {
     TString OutFileName = pn + ".txt";
     ofstream f(OutFileName);
+    f << "Central BinContent Summation = " << MCStatUncertIntegral[0] << ", Central Integral = " << MCSummed[0]->Integral();
+    f << ", Maximum = " << MCSummed[0]->GetMaximum() << "\n";
     f << "Uncertainties Contributions:" << "\n";
     f << "StatUp = " << MCStatUncertIntegral[1] / MCStatUncertIntegral[0] - 1. << "\n";
     f << "StatDown = " << MCStatUncertIntegral[2] / MCStatUncertIntegral[0] - 1. << "\n";
